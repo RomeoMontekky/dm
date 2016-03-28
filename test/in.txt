@@ -1,0 +1,7 @@
+operation(x,y) := (x -> y)
+left_grouped(x,y,z) := operation(operation(x,y), z)
+right_grouped(x,y,z) := operation(x, operation(y,z))
+equality(x,y,z) := (left_grouped(x,y,z) = right_grouped(x,y,z))
+call table(equality)
+exit
+

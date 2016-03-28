@@ -1,0 +1,53 @@
+#pragma once
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+namespace dm
+{
+
+struct StringPtrLen
+{
+public:
+   StringPtrLen();
+   StringPtrLen(const char* ptr, long len);
+
+   operator std::string() const;
+
+   const char* Ptr() const; // TODO: Remove
+   long Len() const; // TODO: Rename to Length
+   const char* Begin() const;
+   const char* End() const;
+   char At(long index) const;
+
+   StringPtrLen Left(const char* boundary) const;
+   StringPtrLen Right(const char* boundary) const;
+
+   void Assign(const char* ptr, long len);
+   void Reset();
+   void RemoveLeft(int count);
+   void RemoveRight(int count);
+
+   void TrimLeft();
+   void TrimRight();
+   void Trim();
+
+   // Variable str is null terminated
+   bool StartsWith(const char* str) const;
+   bool Equals(const char* str) const;
+
+   const char* Find(char ch) const;
+   const char* FindBackward(char ch) const;
+
+private:
+   const char* m_ptr;
+   long m_len;
+};
+
+using TStringPtrLenVector = std::vector<StringPtrLen>;
+
+std::ostream& operator<<(std::ostream& os, const StringPtrLen& str);
+
+}; // namespace dm
+

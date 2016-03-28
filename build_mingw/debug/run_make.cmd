@@ -1,0 +1,1 @@
+mingw32-make.exe > make.out 2>&1
