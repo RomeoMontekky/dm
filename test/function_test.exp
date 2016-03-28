@@ -1,0 +1,4 @@
+Test function called with 3 parameters.
+   Parameter [0] = '1'
+   Parameter [1] = '2'
+   Parameter [2] = '3'

@@ -18,21 +18,28 @@ public:
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };
 
-FunctionTest::FunctionTest() : Function("test", 1)
+FunctionTest::FunctionTest() : Function("test", -1)
 {
 }
 
 TFunctionOutputPtr FunctionTest::Call(VariableManager& variable_mgr, const TStringPtrLenVector& params)
 {
-   assert(params.size() == GetParameterCount());
-   
    variable_mgr; // To avoid warning
 
    auto output = std::make_unique<FunctionOutput>();
 
-   std::stringstream sstr;
-   sstr << "Test function called with parameter '" << params.at(0) << "'.";
-   output->AddLine(sstr.str());
+   {
+      std::stringstream sstr;
+      sstr << "Test function called with " << params.size() << " parameters.";
+      output->AddLine(sstr.str());
+   }
+
+   for (long index = 0; index < params.size(); ++index)
+   {
+      std::stringstream sstr;
+      sstr << "   Parameter [" << index << "] = '" << params.at(index) << "'";
+      output->AddLine(sstr.str());
+   }
 
    return output;
 }

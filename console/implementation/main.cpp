@@ -8,7 +8,7 @@ int main()
 {
    dm::TIEnginePtr engine = dm::CreateEngine();
 
-   std::cout << "Enter commands to interact with the engine. Enter 'exit' to quit the program." << std::endl;
+   std::cerr << "Enter commands to interact with the engine. Enter 'exit' to quit the program." << std::endl;
 
    std::string str;
    while (true)

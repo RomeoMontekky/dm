@@ -1,7 +1,5 @@
 #pragma once
 
-#include <engine/istringable.h>
-
 #include "expression_base.h"
 #include "../common/named_object.h"
 
