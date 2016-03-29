@@ -71,10 +71,10 @@ LiteralType Plus(LiteralType value1, LiteralType value2)
 
 }; // namespace
 
-bool IsCommutaiveOperation(OperationType operation)
+bool IsOperationCommutaive(OperationType operation)
 {
    // Each time you add new operation to OperationType
-   // check the condition in IsCommutaiveOperation.
+   // check the condition in IsOperationCommutaive.
    //
    // After that you can add new operation to assert
    // condition manully. 
@@ -98,10 +98,10 @@ bool IsCommutaiveOperation(OperationType operation)
            OperationType::Plus  == operation);
 }
 
-bool IsAssociativeOperation(OperationType operation)
+bool IsOperationAssociative(OperationType operation)
 {
    // Each time you add new operation to OperationType
-   // check the condition in IsAssociativeOperation.
+   // check the condition in IsOperationAssociative.
    //
    // After that you can add new operation to assert
    // condition manully. 

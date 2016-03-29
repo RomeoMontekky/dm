@@ -19,8 +19,8 @@ enum class OperationType
    Plus
 };
 
-bool IsCommutaiveOperation(OperationType operation);
-bool IsAssociativeOperation(OperationType operation);
+bool IsOperationCommutaive(OperationType operation);
+bool IsOperationAssociative(OperationType operation);
 
 LiteralType PerformOperation(OperationType operation, const LiteralType values[], long amount);
 
