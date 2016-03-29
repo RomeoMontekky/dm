@@ -70,8 +70,8 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
       ExpressionSimplifierVisitor child_visitor;
       expression.GetChild(index)->Accept(child_visitor);
 
-      children_values[index] = child_visitor.m_value;
-      children_is_raws[index] = child_visitor.m_is_raw;
+      children_values[index] = child_visitor.GetValue();
+      children_is_raws[index] = child_visitor.GetIsRaw();
 
       if (LiteralType::None == child_visitor.m_value)
       {
