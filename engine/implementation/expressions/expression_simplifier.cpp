@@ -24,7 +24,10 @@ public:
    virtual void Visit(OperationExpression& expression) override;
 
 private:
+   // Literal value of the subtree (raw or calculated).
+   // If calculation isn't possible, then it has LiteralType::None value.
    LiteralType m_value;
+   // Whether literal value is raw or it was calculated.
    bool m_is_raw;   
 };
 
