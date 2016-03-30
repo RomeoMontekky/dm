@@ -10,6 +10,59 @@ namespace dm
 namespace
 {
 
+/////////// ExpressionLiniarizerVisitor /////////////
+
+class ExpressionLiniarizerVisitor : public ExpressionVisitor
+{
+public:
+   ExpressionLiniarizerVisitor();
+
+   OperationType GetOperation() const;
+   TExpressionPtrVector& GetExpressions();
+
+   // ExpressionVisitor
+   virtual void Visit(LiteralExpression& expression) override;
+   virtual void Visit(ParamRefExpression& expression) override;
+   virtual void Visit(OperationExpression& expression) override;
+
+private:
+   OperationType m_operation;
+   TExpressionPtrVector m_expressions;
+};
+
+ExpressionLiniarizerVisitor::ExpressionLiniarizerVisitor() :
+   m_operation(OperationType::None), m_expressions()
+{
+}
+
+OperationType ExpressionLiniarizerVisitor::GetOperation() const
+{
+   return m_operation;
+}
+
+TExpressionPtrVector& ExpressionLiniarizerVisitor::GetExpressions()
+{
+   return m_expressions;
+}
+
+void ExpressionLiniarizerVisitor::Visit(LiteralExpression& expression)
+{
+}
+
+void ExpressionLiniarizerVisitor::Visit(ParamRefExpression& expression)
+{
+}
+
+void ExpressionLiniarizerVisitor::Visit(OperationExpression& expression)
+{
+   const long child_count = expression.GetChildCount();
+   m_expressions.reserve(child_count);
+   for (long index = 0; index < child_count; ++index)
+   {
+      m_expressions.push_back(std::move(expression.GetChild(index)));
+   }
+}
+
 /////////// ExpressionNormalizerVisitor /////////////
 
 class ExpressionNormalizerVisitor : public ExpressionVisitor
@@ -47,7 +100,6 @@ bool ExpressionNormalizerVisitor::GetIsLeaf() const
    return m_is_leaf;
 }
 
-
 void ExpressionNormalizerVisitor::Visit(LiteralExpression& expression)
 {
    m_is_leaf = true;
@@ -60,9 +112,10 @@ void ExpressionNormalizerVisitor::Visit(ParamRefExpression&)
 
 void ExpressionNormalizerVisitor::Visit(OperationExpression& expression)
 {
-   const long child_count = expression.GetChildCount();
+   long child_count = expression.GetChildCount();
    const bool is_associative = IsOperationAssociative(expression.GetOperation());
 
+   bool is_skip_linearization = true;
    for (long index = 0; index < child_count; ++index)
    {
       ExpressionNormalizerVisitor child_visitor;
@@ -86,12 +139,35 @@ void ExpressionNormalizerVisitor::Visit(OperationExpression& expression)
       {
          return;
       }
+
+      // Discard the flag if at least one child isn't leaf.
+      if (is_skip_linearization && !child_visitor.GetIsLeaf())
+      {
+         is_skip_linearization = false;
+      }
    }
 
    m_operation = expression.GetOperation();
-}
 
-/////////// ExpressionLiniarizerVisitor /////////////
+   if (!is_skip_linearization)
+   {
+      return;
+   }
+
+   // Linearize expression
+   for (long index = 0; index < child_count; ++index)
+   {
+      ExpressionLiniarizerVisitor child_visitor;
+      expression.GetChild(index)->Accept(child_visitor);
+      if (!child_visitor.GetExpressions().empty())
+      {
+         assert(child_visitor.GetOperation() == m_expression.GetOperation());
+         expression.RemoveChild(index);
+         // TODO: Insert expressions from child_visitor and correct index
+      }
+   }
+   
+}
 
 }; // namespace
 
