@@ -61,8 +61,19 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
 {
    const long child_count = expression.GetChildCount();
 
+#ifdef _MSC_VER
+   std::unique_ptr<LiteralType[]> children_values_ptr = std::make_unique<LiteralType[]>(child_count);
+   LiteralType * const children_values = children_values_ptr.get();
+#else
    LiteralType children_values[child_count];
+#endif
+
+#ifdef _MSC_VER
+   std::unique_ptr<bool[]> children_is_raws_ptr = std::make_unique<bool[]>(child_count);
+   bool * const children_is_raws = children_is_raws_ptr.get();
+#else
    bool children_is_raws[child_count];
+#endif
 
    bool is_all_actual_values = true;
    for (long index = 0; index < child_count; ++index)

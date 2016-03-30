@@ -17,7 +17,6 @@ class ExpressionLiniarizerVisitor : public ExpressionVisitor
 public:
    ExpressionLiniarizerVisitor();
 
-   OperationType GetOperation() const;
    TExpressionPtrVector& GetExpressions();
 
    // ExpressionVisitor
@@ -26,18 +25,12 @@ public:
    virtual void Visit(OperationExpression& expression) override;
 
 private:
-   OperationType m_operation;
    TExpressionPtrVector m_expressions;
 };
 
 ExpressionLiniarizerVisitor::ExpressionLiniarizerVisitor() :
-   m_operation(OperationType::None), m_expressions()
+   m_expressions()
 {
-}
-
-OperationType ExpressionLiniarizerVisitor::GetOperation() const
-{
-   return m_operation;
 }
 
 TExpressionPtrVector& ExpressionLiniarizerVisitor::GetExpressions()
@@ -71,7 +64,6 @@ public:
    ExpressionNormalizerVisitor();
 
    OperationType GetOperation() const;
-   bool GetIsLeaf() const;
 
    // ExpressionVisitor
    virtual void Visit(LiteralExpression& expression) override;
@@ -81,12 +73,10 @@ public:
 private:
    // Operation which in each operation expression node is the subtree.
    OperationType m_operation;
-   // Is current expression is a leaf of the subtree.
-   bool m_is_leaf;
 };
 
 ExpressionNormalizerVisitor::ExpressionNormalizerVisitor() :
-   m_operation(OperationType::None), m_is_leaf(false)
+   m_operation(OperationType::None)
 {
 }
 
@@ -95,78 +85,46 @@ OperationType ExpressionNormalizerVisitor::GetOperation() const
    return m_operation;
 }
 
-bool ExpressionNormalizerVisitor::GetIsLeaf() const
-{
-   return m_is_leaf;
-}
-
 void ExpressionNormalizerVisitor::Visit(LiteralExpression& expression)
 {
-   m_is_leaf = true;
 }
 
 void ExpressionNormalizerVisitor::Visit(ParamRefExpression&)
 {
-   m_is_leaf = true;
 }
 
 void ExpressionNormalizerVisitor::Visit(OperationExpression& expression)
 {
+   m_operation = expression.GetOperation();
+
    long child_count = expression.GetChildCount();
    const bool is_associative = IsOperationAssociative(expression.GetOperation());
 
-   bool is_skip_linearization = true;
    for (long index = 0; index < child_count; ++index)
    {
-      ExpressionNormalizerVisitor child_visitor;
-      expression.GetChild(index)->Accept(child_visitor);
+      ExpressionNormalizerVisitor normalizer_visitor;
+      expression.GetChild(index)->Accept(normalizer_visitor);
 
-      // An expression can be marked as potentionally normalizable if:
-      //    - All children are leaves or operations
-      //      with the same operation type, as current expression.
-      // If the current operation is not associative additional condition should be checked:
-      //    - Only the first child can be not leaf.
+      // The child expression can be linearized if following is true:
+      //    - it is either first child, or current operation is associative;
+      //    - it is operation expression and operation is the same as in the current expression;
 
-      // Here is negated and simplified condtion:
-
-      if (
-            !child_visitor.GetIsLeaf() && 
-            (
-               (!is_associative && index != 0) || 
-               child_visitor.GetOperation() == expression.GetOperation()
-            )
-         )
+      if ((is_associative || 0 == index) && 
+          (normalizer_visitor.GetOperation() == expression.GetOperation()))
       {
-         return;
-      }
+         ExpressionLiniarizerVisitor liniarizer_visitor;
+         expression.GetChild(index)->Accept(liniarizer_visitor);
 
-      // Discard the flag if at least one child isn't leaf.
-      if (is_skip_linearization && !child_visitor.GetIsLeaf())
-      {
-         is_skip_linearization = false;
+         if (!liniarizer_visitor.GetExpressions().empty())
+         {
+            const long expressions_count = liniarizer_visitor.GetExpressions().size();
+            expression.RemoveChild(index);
+            expression.InsertChildren(index, std::move(liniarizer_visitor.GetExpressions()));
+            index += expressions_count - 1;
+            child_count += expressions_count - 1;
+         }
       }
    }
-
-   m_operation = expression.GetOperation();
-
-   if (!is_skip_linearization)
-   {
-      return;
-   }
-
-   // Linearize expression
-   for (long index = 0; index < child_count; ++index)
-   {
-      ExpressionLiniarizerVisitor child_visitor;
-      expression.GetChild(index)->Accept(child_visitor);
-      if (!child_visitor.GetExpressions().empty())
-      {
-         assert(child_visitor.GetOperation() == m_expression.GetOperation());
-         expression.RemoveChild(index);
-         // TODO: Insert expressions from child_visitor and correct index
-      }
-   }
-   
 }
 
 }; // namespace

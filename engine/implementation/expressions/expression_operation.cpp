@@ -87,7 +87,7 @@ void OperationExpression::InsertChild(long index, TExpressionPtr&& expression)
    m_children.insert(m_children.cbegin() + index, std::move(expression));
 }
 
-void OperationExpression::InsertChidren(long index, TExpressionPtrVector&& expressions)
+void OperationExpression::InsertChildren(long index, TExpressionPtrVector&& expressions)
 {
    assert(index >=0 && index <= m_children.size());
    for (auto& expression : expressions)

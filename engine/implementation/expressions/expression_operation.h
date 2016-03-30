@@ -19,7 +19,7 @@ public:
 
    void RemoveChild(long index);
    void InsertChild(long index, TExpressionPtr&& expression);
-   void InsertChidren(long index, TExpressionPtrVector&& expressions);
+   void InsertChildren(long index, TExpressionPtrVector&& expressions);
 
    // IStringable
    virtual std::string ToString() const override;

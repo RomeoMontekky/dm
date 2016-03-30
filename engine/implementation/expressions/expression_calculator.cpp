@@ -51,7 +51,13 @@ void ExpressionCalculatorVisitor::Visit(const OperationExpression& expression)
 {
    const long child_count = expression.GetChildCount();
 
+#ifdef _MSC_VER
+   std::unique_ptr<LiteralType[]> children_values_ptr = std::make_unique<LiteralType[]>(child_count);
+   LiteralType * const children_values = children_values_ptr.get();
+#else
    LiteralType children_values[child_count];
+#endif
+
    for (long index = 0; index < child_count; ++index)
    {
       ExpressionCalculatorVisitor child_visitor(m_param_values);

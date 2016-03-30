@@ -104,7 +104,14 @@ TFunctionOutputPtr FunctionTable::Call(VariableManager& variable_mgr, const TStr
    // One element on each variable's parameter + one element
    // to hold carry-flag from highest bit-element.
    const long all_count = variable->GetParameterCount() + 1;
+
+#ifdef _MSC_VER
+   std::unique_ptr<LiteralType[]> all_values_ptr = std::make_unique<LiteralType[]>(all_count);
+   LiteralType * const all_values = all_values_ptr.get();
+#else
    LiteralType all_values[all_count];
+#endif
+
    std::fill(all_values, all_values + all_count, LiteralType::False);
 
    // Element with carry-flag is skipped
