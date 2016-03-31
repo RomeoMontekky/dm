@@ -10,12 +10,12 @@ namespace dm
 namespace
 {
 
-/////////// ExpressionLiniarizerVisitor /////////////
+/////////// ChildrenAbsorberVisitor /////////////
 
-class ExpressionLiniarizerVisitor : public ExpressionVisitor
+class ChildrenAbsorberVisitor : public ExpressionVisitor
 {
 public:
-   ExpressionLiniarizerVisitor();
+   ChildrenAbsorberVisitor();
 
    TExpressionPtrVector& GetExpressions();
 
@@ -26,17 +26,17 @@ private:
    TExpressionPtrVector m_expressions;
 };
 
-ExpressionLiniarizerVisitor::ExpressionLiniarizerVisitor() :
+ChildrenAbsorberVisitor::ChildrenAbsorberVisitor() :
    m_expressions()
 {
 }
 
-TExpressionPtrVector& ExpressionLiniarizerVisitor::GetExpressions()
+TExpressionPtrVector& ChildrenAbsorberVisitor::GetExpressions()
 {
    return m_expressions;
 }
 
-void ExpressionLiniarizerVisitor::Visit(OperationExpression& expression)
+void ChildrenAbsorberVisitor::Visit(OperationExpression& expression)
 {
    const long child_count = expression.GetChildCount();
    m_expressions.reserve(child_count);
@@ -82,24 +82,25 @@ void ExpressionNormalizerVisitor::Visit(OperationExpression& expression)
 
    for (long index = 0; index < child_count; ++index)
    {
-      ExpressionNormalizerVisitor normalizer_visitor;
-      expression.GetChild(index)->Accept(normalizer_visitor);
+      ExpressionNormalizerVisitor child_visitor;
+      expression.GetChild(index)->Accept(child_visitor);
 
-      // The child expression can be linearized if following is true:
+      // The child expression can be normalized if following is true:
       //    - it is either first child, or current operation is associative;
       //    - it is operation expression and operation is the same as in the current expression;
 
       if ((is_associative || 0 == index) && 
-          (normalizer_visitor.GetOperation() == expression.GetOperation()))
+          (child_visitor.GetOperation() == expression.GetOperation()))
       {
-         ExpressionLiniarizerVisitor liniarizer_visitor;
-         expression.GetChild(index)->Accept(liniarizer_visitor);
+         ChildrenAbsorberVisitor absorber;
+         expression.GetChild(index)->Accept(absorber);
+         auto& expressions = absorber.GetExpressions();
 
-         if (!liniarizer_visitor.GetExpressions().empty())
+         if (!expressions.empty())
          {
-            const long expressions_count = liniarizer_visitor.GetExpressions().size();
+            const long expressions_count = expressions.size();
             expression.RemoveChild(index);
-            expression.InsertChildren(index, std::move(liniarizer_visitor.GetExpressions()));
+            expression.InsertChildren(index, std::move(expressions));
             index += expressions_count - 1;
             child_count += expressions_count - 1;
          }
