@@ -77,19 +77,19 @@ TExpressionPtr& OperationExpression::GetChild(long index)
 
 void OperationExpression::RemoveChild(long index)
 {
-   assert(index >=0 && index < m_children.size());
+   assert(index >=0 && index < (long)m_children.size());
    m_children.erase(m_children.cbegin() + index);
 }
 
 void OperationExpression::InsertChild(long index, TExpressionPtr&& expression)
 {
-   assert(index >=0 && index <= m_children.size());
+   assert(index >=0 && index <= (long)m_children.size());
    m_children.insert(m_children.cbegin() + index, std::move(expression));
 }
 
 void OperationExpression::InsertChildren(long index, TExpressionPtrVector&& expressions)
 {
-   assert(index >=0 && index <= m_children.size());
+   assert(index >=0 && index <= (long)m_children.size());
    for (auto& expression : expressions)
    {
       m_children.insert(m_children.cbegin() + index, std::move(expression));

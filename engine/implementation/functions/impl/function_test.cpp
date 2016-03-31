@@ -34,7 +34,7 @@ TFunctionOutputPtr FunctionTest::Call(VariableManager& variable_mgr, const TStri
       output->AddLine(sstr.str());
    }
 
-   for (long index = 0; index < params.size(); ++index)
+   for (long index = 0; index < (long)params.size(); ++index)
    {
       std::stringstream sstr;
       sstr << "   Parameter [" << index << "] = '" << params.at(index) << "'";
