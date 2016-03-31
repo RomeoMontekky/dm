@@ -69,7 +69,7 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
       children_values[index] = child_visitor.GetValue();
       children_is_raws[index] = child_visitor.GetIsRaw();
 
-      if (LiteralType::None == child_visitor.m_value)
+      if (LiteralType::None == child_visitor.GetValue())
       {
          is_all_actual_values = false;
       }
