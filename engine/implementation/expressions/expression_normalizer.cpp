@@ -20,8 +20,6 @@ public:
    TExpressionPtrVector& GetExpressions();
 
    // ExpressionVisitor
-   virtual void Visit(LiteralExpression& expression) override;
-   virtual void Visit(ParamRefExpression& expression) override;
    virtual void Visit(OperationExpression& expression) override;
 
 private:
@@ -36,14 +34,6 @@ ExpressionLiniarizerVisitor::ExpressionLiniarizerVisitor() :
 TExpressionPtrVector& ExpressionLiniarizerVisitor::GetExpressions()
 {
    return m_expressions;
-}
-
-void ExpressionLiniarizerVisitor::Visit(LiteralExpression& expression)
-{
-}
-
-void ExpressionLiniarizerVisitor::Visit(ParamRefExpression& expression)
-{
 }
 
 void ExpressionLiniarizerVisitor::Visit(OperationExpression& expression)
@@ -66,8 +56,6 @@ public:
    OperationType GetOperation() const;
 
    // ExpressionVisitor
-   virtual void Visit(LiteralExpression& expression) override;
-   virtual void Visit(ParamRefExpression& expression) override;
    virtual void Visit(OperationExpression& expression) override;
 
 private:
@@ -83,14 +71,6 @@ ExpressionNormalizerVisitor::ExpressionNormalizerVisitor() :
 OperationType ExpressionNormalizerVisitor::GetOperation() const
 {
    return m_operation;
-}
-
-void ExpressionNormalizerVisitor::Visit(LiteralExpression& expression)
-{
-}
-
-void ExpressionNormalizerVisitor::Visit(ParamRefExpression&)
-{
 }
 
 void ExpressionNormalizerVisitor::Visit(OperationExpression& expression)

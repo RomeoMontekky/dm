@@ -18,7 +18,7 @@ public:
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };
 
-FunctionTest::FunctionTest() : Function("test", -1)
+FunctionTest::FunctionTest() : Function("test")
 {
 }
 

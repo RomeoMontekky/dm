@@ -1,6 +1,7 @@
 #include "../function_base.h"
 #include "../function_registrator.h"
 #include "../../common/exception.h"
+#include "../../common/local_array.h"
 #include "../../expressions/expression_calculator.h"
 
 #include <string>
@@ -104,14 +105,7 @@ TFunctionOutputPtr FunctionTable::Call(VariableManager& variable_mgr, const TStr
    // One element on each variable's parameter + one element
    // to hold carry-flag from highest bit-element.
    const long all_count = variable->GetParameterCount() + 1;
-
-#ifdef _MSC_VER
-   std::unique_ptr<LiteralType[]> all_values_ptr = std::make_unique<LiteralType[]>(all_count);
-   LiteralType * const all_values = all_values_ptr.get();
-#else
-   LiteralType all_values[all_count];
-#endif
-
+   LOCAL_ARRAY(LiteralType, all_values, all_count);
    std::fill(all_values, all_values + all_count, LiteralType::False);
 
    // Element with carry-flag is skipped

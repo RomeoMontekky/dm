@@ -44,6 +44,7 @@ set(HEADER_FILES
    "implementation/common/exception.h"
    "implementation/common/function_utils.h"
    "implementation/common/literals.h"
+   "implementation/common/local_array.h"
    "implementation/common/named_object.h"
    "implementation/common/noncopyable.h"
    "implementation/common/operations.h"
