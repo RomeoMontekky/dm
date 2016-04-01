@@ -81,6 +81,11 @@ void OperationExpression::RemoveChild(long index)
    m_children.erase(m_children.cbegin() + index);
 }
 
+void OperationExpression::AddChild(TExpressionPtr&& expression)
+{
+   m_children.push_back(std::move(expression));
+}
+
 void OperationExpression::InsertChild(long index, TExpressionPtr&& expression)
 {
    assert(index >=0 && index <= (long)m_children.size());

@@ -71,10 +71,10 @@ LiteralType Plus(LiteralType value1, LiteralType value2)
 
 }; // namespace
 
-bool IsOperationCommutaive(OperationType operation)
+bool IsOperationCommutative(OperationType operation)
 {
    // Each time you add new operation to OperationType
-   // check the condition in IsOperationCommutaive.
+   // check the condition in IsOperationCommutative.
    //
    // After that you can add new operation to assert
    // condition manully. 

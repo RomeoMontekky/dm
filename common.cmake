@@ -10,6 +10,8 @@ macro(set_options_and_post_build_steps)
       else()
          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -std=c++14")
       endif()
+   else()
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_SCL_SECURE_NO_WARNINGS")
    endif()
    
    add_custom_command(

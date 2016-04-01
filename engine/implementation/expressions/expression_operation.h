@@ -18,6 +18,7 @@ public:
    TExpressionPtr& GetChild(long index);
 
    void RemoveChild(long index);
+   void AddChild(TExpressionPtr&& expression);
    void InsertChild(long index, TExpressionPtr&& expression);
    void InsertChildren(long index, TExpressionPtrVector&& expressions);
 
