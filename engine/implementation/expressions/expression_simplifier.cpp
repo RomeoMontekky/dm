@@ -61,7 +61,7 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
    LOCAL_ARRAY(LiteralType, child_values, child_count);
    LOCAL_ARRAY(bool, child_is_raws, child_count);
 
-   long actual_values_count = 0;
+   long non_actual_values_count = 0;
    long first_actual_values_count = 0;
 
    for (long index = 0; index < child_count; ++index)
@@ -74,15 +74,14 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
 
       if (child_values[index] != LiteralType::None)
       {
-         ++actual_values_count;
-         if (first_actual_values_count >= 0)
+         if (0 == non_actual_values_count)
          {
             ++first_actual_values_count;
          }
       }
       else
       {
-         first_actual_values_count = -1;
+         ++non_actual_values_count;
       }
    }
 
@@ -92,7 +91,7 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
 
    // If all child expressions have actual values, then we can
    // simplify the whole operation expression to a calculated value.
-   if (child_count == actual_values_cout)
+   if (0 == non_actual_values_count)
    {
       m_value = PerformOperation(expression.GetOperation(), child_values, child_count);
       return;
@@ -104,6 +103,8 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
       //    2. Calculate the result of operation over this array;
       //    3. Remove all expressions that correspond to actual values;
       //    4. Add one literal expression which will hold the calculated result.
+
+      const long actual_values_count = child_count - non_actual_values_count;
 
       LOCAL_ARRAY(LiteralType, actual_values, actual_values_count);
       std::copy_if(child_values, child_values + child_count, actual_values, 
@@ -133,7 +134,19 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
    {
       // In this case we cann't move operards, so we can simplify only first actual values.
 
-      // TODO: Implement
+      const LiteralType value = PerformOperation(expression.GetOperation(), child_values, first_actual_values);
+
+      for (long count = first_actual_values; count > 0; --count)
+      {
+         expression.RemoveChild(0);
+      }
+
+      std::copy(child_values + first_actual_values, child_values + child_count, child_value);
+      std::copy(child_is_raws + first_actual_values, child_is_raws + child_count, child_is_raws);
+
+      child_count -= first_actual_values
+
+      // TODO: Add calculated expression to the head
    }
 
    // If not all child expressions have actual values, then we need to
