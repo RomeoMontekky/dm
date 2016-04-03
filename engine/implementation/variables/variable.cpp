@@ -28,18 +28,13 @@ const Expression* Variable::GetExpression() const
 
 std::string Variable::ToString() const
 {
+   assert(m_expression.get() != nullptr);
+   
    std::string ret;
 
-   if (!GetName().empty())
-   {
-      ret += GetName();
-      ret += " := ";
-   }
-   
-   assert(m_expression.get() != nullptr);
+   ret += VariableDeclaration::ToString();
+   ret += " := ";
    ret += m_expression->ToString();
-
-   // TODO: Add parameters
 
    return ret;
 }

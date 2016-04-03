@@ -38,7 +38,7 @@ std::string ConstructHeader(const Variable* variable)
    header += g_char_vert_line;
    header += g_char_vert_line;
    header += g_char_filler;
-   header += variable->GetName();
+   header += variable->VariableDeclaration::ToString();
    header += g_char_filler;
    header += g_char_vert_line;
 
@@ -48,6 +48,7 @@ std::string ConstructHeader(const Variable* variable)
 std::string ConstructRow(const Variable* variable, const LiteralType param_values[], LiteralType func_value)
 {
    assert(variable != nullptr);
+   const auto declaration = variable->VariableDeclaration::ToString();
 
    std::stringstream row;
 
@@ -64,7 +65,7 @@ std::string ConstructRow(const Variable* variable, const LiteralType param_value
    row << g_char_vert_line;
    row << g_char_vert_line;
    row << g_char_filler;
-   row << std::setw(variable->GetName().size()) << LiteralTypeToString(func_value);
+   row << std::setw(declaration.size()) << LiteralTypeToString(func_value);
    row << g_char_filler;
    row << g_char_vert_line;
 

@@ -50,4 +50,38 @@ const NamedObject& VariableDeclaration::GetParameter(long index) const
    return m_parameters.at(index);
 }
 
+
+std::string VariableDeclaration::ToString() const
+{
+   std::string ret;
+
+   if (!GetName().empty())
+   {
+      ret += GetName();
+
+      if (!m_parameters.empty())
+      {
+         ret += '(';
+   
+         bool is_first = true;
+         for (const auto& parameter : m_parameters)
+         {
+            if (is_first)
+            {
+               is_first = false;
+            }
+            else
+            {
+               ret += ", ";
+            }
+            ret += parameter.GetName();
+         }
+   
+         ret += ")";
+      }
+   }
+   
+   return ret;
+}
+
 }; // namespace dm

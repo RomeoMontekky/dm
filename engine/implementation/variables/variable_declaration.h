@@ -19,10 +19,14 @@ public:
 
    void AddParameter(const StringPtrLen& name);
    long FindParameter(const StringPtrLen& name) const;
+
    long GetParameterCount() const;
    const NamedObject& GetParameter(long index) const;
 
-private:
+   // IStringable
+   virtual std::string ToString() const override;
+
+protected:
    TNamedObjectVector m_parameters;
 };
 
