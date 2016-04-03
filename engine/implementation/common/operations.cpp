@@ -84,6 +84,7 @@ bool IsOperationCommutative(OperationType operation)
 
    assert
    (
+      OperationType::Negation == operation ||
       OperationType::Conjunction == operation ||
       OperationType::Disjunction == operation ||
       OperationType::Implication == operation ||
@@ -91,11 +92,13 @@ bool IsOperationCommutative(OperationType operation)
       OperationType::Plus == operation
    );
 
-   return (OperationType::Conjunction == operation ||
-           OperationType::Disjunction == operation ||
-        // OperationType::Implication is not commutative
-           OperationType::Equality  == operation ||
-           OperationType::Plus  == operation);
+   return (// OperationType::Negation == operation is not commutative
+              OperationType::Conjunction == operation ||
+              OperationType::Disjunction == operation ||
+           // OperationType::Implication is not commutative
+              OperationType::Equality  == operation ||
+              OperationType::Plus  == operation);
+
 }
 
 bool IsOperationAssociative(OperationType operation)
@@ -111,6 +114,7 @@ bool IsOperationAssociative(OperationType operation)
 
    assert
    (
+      OperationType::Negation == operation ||
       OperationType::Conjunction == operation ||
       OperationType::Disjunction == operation ||
       OperationType::Implication == operation ||
@@ -118,11 +122,12 @@ bool IsOperationAssociative(OperationType operation)
       OperationType::Plus == operation
    );
 
-   return (OperationType::Conjunction == operation ||
-           OperationType::Disjunction == operation ||
-        // OperationType::Implication is not associative
-           OperationType::Equality  == operation ||
-           OperationType::Plus  == operation);
+   return (// OperationType::Negation == operation is not associative
+              OperationType::Conjunction == operation ||
+              OperationType::Disjunction == operation ||
+           // OperationType::Implication is not associative
+              OperationType::Equality  == operation ||
+              OperationType::Plus  == operation);
 }
 
 LiteralType PerformOperation(OperationType operation, const LiteralType values[], long amount)
