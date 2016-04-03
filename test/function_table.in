@@ -1,4 +1,4 @@
-empty := 1
-call table(empty)
+f_true := true
+call table(f_true)
 f(x, y, z) := x & y -> z
 call table(f)

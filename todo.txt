@@ -1,0 +1,6 @@
+- processing of empty string inside the engine
+- support of one-line comments
+- function for evaluation of expressions
+- function to open brackets
+- function for KNF
+- function for DNF

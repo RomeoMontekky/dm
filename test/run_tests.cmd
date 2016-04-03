@@ -4,6 +4,8 @@ set COMPILER=mingw
 set CONFIGURATION=debug
 set TEST_COMMAND=..\build_%COMPILER%\%CONFIGURATION%\bin\console.exe
 
+call :run_one_test operations_base
+call :run_one_test operations_priority
 call :run_one_test normalization
 call :run_one_test simplification
 call :run_one_test function_test
