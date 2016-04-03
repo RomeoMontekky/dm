@@ -1,0 +1,12 @@
+Negation(x) := !x
+call table(Negation)
+Conjunction(x, y) := x & y
+call table(Conjunction)
+Disjunction(x, y) := x | y
+call table(Disjunction)
+Implication(x, y) := x -> y
+call table(Implication)
+Equality(x, y) := x = y
+call table(Equality)
+Plus(x, y) := x + y
+call table(Plus)
