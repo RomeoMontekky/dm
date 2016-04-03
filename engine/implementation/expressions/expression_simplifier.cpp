@@ -88,12 +88,13 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
       IsOperationCommutative(expression.GetOperation()) && 
       IsOperationAssociative(expression.GetOperation());
 
-   // If all child expressions have actual values, then we can
-   // simplify the whole operation expression to a calculated value.
-
    if (0 == non_actual_values_count)
    {
+      // If all child expressions have actual values, then we can
+      // simplify the whole operation expression to a calculated value.
+
       m_value = PerformOperation(expression.GetOperation(), child_values, child_count);
+
       return;
    }
    else if ((!is_children_movable || first_actual_values_count == actual_values_count) && 
