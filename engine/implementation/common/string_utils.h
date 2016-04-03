@@ -15,8 +15,8 @@ public:
 
    operator std::string() const;
 
-   const char* Ptr() const; // TODO: Remove
-   long Len() const; // TODO: Rename to Length
+   const char* Ptr() const;
+   long Len() const;
    const char* Begin() const;
    const char* End() const;
    char At(long index) const;
@@ -26,8 +26,8 @@ public:
 
    void Assign(const char* ptr, long len);
    void Reset();
-   void RemoveLeft(int count);
-   void RemoveRight(int count);
+   void RemoveLeft(long count);
+   void RemoveRight(long count);
 
    void TrimLeft();
    void TrimRight();

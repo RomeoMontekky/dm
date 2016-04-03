@@ -97,20 +97,20 @@ void StringPtrLen::Reset()
    m_len = -1;
 }
 
-void StringPtrLen::RemoveLeft(int count)
+void StringPtrLen::RemoveLeft(long count)
 {
    assert(m_ptr != nullptr);
-   assert(m_len != -1);
+   assert(count >= 0);
    assert(m_len >= count);
 
    m_ptr += count;
    m_len -= count;
 }
 
-void StringPtrLen::RemoveRight(int count)
+void StringPtrLen::RemoveRight(long count)
 {
    assert(m_ptr != nullptr);
-   assert(m_len != -1);
+   assert(count >= 0);
    assert(m_len >= count);
 
    m_len -= count;
