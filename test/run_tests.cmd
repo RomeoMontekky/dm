@@ -11,12 +11,12 @@ call :run_one_test operations_base
 call :run_one_test operations_priority
 call :run_one_test normalization
 call :run_one_test simplification
+call :run_one_test function_eval
 call :run_one_test function_test
 call :run_one_test function_table
 
 echo --------------------------------------
 echo Successful tests - %SUCCESSFUL_TESTS%, Failed tests - %FAILED_TESTS%
-
 goto :eof
 
 :run_one_test

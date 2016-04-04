@@ -27,6 +27,7 @@ set(CPP_FILES
    "implementation/functions/function_manager.cpp"
    "implementation/functions/function_output.cpp"
 
+   "implementation/functions/impl/function_eval.cpp"
    "implementation/functions/impl/function_table.cpp"
    "implementation/functions/impl/function_test.cpp"
   
