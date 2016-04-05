@@ -3,13 +3,13 @@
 - processing of empty string inside the engine
 - support of one-line comments
 - functions to operate with variables (remove, copy and so on).
-   - copy (done)
+   - copy (done) (fix order of parameters: FromTo form is desirable)
    - remove (done)
    - remove_all
    - show
    - show_all
 - function for evaluation of expressions (dummy already created)
 - function to open brackets
-- function for KNF building
-- function for DNF building
-- function for Zhegalkin polinom
+- function for CNF/SCNF/MinCNF building
+- function for DNF/SDNF/MinDNF building
+- function for Zhegalkin polinom building
