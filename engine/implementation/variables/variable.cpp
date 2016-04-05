@@ -18,7 +18,7 @@ Variable::Variable(const StringPtrLen& name) :
 Variable::Variable(const StringPtrLen& name, const Variable& rhs) :
    VariableDeclaration(rhs), m_expression()
 {
- // TODO: Copy expression, changing param-refs to new variable
+   // TODO: Copy expression, changing param-refs to new variable
 }
 
 void Variable::SetExpression(TExpressionPtr&& expression)
