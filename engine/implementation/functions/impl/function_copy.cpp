@@ -19,7 +19,7 @@ public:
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };
 
-FunctionImpl::FunctionImpl() : Function("copy", 1)
+FunctionImpl::FunctionImpl() : Function("copy", 2)
 {
 }
 

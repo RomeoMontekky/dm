@@ -1,4 +1,13 @@
-f(x, y) := x | y -> (x + 1)
-f(0, 0)
-call table(f) 
-f(0, 0)
+f0(x, y) := x | y -> (x + 0)
+f1(x, y) := x | y -> (x + 1)
+
+f0(0, 0)
+f1(0, 0)
+
+call table(f0) 
+call table(f1) 
+
+call remove(f0, f1)
+
+f0(0, 0)
+f1(0, 0)

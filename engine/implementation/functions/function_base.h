@@ -25,10 +25,11 @@ public:
    virtual TFunctionOutputPtr Call(VariableManager& variable_mgr, const TStringPtrLenVector& params) = 0;
 
 protected:
-   const Variable* CheckAndGetConstVariable(
-      const VariableManager& variable_mgr, const TStringPtrLenVector& params, long param_index, bool must_exist = true);
+   void CheckNonEmptyParameters(const TStringPtrLenVector& params);
+   StringPtrLen CheckQualifier(const StringPtrLen& param);
 
-   StringPtrLen CheckQualifier(const TStringPtrLenVector& params, long param_index);
+   const Variable* CheckAndGetConstVariable(
+      const VariableManager& variable_mgr, const StringPtrLen& param, bool must_exist = true);
 
 private:
    std::string GetParameterReportingString(const StringPtrLen& param_value);
