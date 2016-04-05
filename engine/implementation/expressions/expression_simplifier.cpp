@@ -138,8 +138,7 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
       //    4. Add one literal expression which will hold the calculated result.
 
       LOCAL_ARRAY(LiteralType, actual_values, actual_values_count);
-      std::copy_if(child_values, child_values + child_count, actual_values, 
-         [](LiteralType literal) { return literal != LiteralType::None; });
+      std::remove_copy(child_values, child_values + child_count, actual_values, LiteralType::None)
 
       long index = 0;
       while (index < child_count)
