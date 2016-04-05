@@ -1,4 +1,5 @@
 #include "variable.h"
+#include "../expressions/expression_param_ref.h"
 
 #include <cassert>
 
@@ -18,7 +19,17 @@ Variable::Variable(const StringPtrLen& name) :
 Variable::Variable(const StringPtrLen& name, const Variable& rhs) :
    VariableDeclaration(rhs), m_expression()
 {
-   // TODO: Copy expression, changing param-refs to new variable
+   const long param_count = GetParameterCount();
+   
+   TExpressionPtrVector replace_params;
+   replace_params.reserve(param_count);
+   for (long index = 0; i < param_count; ++i)
+   {
+      replace_params.push_back(
+         std::unique_ptr<LiteralExpression>(GetParameter(index), index));
+   }
+
+   m_expression = rhs.m_expression->CloneWithSubstitution(replace_params);
 }
 
 void Variable::SetExpression(TExpressionPtr&& expression)
