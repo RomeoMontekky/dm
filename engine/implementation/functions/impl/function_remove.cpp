@@ -19,7 +19,7 @@ public:
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };
 
-FunctionImpl::FunctionImpl() : Function("eval", 1)
+FunctionImpl::FunctionImpl() : Function("remove", 1)
 {
 }
 
@@ -27,14 +27,13 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
 {
    assert(params.size() == GetParameterCount());
 
-   auto variable = CheckAndGetConstVariable(variable_mgr, params, 0);
+   CheckAndGetConstVariable(variable_mgr, params, 0);
+   viriable_mgr.RemoveVariable(params[0]);
 
-   auto output = std::make_unique<FunctionOutput>();
-
-   // TODO: Implement
-   output->AddLine("Eval function called");
-
-   return output;
+   std::stringstream stream;
+   stream << "Variable '" << params[0] << "' was removed";
+   
+   return std::make_unique<FunctionOutput>(stream.str());
 }
 
 }; // namespace

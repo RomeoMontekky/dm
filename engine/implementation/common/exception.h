@@ -21,20 +21,20 @@ private:
 void FormatError(std::stringstream& stream);
 
 template <typename FirstParamType, typename ...OtherParamsType>
-void FormatError(
+void FormatString(
    std::stringstream& stream, 
    const FirstParamType& first_param, 
    const OtherParamsType&... other_params)
 {
    stream << first_param;
-   FormatError(stream, other_params...);
+   FormatString(stream, other_params...);
 }
 
 template <typename ...Args>
 void Error(const Args&... args)
 {
    std::stringstream stream;
-   FormatError(stream, args...);
+   FormatString(stream, args...);
    throw Exception(stream.str());
 }
 

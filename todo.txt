@@ -1,7 +1,8 @@
 ! re-design ParamRefExpression: reference to parameter -> reference to variable.
 - processing of empty string inside the engine
 - support of one-line comments
+- functions to operate with variables (remove, copy and so on)
 - function for evaluation of expressions (dummy already created)
 - function to open brackets
-- function for KNF
-- function for DNF
+- function for KNF building
+- function for DNF building

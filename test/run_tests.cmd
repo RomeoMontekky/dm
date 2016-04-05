@@ -11,7 +11,9 @@ call :run_one_test operations_base
 call :run_one_test operations_priority
 call :run_one_test normalization
 call :run_one_test simplification
+call :run_one_test function_copy
 call :run_one_test function_eval
+call :run_one_test function_remove
 call :run_one_test function_test
 call :run_one_test function_table
 

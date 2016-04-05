@@ -8,6 +8,18 @@ FunctionOutput::FunctionOutput() :
 {
 }
 
+FunctionOutput::FunctionOutput(const std::string& line) :
+   m_output()
+{
+   AddLine(line);
+}
+
+FunctionOutput::FunctionOutput(const char* line) :
+   m_output()
+{
+   AddLine(line);
+}
+
 void FunctionOutput::AddLine(const std::string& line)
 {
    if (!m_output.empty())

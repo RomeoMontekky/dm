@@ -11,6 +11,9 @@
 namespace dm
 {
 
+class Function;
+using TFunctionPtr = std::unique_ptr<Function>;
+
 class Function : public NamedObject
 {
 public:
@@ -21,10 +24,17 @@ public:
 
    virtual TFunctionOutputPtr Call(VariableManager& variable_mgr, const TStringPtrLenVector& params) = 0;
 
+protected:
+   const Variable* CheckAndGetConstVariable(
+      const VariableManager& variable_mgr, const TStringPtrLenVector& params, long param_index, bool must_exist = true);
+
+   StringPtrLen CheckQualifier(const TStringPtrLenVector& params, long param_index);
+
+private:
+   std::string GetParameterReportingString(const StringPtrLen& param_value);
+
 private:
    long m_param_count;
 };
-
-using TFunctionPtr = std::unique_ptr<Function>;
 
 }; // namespace dm

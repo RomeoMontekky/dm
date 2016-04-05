@@ -10,7 +10,7 @@ namespace dm
 namespace
 {
 
-class FunctionTest : public Function
+class FunctionImpl : public Function
 {
 public:
    FunctionTest();
@@ -18,11 +18,11 @@ public:
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };
 
-FunctionTest::FunctionTest() : Function("test")
+FunctionImpl::FunctionImpl() : Function("test")
 {
 }
 
-TFunctionOutputPtr FunctionTest::Call(VariableManager& variable_mgr, const TStringPtrLenVector& params)
+TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStringPtrLenVector& params)
 {
    variable_mgr; // To avoid warning
 
@@ -46,6 +46,6 @@ TFunctionOutputPtr FunctionTest::Call(VariableManager& variable_mgr, const TStri
 
 }; // namespace
 
-REGISTER_FUNCTION(FunctionTest);
+REGISTER_FUNCTION(FunctionImpl);
 
 }; // namespace dm

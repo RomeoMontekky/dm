@@ -1,0 +1,4 @@
+f(x, y) := x | y -> (x + 1)
+f(0, 0)
+call table(f) 
+f(0, 0)

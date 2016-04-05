@@ -19,7 +19,7 @@ public:
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };
 
-FunctionImpl::FunctionImpl() : Function("eval", 1)
+FunctionImpl::FunctionImpl() : Function("copy", 1)
 {
 }
 
@@ -27,14 +27,15 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
 {
    assert(params.size() == GetParameterCount());
 
-   auto variable = CheckAndGetConstVariable(variable_mgr, params, 0);
+   CheckAndGetConstVariable(variable_mgr, params, 0, false);
+   auto variable_from = CheckAndGetConstVariable(variable_mgr, params, 1);
 
-   auto output = std::make_unique<FunctionOutput>();
+   auto variable_to = std::make_unique<Variable>(params[0], variable_from);
 
-   // TODO: Implement
-   output->AddLine("Eval function called");
+   std::stringstream stream;
+   stream << "Variable '" << params[0] << "' is new copy of variabel '" << params[1] << "'.";
 
-   return output;
+   return std::make_unique<FunctionOutput>(stream.str());
 }
 
 }; // namespace

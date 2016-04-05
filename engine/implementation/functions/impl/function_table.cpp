@@ -72,27 +72,23 @@ std::string ConstructRow(const Variable* variable, const LiteralType param_value
    return row.str();
 }
 
-class FunctionTable : public Function
+class FunctionImpl : public Function
 {
 public:
-   FunctionTable();
+   FunctionImpl();
 
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };
 
-FunctionTable::FunctionTable() : Function("table", 1)
+FunctionImpl::FunctionImpl() : Function("table", 1)
 {
 }
 
-TFunctionOutputPtr FunctionTable::Call(VariableManager& variable_mgr, const TStringPtrLenVector& params)
+TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStringPtrLenVector& params)
 {
    assert(params.size() == GetParameterCount());
 
-   auto variable = variable_mgr.FindVariable(params[0]);
-   if (nullptr == variable)
-   {
-      Error("Usage of undefined variable '", params[0], "'.");
-   }
+   auto variable = CheckAndGetConstVariable(variable_mgr, params, 0);
 
    const auto header = ConstructHeader(variable);
    const std::string horizontal_line(header.size(), g_char_horz_line);
@@ -131,6 +127,6 @@ TFunctionOutputPtr FunctionTable::Call(VariableManager& variable_mgr, const TStr
 
 }; // namespace
 
-REGISTER_FUNCTION(FunctionTable);
+REGISTER_FUNCTION(FunctionImpl);
 
 }; // namespace dm

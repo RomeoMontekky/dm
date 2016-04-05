@@ -15,6 +15,7 @@ public:
    Variable(); 
 
    Variable(const StringPtrLen& name);
+   Variable(const StringPtrLen& name, const Variable& rhs);
 
    void SetExpression(TExpressionPtr&& expression);
    const Expression* GetExpression() const;
