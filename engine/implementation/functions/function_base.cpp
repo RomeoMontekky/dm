@@ -29,7 +29,7 @@ void Function::CheckNonEmptyParameters(const TStringPtrLenVector& params)
    }
 }
 
-StringPtrLen Function::CheckQualifier(const StringPtrLen& param)
+void Function::CheckQualifier(const StringPtrLen& param)
 {
    ::CheckQualifier(param, GetParameterReportingString(param));
 }

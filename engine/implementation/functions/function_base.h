@@ -26,7 +26,7 @@ public:
 
 protected:
    void CheckNonEmptyParameters(const TStringPtrLenVector& params);
-   StringPtrLen CheckQualifier(const StringPtrLen& param);
+   void CheckQualifier(const StringPtrLen& param);
 
    const Variable* CheckAndGetConstVariable(
       const VariableManager& variable_mgr, const StringPtrLen& param, bool must_exist = true);
