@@ -2,7 +2,7 @@
 
 #include "function_output.h"
 #include "../variables/variable_manager.h"
-#include "../common/named_object.h"
+#include "../common/named_entity.h"
 #include "../common/string_utils.h"
 
 #include <memory>
@@ -14,7 +14,7 @@ namespace dm
 class Function;
 using TFunctionPtr = std::unique_ptr<Function>;
 
-class Function : public NamedObject
+class Function : public NamedEntity
 {
 public:
    Function(const char* name, long param_count = -1);

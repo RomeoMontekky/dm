@@ -8,7 +8,7 @@ namespace dm
 {
 
 Function::Function(const char* name, long param_count) :
-   NamedObject(name), m_param_count(param_count)
+   NamedEntity(name), m_param_count(param_count)
 {
 }
 

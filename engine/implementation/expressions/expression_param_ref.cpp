@@ -4,12 +4,12 @@
 namespace dm
 {
 
-ParamRefExpression::ParamRefExpression(const NamedObject& ref, long index) :
+ParamRefExpression::ParamRefExpression(const NamedEntity& ref, long index) :
     Expression(), m_ref(ref), m_index(index)
 {
 }
 
-const NamedObject& ParamRefExpression::GetParamRef() const
+const NamedEntity& ParamRefExpression::GetParamRef() const
 {
    return m_ref;
 }

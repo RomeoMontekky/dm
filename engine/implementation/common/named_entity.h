@@ -8,12 +8,12 @@
 namespace dm
 {
 
-class NamedObject
+class NamedEntity
 {
 public:
-   NamedObject();
-   NamedObject(const StringPtrLen& name);
-   NamedObject(const char* name);
+   NamedEntity();
+   NamedEntity(const StringPtrLen& name);
+   NamedEntity(const char* name);
 
    const std::string& GetName() const;
 
@@ -21,6 +21,6 @@ private:
    std::string m_name;
 };
 
-using TNamedObjectVector = std::vector<NamedObject>;
+using TNamedEntityVector = std::vector<NamedEntity>;
 
 }; // namespace dm

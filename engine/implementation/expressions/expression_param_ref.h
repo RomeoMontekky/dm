@@ -1,7 +1,7 @@
 #pragma once
 
 #include "expression_base.h"
-#include "../common/named_object.h"
+#include "../common/named_entity.h"
 
 namespace dm
 {
@@ -9,9 +9,9 @@ namespace dm
 class ParamRefExpression : public Expression
 {
 public:
-   ParamRefExpression(const NamedObject& ref, long index);
+   ParamRefExpression(const NamedEntity& ref, long index);
 
-   const NamedObject& GetParamRef() const;
+   const NamedEntity& GetParamRef() const;
    long GetParamIndex() const;
 
    // IStringable
@@ -28,7 +28,7 @@ private:
    ParamRefExpression& operator=(const ParamRefExpression& rhs) = delete;
 
 private:
-   const NamedObject& m_ref;
+   const NamedEntity& m_ref;
    long m_index;
 };
 

@@ -1,15 +1,14 @@
 #pragma once
 
 #include <engine/istringable.h>
-
-#include "../common/named_object.h"
+#include "../common/named_entity.h"
 
 #include <memory>
 
 namespace dm
 {
 
-class VariableDeclaration : public NamedObject, public IStringable
+class VariableDeclaration : public NamedEntity, public IStringable
 {
 public:
    // Unnamed variable declaration
@@ -21,13 +20,13 @@ public:
    long FindParameter(const StringPtrLen& name) const;
 
    long GetParameterCount() const;
-   const NamedObject& GetParameter(long index) const;
+   const NamedEntity& GetParameter(long index) const;
 
    // IStringable
    virtual std::string ToString() const override;
 
 protected:
-   TNamedObjectVector m_parameters;
+   TNamedEntityVector m_parameters;
 };
 
 }; // namespace dm

@@ -7,18 +7,18 @@ namespace dm
 {
 
 VariableDeclaration::VariableDeclaration() : // unnamed variable declaration
-   NamedObject(), m_parameters()
+   NamedEntity(), m_parameters()
 {
 }
 
 VariableDeclaration::VariableDeclaration(const StringPtrLen& name) :
-   NamedObject(name), m_parameters()
+   NamedEntity(name), m_parameters()
 {
 }
 
 VariableDeclaration::VariableDeclaration(
    const StringPtrLen& name, const VariableDeclaration& rhs) :
-      NamedObject(name), m_parameters(rhs.m_parameters)
+      NamedEntity(name), m_parameters(rhs.m_parameters)
 {
 }
 
@@ -50,7 +50,7 @@ long VariableDeclaration::GetParameterCount() const
    return m_parameters.size();
 }
 
-const NamedObject& VariableDeclaration::GetParameter(long index) const
+const NamedEntity& VariableDeclaration::GetParameter(long index) const
 {
    assert(index >= 0 && index < (long)m_parameters.size());
    return m_parameters.at(index);
