@@ -25,7 +25,7 @@ FunctionImpl::FunctionImpl() : Function("remove")
 
 TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStringPtrLenVector& params)
 {
-   CheckNonEmptyParameters();
+   CheckNonEmptyParameters(params);
    for (const auto& param : params)
    {
       CheckAndGetConstVariable(variable_mgr, param);
@@ -38,7 +38,7 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
       variable_mgr.RemoveVariable(param);
       std::stringstream stream;
       stream << "Variable '" << param << "' was removed.";
-      ouput->AddLine(stream.str());
+      output->AddLine(stream.str());
    }
 
    return output;

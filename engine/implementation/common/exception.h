@@ -18,7 +18,7 @@ private:
    std::string m_error;
 };
 
-void FormatError(std::stringstream& stream);
+void FormatString(std::stringstream& stream);
 
 template <typename FirstParamType, typename ...OtherParamsType>
 void FormatString(

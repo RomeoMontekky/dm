@@ -27,7 +27,7 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
 {
    assert(params.size() == GetParameterCount());
 
-   auto variable = CheckAndGetConstVariable(variable_mgr, params, 0);
+   auto variable = CheckAndGetConstVariable(variable_mgr, params[0]);
 
    auto output = std::make_unique<FunctionOutput>();
 

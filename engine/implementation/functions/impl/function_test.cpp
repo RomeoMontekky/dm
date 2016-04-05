@@ -13,7 +13,7 @@ namespace
 class FunctionImpl : public Function
 {
 public:
-   FunctionTest();
+   FunctionImpl();
 
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };

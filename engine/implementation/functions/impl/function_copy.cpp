@@ -27,15 +27,12 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
 {
    assert(params.size() == GetParameterCount());
 
-   CheckAndGetConstVariable(variable_mgr, params, 0, false);
-   auto variable_from = CheckAndGetConstVariable(variable_mgr, params, 1);
+   CheckAndGetConstVariable(variable_mgr, params[0], false);
+   auto variable_from = CheckAndGetConstVariable(variable_mgr, params[1]);
+   auto variable_to = std::make_unique<Variable>(params[0], *variable_from);
 
-   auto variable_to = std::make_unique<Variable>(params[0], variable_from);
-
-   std::stringstream stream;
-   stream << "Variable '" << params[0] << "' is new copy of variabel '" << params[1] << "'.";
-
-   return std::make_unique<FunctionOutput>(stream.str());
+   return std::make_unique<FunctionOutput>(
+      variable_mgr.AddVariable(std::move(variable_to)).ToString());
 }
 
 }; // namespace

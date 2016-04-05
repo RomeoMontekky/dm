@@ -1,0 +1,8 @@
+f0(x, y) := ((x | y) -> (x + 0))
+f1(x, y) := ((x | y) -> (x + 1))
+1
+1
+Variable 'f0' was removed.
+Variable 'f1' was removed.
+Error: Usage of undefined variable 'f0'.
+Error: Usage of undefined variable 'f1'.

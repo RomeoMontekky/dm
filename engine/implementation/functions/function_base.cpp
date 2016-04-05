@@ -1,6 +1,6 @@
 #include "function_base.h"
 #include "../common/exception.h"
-#include "../common/qulifier_utils.h"
+#include "../common/qualifier_utils.h"
 
 #include <cassert>
 
@@ -31,11 +31,11 @@ void Function::CheckNonEmptyParameters(const TStringPtrLenVector& params)
 
 void Function::CheckQualifier(const StringPtrLen& param)
 {
-   ::CheckQualifier(param, GetParameterReportingString(param));
+   dm::CheckQualifier(param, GetParameterReportingString(param).c_str());
 }
 
 const Variable* Function::CheckAndGetConstVariable(
-   const VariableManager& variable_mgr, const StringPtrLen& param, bool must_exist = true)
+   const VariableManager& variable_mgr, const StringPtrLen& param, bool must_exist)
 {
    CheckQualifier(param);
    

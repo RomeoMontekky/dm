@@ -17,16 +17,16 @@ Variable::Variable(const StringPtrLen& name) :
 }
 
 Variable::Variable(const StringPtrLen& name, const Variable& rhs) :
-   VariableDeclaration(rhs), m_expression()
+   VariableDeclaration(name, rhs), m_expression()
 {
    const long param_count = GetParameterCount();
    
    TExpressionPtrVector replace_params;
    replace_params.reserve(param_count);
-   for (long index = 0; i < param_count; ++i)
+   for (long index = 0; index < param_count; ++index)
    {
       replace_params.push_back(
-         std::unique_ptr<LiteralExpression>(GetParameter(index), index));
+         std::make_unique<ParamRefExpression>(GetParameter(index), index));
    }
 
    m_expression = rhs.m_expression->CloneWithSubstitution(replace_params);
@@ -49,8 +49,11 @@ std::string Variable::ToString() const
    
    std::string ret;
 
-   ret += VariableDeclaration::ToString();
-   ret += " := ";
+   if (!GetName().empty())
+   {
+      ret += VariableDeclaration::ToString();
+      ret += " := ";
+   }
    ret += m_expression->ToString();
 
    return ret;

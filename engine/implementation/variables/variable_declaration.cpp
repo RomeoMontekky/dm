@@ -7,12 +7,18 @@ namespace dm
 {
 
 VariableDeclaration::VariableDeclaration() : // unnamed variable declaration
-   NamedObject()
+   NamedObject(), m_parameters()
 {
 }
 
 VariableDeclaration::VariableDeclaration(const StringPtrLen& name) :
-   NamedObject(name)
+   NamedObject(name), m_parameters()
+{
+}
+
+VariableDeclaration::VariableDeclaration(
+   const StringPtrLen& name, const VariableDeclaration& rhs) :
+      NamedObject(name), m_parameters(rhs.m_parameters)
 {
 }
 

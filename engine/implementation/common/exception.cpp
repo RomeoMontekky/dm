@@ -21,7 +21,7 @@ const char* Exception::GetDescription() const
    return m_error.c_str();
 }
 
-void FormatError(std::stringstream& stream)
+void FormatString(std::stringstream& stream)
 {
 }
 

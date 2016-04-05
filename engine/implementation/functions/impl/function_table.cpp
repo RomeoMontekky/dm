@@ -88,7 +88,7 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
 {
    assert(params.size() == GetParameterCount());
 
-   auto variable = CheckAndGetConstVariable(variable_mgr, params, 0);
+   auto variable = CheckAndGetConstVariable(variable_mgr, params[0]);
 
    const auto header = ConstructHeader(variable);
    const std::string horizontal_line(header.size(), g_char_horz_line);

@@ -14,8 +14,8 @@ class VariableDeclaration : public NamedObject, public IStringable
 public:
    // Unnamed variable declaration
    VariableDeclaration(); 
-
    VariableDeclaration(const StringPtrLen& name);
+   VariableDeclaration(const StringPtrLen& name, const VariableDeclaration& rhs);
 
    void AddParameter(const StringPtrLen& name);
    long FindParameter(const StringPtrLen& name) const;

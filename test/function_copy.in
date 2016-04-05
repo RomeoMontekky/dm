@@ -1,4 +1,2 @@
 f(x, y) := x | y -> (x + 1)
 call copy(g, f)
-check_equality(x, y) := f(x,y) = g(x,y)
-call table(check_equality) 
