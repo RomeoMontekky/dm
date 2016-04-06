@@ -6,10 +6,12 @@
 namespace dm
 {
 
+class VariableDeclaration;
+
 class ParamRefExpression : public Expression
 {
 public:
-   ParamRefExpression(const NamedEntity& ref, long index);
+   ParamRefExpression(const VariableDeclaration& variable, long index);
 
    const NamedEntity& GetParamRef() const;
    long GetParamIndex() const;
@@ -28,7 +30,7 @@ private:
    ParamRefExpression& operator=(const ParamRefExpression& rhs) = delete;
 
 private:
-   const NamedEntity& m_ref;
+   const VariableDeclaration& m_variable;
    long m_index;
 };
 

@@ -7,3 +7,4 @@ install_manifest.txt
 *.exe
 *.dll
 *.a
+/build_mingw/debug/cmake.out

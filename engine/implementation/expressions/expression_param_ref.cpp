@@ -1,17 +1,18 @@
 #include "expression_param_ref.h"
 #include "expression_visitor.h"
+#include "../variables/variable_declaration.h"
 
 namespace dm
 {
 
-ParamRefExpression::ParamRefExpression(const NamedEntity& ref, long index) :
-    Expression(), m_ref(ref), m_index(index)
+ParamRefExpression::ParamRefExpression(const VariableDeclaration& variable, long index) :
+    Expression(), m_variable(variable), m_index(index)
 {
 }
 
 const NamedEntity& ParamRefExpression::GetParamRef() const
 {
-   return m_ref;
+   return m_variable.GetParameter(m_index);
 }
 
 long ParamRefExpression::GetParamIndex() const
@@ -21,7 +22,7 @@ long ParamRefExpression::GetParamIndex() const
 
 std::string ParamRefExpression::ToString() const
 {
-   return m_ref.GetName();
+   return m_variable.GetParameter(m_index).GetName();
 }
 
 TExpressionPtr ParamRefExpression::Clone() const

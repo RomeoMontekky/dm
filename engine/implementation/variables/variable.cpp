@@ -26,7 +26,7 @@ Variable::Variable(const StringPtrLen& name, const Variable& rhs) :
    for (long index = 0; index < param_count; ++index)
    {
       replace_params.push_back(
-         std::make_unique<ParamRefExpression>(GetParameter(index), index));
+         std::make_unique<ParamRefExpression>(*this, index));
    }
 
    m_expression = rhs.m_expression->CloneWithSubstitution(replace_params);

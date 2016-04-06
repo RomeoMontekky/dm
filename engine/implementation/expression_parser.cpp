@@ -249,8 +249,7 @@ TExpressionPtr ExpressionParser::ParseParameterExpression(StringPtrLen str) cons
    long param_index = m_curr_variable->FindParameter(str);
    if (param_index >= 0)
    {
-      return std::make_unique<ParamRefExpression>(
-         m_curr_variable->GetParameter(param_index), param_index);
+      return std::make_unique<ParamRefExpression>(*m_curr_variable, param_index);
    }
    return TExpressionPtr();
 }
