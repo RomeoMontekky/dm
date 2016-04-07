@@ -28,6 +28,8 @@ set(CPP_FILES
    "implementation/functions/function_output.cpp"
 
    "implementation/functions/impl/function_copy.cpp"
+   "implementation/functions/impl/function_display.cpp"
+   "implementation/functions/impl/function_display_all.cpp"
    "implementation/functions/impl/function_eval.cpp"
    "implementation/functions/impl/function_remove.cpp"
    "implementation/functions/impl/function_remove_all.cpp"

@@ -19,15 +19,28 @@ public:
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };
 
-FunctionImpl::FunctionImpl() : Function("remove_all", 0)
+FunctionImpl::FunctionImpl() : Function("display")
 {
 }
 
 TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStringPtrLenVector& params)
 {
-   assert(params.empty());
-   variable_mgr.RemoveAllVariables();
-   return std::make_unique<FunctionOutput>("All variables were removed.");
+   CheckNonEmptyParameters(params);
+   for (const auto& param : params)
+   {
+      CheckAndGetConstVariable(variable_mgr, param);
+   }
+
+   auto output = std::make_unique<FunctionOutput>();
+
+   for (const auto& param : params)
+   {
+      auto variable = variable_mgr.FindVariable(param);
+      assert(variable != nullptr);
+      output->AddLine(variable->ToString());
+   }
+
+   return output;
 }
 
 }; // namespace

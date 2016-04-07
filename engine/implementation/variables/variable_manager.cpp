@@ -5,7 +5,8 @@
 namespace dm
 {
 
-VariableManager::VariableManager() : m_variables()
+VariableManager::VariableManager() : 
+   m_variables(), m_curr_iterator(m_variables.cend())
 {
 }
 
@@ -36,6 +37,28 @@ void VariableManager::RemoveVariable(const StringPtrLen& name)
 void VariableManager::RemoveAllVariables()
 {
    m_variables.clear();
+}
+
+const Variable* VariableManager::GetFirstVariable() const
+{
+   if (m_variables.empty())
+   {
+      return nullptr;
+   }
+
+   m_curr_iterator = m_variables.cbegin();
+   return (*m_curr_iterator).second.get();
+}
+
+const Variable* VariableManager::GetNextVariable() const
+{
+   if ((  m_curr_iterator == m_variables.cend()) ||
+       (++m_curr_iterator == m_variables.cend()))
+   {
+      return nullptr;
+   }
+
+   return (*m_curr_iterator).second.get();
 }
 
 }; // namespace dm

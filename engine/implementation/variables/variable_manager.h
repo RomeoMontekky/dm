@@ -18,8 +18,14 @@ public:
    void RemoveVariable(const StringPtrLen& name);
    void RemoveAllVariables();
 
+   const Variable* GetFirstVariable() const;
+   const Variable* GetNextVariable() const;
+
 private:
-   std::map<std::string, TVariablePtr> m_variables;
+   using TVariablePtrMap = std::map<std::string, TVariablePtr>;
+
+   TVariablePtrMap m_variables;
+   mutable TVariablePtrMap::const_iterator m_curr_iterator;
 };
 
 }; // namespace dm
