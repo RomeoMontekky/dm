@@ -16,6 +16,7 @@ public:
    const Variable& AddVariable(TVariablePtr&& variable);
    const Variable* FindVariable(const StringPtrLen& name) const;
    void RemoveVariable(const StringPtrLen& name);
+   void RemoveAllVariables();
 
 private:
    std::map<std::string, TVariablePtr> m_variables;

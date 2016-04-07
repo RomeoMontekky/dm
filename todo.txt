@@ -1,10 +1,9 @@
-! check if it is possible to do replace a vector to a raw array in CloneWithSubstitution's parameter.
 - processing of empty string inside the engine
 - support of one-line comments
 - functions to operate with variables (remove, copy and so on).
-   - copy (done) (fix order of parameters: FromTo form is desirable)
+   - copy (done)
    - remove (done)
-   - remove_all
+   - remove_all (done)
    - show
    - show_all
 - function for evaluation of expressions (dummy already created)

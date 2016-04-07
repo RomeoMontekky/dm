@@ -6,7 +6,7 @@ f1(0)
 f2(0)
 f3(0)
 
-call remove(f1, f3)
+call remove_all
 
 f1(0)
 f2(0)

@@ -30,6 +30,7 @@ set(CPP_FILES
    "implementation/functions/impl/function_copy.cpp"
    "implementation/functions/impl/function_eval.cpp"
    "implementation/functions/impl/function_remove.cpp"
+   "implementation/functions/impl/function_remove_all.cpp"
    "implementation/functions/impl/function_table.cpp"
    "implementation/functions/impl/function_test.cpp"
   

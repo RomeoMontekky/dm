@@ -33,4 +33,9 @@ void VariableManager::RemoveVariable(const StringPtrLen& name)
    assert(1 == ret);
 }
 
+void VariableManager::RemoveAllVariables()
+{
+   m_variables.clear();
+}
+
 }; // namespace dm

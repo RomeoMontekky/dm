@@ -14,6 +14,7 @@ call :run_one_test simplification
 call :run_one_test function_copy
 call :run_one_test function_eval
 call :run_one_test function_remove
+call :run_one_test function_remove_all
 call :run_one_test function_test
 call :run_one_test function_table
 

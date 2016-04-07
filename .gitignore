@@ -7,4 +7,11 @@ install_manifest.txt
 *.exe
 *.dll
 *.a
-/build_mingw/debug/cmake.out
+cmake.out
+make.out
+CMakeLists.txt.user
+.ninja_deps
+.ninja_log
+Project.cbp
+build.ninja
+rules.ninja
