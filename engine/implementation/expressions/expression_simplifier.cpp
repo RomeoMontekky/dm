@@ -83,6 +83,11 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
    }
 
    const long actual_values_count = child_count - non_actual_values_count;
+   if (0 == actual_values_count)
+   {
+      // Nothing to simplify
+      return;
+   }
 
    const bool is_children_movable = 
       IsOperationCommutative(expression.GetOperation()) && 
@@ -129,34 +134,63 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
 
       child_count -= first_actual_values_count - 1;
    }
-   else if (is_children_movable && actual_values_count > 1)
+   else if (is_children_movable)
    {
-      // In this case we can perform operations with operands in any order, so we must do following:
-      //    1. Collect all actual values in a single array;
-      //    2. Calculate the result of operation over this array;
-      //    3. Remove all expressions that correspond to actual values;
-      //    4. Add one literal expression which will hold the calculated result.
-
-      LOCAL_ARRAY(LiteralType, actual_values, actual_values_count);
-      std::remove_copy(child_values, child_values + child_count, actual_values, LiteralType::None);
-
-      long index = 0;
-      while (index < child_count)
+      if (actual_values_count > 1)
       {
-         if (child_values[index] != LiteralType::None)
+         // In this case we can perform operations with operands in any order, so we must do following:
+         //    1. Collect all actual values in a single array;
+         //    2. Calculate the result of operation over this array;
+         //    3. Remove all expressions that correspond to actual values;
+         //    4. Add one literal expression which will hold the calculated result.
+   
+         LOCAL_ARRAY(LiteralType, actual_values, actual_values_count);
+         std::remove_copy(child_values, child_values + child_count, actual_values, LiteralType::None);
+   
+         long index = 0;
+         while (index < child_count)
          {
-            expression.RemoveChild(index);
-            std::copy(child_values + index + 1, child_values + child_count, child_values + index);
-            --child_count;
+            if (child_values[index] != LiteralType::None)
+            {
+               expression.RemoveChild(index);
+               std::copy(child_values + index + 1, child_values + child_count, child_values + index);
+               --child_count;
+            }
+            else
+            {
+               ++index;
+            }
+         }
+   
+         const LiteralType value = PerformOperation(expression.GetOperation(), actual_values, actual_values_count);
+         expression.AddChild(std::make_unique<LiteralExpression>(value));
+      }
+      else // actual_values_count == 1
+      {
+         // In this case just move expression that corresponds to the actual value to the end.
+         // If it is raw - this is enough to move it.
+         // Otherwise we need to create new literal expression to simplify it and delete the old one.
+         
+         long actual_index = 0;
+         for (; child_values[actual_index] == LiteralType::None; ++actual_index);
+         assert(actual_index < child_count);
+         
+         if (child_is_raws[actual_index])
+         {
+            // If actual_index == child_count - 1, then actual expression is already on its place.
+            if (actual_index < child_count - 1)
+            {
+               TExpressionPtr actual_expression = std::move(expression.GetChild(actual_index));
+               expression.RemoveChild(actual_index);
+               expression.AddChild(std::move(actual_expression));
+            }
          }
          else
          {
-            ++index;
+            expression.RemoveChild(actual_index);
+            expression.AddChild(std::make_unique<LiteralExpression>(child_values[actual_index]));
          }
       }
-
-      const LiteralType value = PerformOperation(expression.GetOperation(), actual_values, actual_values_count);
-      expression.AddChild(std::make_unique<LiteralExpression>(value));
 
       return;
    }
