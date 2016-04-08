@@ -3,8 +3,6 @@
 #include "expression_base.h"
 #include "../common/literals.h"
 
-#include <vector>
-
 namespace dm
 {
 
