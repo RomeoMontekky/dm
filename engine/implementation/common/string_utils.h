@@ -20,7 +20,7 @@ public:
    const char* Begin() const;
    const char* End() const;
    char At(long index) const;
-
+   
    StringPtrLen Left(const char* boundary) const;
    StringPtrLen Right(const char* boundary) const;
 
@@ -39,6 +39,8 @@ public:
 
    const char* Find(char ch) const;
    const char* FindBackward(char ch) const;
+   
+   bool HasNoData() const;
 
 private:
    const char* m_ptr;

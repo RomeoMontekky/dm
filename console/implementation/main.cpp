@@ -18,15 +18,14 @@ int ProcessStream(std::istream& stream)
          break;
       }
 
-      if (str.empty())
-      {
-         continue;
-      }
-
       try
       {
          const dm::IStringable& ret = engine->Process(str.c_str(), str.length());
-         std::cout << ret.ToString() << std::endl;
+         std::string output = ret.ToString();
+         if (!output.empty())
+         {
+            std::cout << ret.ToString() << std::endl;
+         }
       }
       catch (const dm::IException& ex)
       {

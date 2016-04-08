@@ -218,6 +218,24 @@ const char* StringPtrLen::FindBackward(char ch) const
    return nullptr;
 }
 
+bool StringPtrLen::HasNoData() const
+{
+   assert(m_ptr != nullptr);
+   assert(m_len != -1);
+
+   const char* ptr = m_ptr;
+   const char* const end = m_ptr + m_len;
+   for (; ptr != end; ++ptr)
+   {
+      if (!std::isspace(*ptr))
+      {
+         return false;
+      }
+   }
+   
+   return true;
+}
+
 std::ostream& operator<<(std::ostream& os, const StringPtrLen& str)
 {
    return os.write(str.Ptr(), str.Len());

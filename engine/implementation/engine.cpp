@@ -22,6 +22,12 @@ Engine::Engine() :
 const IStringable& Engine::Process(const char* str, long len)
 {
    StringPtrLen str_obj(str, len);
+   
+   if (str_obj.HasNoData())
+   {
+      static FunctionOutput empty_output;
+      return empty_output;
+   }
 
    if (IsFunctionCall(str_obj))
    {
