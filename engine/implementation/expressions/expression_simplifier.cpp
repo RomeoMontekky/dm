@@ -99,40 +99,67 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
       // simplify the whole operation expression to a calculated value.
 
       m_value = PerformOperation(expression.GetOperation(), child_values, child_count);
-
-      return;
    }
-   else if ((!is_children_movable || first_actual_values_count == actual_values_count) && 
-             first_actual_values_count > 1)
+   else if (!is_children_movable || first_actual_values_count == actual_values_count)
    {
-      // In this case we cann't move operands, so we can simplify only first actual values.
-      // Another case is when operands with actual values are all already at the biginning.
-
-      for (long counter = first_actual_values_count; counter > 0; --counter)
+      if (first_actual_values_count > 1)
       {
-         expression.RemoveChild(0);
+         // In this case we can't move operands, so we can simplify only first actual values.
+         // Another case is when operands with actual values are all already at the biginning.
+   
+         for (long counter = first_actual_values_count; counter > 0; --counter)
+         {
+            expression.RemoveChild(0);
+         }
+   
+         const LiteralType value = PerformOperation(expression.GetOperation(), child_values, first_actual_values_count);
+         auto value_expression = std::make_unique<LiteralExpression>(value);
+   
+         if (is_children_movable)
+         {
+            expression.AddChild(std::move(value_expression));
+            return;
+         }
+         else
+         {
+            expression.InsertChild(0, std::move(value_expression));
+         }
+   
+         child_values[0] = value;
+         child_is_raws[0] = true;
+   
+         std::copy(child_values + first_actual_values_count, child_values + child_count, child_values + 1);
+         std::copy(child_is_raws + first_actual_values_count, child_is_raws + child_count, child_is_raws + 1);
+   
+         child_count -= first_actual_values_count - 1;
       }
-
-      const LiteralType value = PerformOperation(expression.GetOperation(), child_values, first_actual_values_count);
-      auto value_expression = std::make_unique<LiteralExpression>(value);
-
-      if (is_children_movable)
+      // first_actual_values_count == 1
+      else if (is_children_movable)
       {
-         expression.AddChild(std::move(value_expression));
+         TExpressionPtr actual_expression;
+         if (!child_is_raws[0])
+         {
+            actual_expression = std::make_unique<LiteralExpression>(child_values[0]);
+         }
+         else
+         {
+            actual_expression = std::move(expression.GetChild(0));
+         }
+         expression.RemoveChild(0);
+         expression.AddChild(std::move(actual_expression));
          return;
       }
-      else
+
+      // If we are here, then it is possible that there exist expressions
+      // with actual values, but not raw. Let's simplify them.
+   
+      for (long index = 0; index < child_count; ++index)
       {
-         expression.InsertChild(0, std::move(value_expression));
+         if (child_values[index] != LiteralType::None && !child_is_raws[index])
+         {
+            expression.GetChild(index) = std::make_unique<LiteralExpression>(child_values[index]);
+         }
       }
-
-      child_values[0] = value;
-      child_is_raws[0] = true;
-
-      std::copy(child_values + first_actual_values_count, child_values + child_count, child_values + 1);
-      std::copy(child_is_raws + first_actual_values_count, child_is_raws + child_count, child_is_raws + 1);
-
-      child_count -= first_actual_values_count - 1;
    }
    else if (is_children_movable)
    {
@@ -190,19 +217,6 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
             expression.RemoveChild(actual_index);
             expression.AddChild(std::make_unique<LiteralExpression>(child_values[actual_index]));
          }
-      }
-
-      return;
-   }
-
-   // If we are here, then it is possible that there exist expressions
-   // with actual values, but not raw. Let's simplify them.
-
-   for (long index = 0; index < child_count; ++index)
-   {
-      if (child_values[index] != LiteralType::None && !child_is_raws[index])
-      {
-         expression.GetChild(index) = std::make_unique<LiteralExpression>(child_values[index]);
       }
    }
 
