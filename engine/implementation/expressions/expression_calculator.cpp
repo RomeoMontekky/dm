@@ -53,15 +53,15 @@ void ExpressionCalculatorVisitor::Visit(const OperationExpression& expression)
 {
    const long child_count = expression.GetChildCount();
 
-   LOCAL_ARRAY(LiteralType, children_values, child_count);
+   LOCAL_ARRAY(LiteralType, child_values, child_count);
    for (long index = 0; index < child_count; ++index)
    {
       ExpressionCalculatorVisitor child_visitor(m_param_values);
       expression.GetChild(index)->Accept(child_visitor);
-      children_values[index] = child_visitor.GetValue();
+      child_values[index] = child_visitor.GetValue();
    }
 
-   m_value = PerformOperation(expression.GetOperation(), children_values, child_count);
+   m_value = PerformOperation(expression.GetOperation(), child_values, child_count);
 }
 
 }; // namespace
