@@ -7,10 +7,19 @@
    - display_all (done)
 - function for evaluation of expressions (dummy already created)
 - function to open brackets
-- function for CNF/SCNF/MinCNF building
 - function for DNF/SDNF/MinDNF building
+- function for CNF/SCNF/MinCNF building
 - function for Zhegalkin polinom building
 
------
+------
 
 For MinCNF/MinDNF: https://ru.wikipedia.org/wiki/Метод_Куайна
+
+------
+
+Possible syntax for DNF/CNF group of functions:
+
+   call scnf(f(x,y), 0110)
+
+So we need to extract parse declaration functionality from the parser
+and put it to some common place for re-usage.
