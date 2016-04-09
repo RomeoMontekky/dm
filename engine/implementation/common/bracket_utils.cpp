@@ -50,7 +50,7 @@ void BracketsBalancer::ProcessChar(char ch)
 
       if (--m_balance < 0)
       {
-         Error("Closing bracket cannot be before an opening one.");
+         Error("Closing bracket can't be before an opening one.");
       }
    }
 }

@@ -49,7 +49,7 @@ void CheckQualifier(const StringPtrLen& str, const char* error_prefix)
 {
    if (0 == str.Len())
    {
-      Error(error_prefix, " cannot be empty.");
+      Error(error_prefix, " can't be empty.");
    }
 
    if (!IsQualifier(str))
@@ -59,7 +59,7 @@ void CheckQualifier(const StringPtrLen& str, const char* error_prefix)
 
    if (IsReservedWord(str))
    {
-      Error(error_prefix, " '", str, "' cannot be reserved word.");
+      Error(error_prefix, " '", str, "' can't be reserved word.");
    }
 }
 

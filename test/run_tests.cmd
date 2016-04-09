@@ -7,10 +7,9 @@ set TEST_COMMAND=..\build_%COMPILER%\%CONFIGURATION%\bin\console.exe
 set SUCCESSFUL_TESTS=0
 set FAILED_TESTS=0
 
-call :run_one_test operations_base
-call :run_one_test operations_priority
-call :run_one_test normalization
-call :run_one_test simplification
+call :run_one_test expression_base
+call :run_one_test expression_normalization
+call :run_one_test expression_simplification
 call :run_one_test function_copy
 call :run_one_test function_display
 call :run_one_test function_display_all
@@ -19,6 +18,8 @@ call :run_one_test function_remove
 call :run_one_test function_remove_all
 call :run_one_test function_test
 call :run_one_test function_table
+call :run_one_test operation_base
+call :run_one_test operation_priority
 
 echo ---------------------------------------
 echo Successful tests - %SUCCESSFUL_TESTS%, Failed tests - %FAILED_TESTS%
