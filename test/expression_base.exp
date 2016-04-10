@@ -1,5 +1,5 @@
-f1 := 1
-f2 := 0
+1
+0
 Error: Variable name 'true' can't be reserved word.
 Error: Variable name 'false' can't be reserved word.
 Error: Parameter name 'true' can't be reserved word.
