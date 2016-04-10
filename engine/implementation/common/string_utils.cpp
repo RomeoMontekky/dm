@@ -7,6 +7,13 @@
 namespace dm
 {
 
+namespace
+{
+
+const char g_char_comment = '#';
+
+}; // namespace
+
 StringPtrLen::StringPtrLen() :
    m_ptr(nullptr), m_len(-1)
 {
@@ -145,6 +152,18 @@ void StringPtrLen::Trim()
 {
    TrimRight();
    TrimLeft();
+}
+
+void StringPtrLen::RemoveComment()
+{
+   assert(m_ptr != nullptr);
+   assert(m_len != -1);
+
+   const char* comment = Find(g_char_comment);
+   if (comment != nullptr)
+   {
+      m_len = comment - m_ptr;
+   }
 }
 
 bool StringPtrLen::StartsWith(const char* str) const

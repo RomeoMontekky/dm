@@ -23,6 +23,8 @@ const IStringable& Engine::Process(const char* str, long len)
 {
    StringPtrLen str_obj(str, len);
    
+   str_obj.RemoveComment();
+
    if (str_obj.HasNoData())
    {
       static FunctionOutput empty_output;

@@ -1,8 +1,10 @@
-f1 := true
-f2 := false
+   # check of space-expression ignoring
 
-true(x) := 1
-false(x) := 0
+f1 := true       # is the same as '1'
+f2 := false      # is the same as '0'
+
+true := 1     # should be error as 'true' is reserved
+false := 0    # should be error as 'false' is reserved
 
 g1(x) := (x + 1
 g2(x) :=  x + 1)

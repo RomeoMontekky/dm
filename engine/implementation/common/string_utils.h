@@ -33,6 +33,8 @@ public:
    void TrimRight();
    void Trim();
 
+   void RemoveComment();
+
    // Variable str is null terminated
    bool StartsWith(const char* str) const;
    bool Equals(const char* str) const;

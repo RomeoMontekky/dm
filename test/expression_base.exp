@@ -1,9 +1,9 @@
 f1 := 1
 f2 := 0
-Error: Variable name 'true' cannot be reserved word.
-Error: Variable name 'false' cannot be reserved word.
+Error: Variable name 'true' can't be reserved word.
+Error: Variable name 'false' can't be reserved word.
 Error: Closing bracket is missing.
-Error: Closing bracket cannot be before an opening one.
-Error: Closing bracket cannot be before an opening one.
+Error: Closing bracket can't be before an opening one.
+Error: Closing bracket can't be before an opening one.
 g4(x) := (x + 1)
 g5(x) := (x + 1)

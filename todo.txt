@@ -1,4 +1,3 @@
-- support of one-line comments
 - functions to operate with variables (remove, copy and so on).
    - copy (done)
    - remove (done)
