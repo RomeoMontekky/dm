@@ -3,8 +3,11 @@
 f1 := true       # is the same as '1'
 f2 := false      # is the same as '0'
 
-true := 1     # should be error as 'true' is reserved
-false := 0    # should be error as 'false' is reserved
+true := 1             # should be error as 'true' is reserved
+false := 0            # should be error as 'false' is reserved
+u1(true) := true + 1  # should be error as 'true' is reserved
+u2(true) := false + 1 # should be error as 'false' is reserved
+u3(call) := call + 1  # should be error as 'call' is reserved
 
 g1(x) := (x + 1
 g2(x) :=  x + 1)
