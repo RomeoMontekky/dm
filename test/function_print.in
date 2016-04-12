@@ -1,0 +1,5 @@
+# should not print anything
+call print
+
+# should print trimmed, each in on new line
+call print( token 1 , token 2 , token 3 )

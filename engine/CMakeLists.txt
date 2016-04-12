@@ -31,10 +31,10 @@ set(CPP_FILES
    "implementation/functions/impl/function_display.cpp"
    "implementation/functions/impl/function_display_all.cpp"
    "implementation/functions/impl/function_eval.cpp"
+   "implementation/functions/impl/function_print.cpp"
    "implementation/functions/impl/function_remove.cpp"
    "implementation/functions/impl/function_remove_all.cpp"
    "implementation/functions/impl/function_table.cpp"
-   "implementation/functions/impl/function_test.cpp"
   
    "implementation/variables/variable.cpp"
    "implementation/variables/variable_declaration.cpp"

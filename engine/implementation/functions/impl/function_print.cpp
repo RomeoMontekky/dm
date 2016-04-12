@@ -18,7 +18,7 @@ public:
    virtual TFunctionOutputPtr Call(VariableManager& viriable_mgr, const TStringPtrLenVector& params) override;
 };
 
-FunctionImpl::FunctionImpl() : Function("test")
+FunctionImpl::FunctionImpl() : Function("print")
 {
 }
 
@@ -28,17 +28,9 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
 
    auto output = std::make_unique<FunctionOutput>();
 
+   for (const auto& param : params)
    {
-      std::stringstream sstr;
-      sstr << "Test function called with " << params.size() << " parameters.";
-      output->AddLine(sstr.str());
-   }
-
-   for (long index = 0; index < (long)params.size(); ++index)
-   {
-      std::stringstream sstr;
-      sstr << "   Parameter [" << index << "] = '" << params.at(index) << "'";
-      output->AddLine(sstr.str());
+      output->AddLine(param);
    }
 
    return output;
