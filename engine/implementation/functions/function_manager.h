@@ -3,8 +3,6 @@
 #include "function_base.h"
 #include "../common/noncopyable.h"
 
-#include <memory>
-
 namespace dm
 {
 
