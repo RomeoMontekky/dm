@@ -18,7 +18,4 @@ public:
 }; // namespace dm
 
 #define REGISTER_FUNCTION(FUNCTION_CLASS) \
-namespace \
-{ \
-   static const FunctionRegistrator<FUNCTION_CLASS> g_registrator; \
-} // namespace
+   static const FunctionRegistrator<FUNCTION_CLASS> g_registrator;
