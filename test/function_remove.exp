@@ -4,6 +4,10 @@ f3(x) := (x + 1)
 1
 0
 1
+Error: Parameter 'f5' of function 'remove' must be an existing variable name.
+1
+0
+1
 Variable 'f1' was removed.
 Variable 'f3' was removed.
 Error: Usage of undefined variable 'f1'.

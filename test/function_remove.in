@@ -6,6 +6,13 @@ f1(0)
 f2(0)
 f3(0)
 
+# check that removing is transactinal
+call remove(f1, f3, f5)
+
+f1(0)
+f2(0)
+f3(0)
+
 call remove(f1, f3)
 
 f1(0)
