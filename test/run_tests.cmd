@@ -1,8 +1,6 @@
 @echo off
 
-set COMPILER=mingw
-set CONFIGURATION=debug
-set TEST_COMMAND=..\build_%COMPILER%\%CONFIGURATION%\bin\console.exe
+set TEST_COMMAND=..\bin\console.exe
 
 set SUCCESSFUL_TESTS=0
 set FAILED_TESTS=0

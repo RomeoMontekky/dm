@@ -16,8 +16,8 @@ macro(set_options_and_post_build_steps)
    
    add_custom_command(
       TARGET ${BINARY_NAME} POST_BUILD 
-      COMMAND ${CMAKE_COMMAND} -E "make_directory" ARGS "${CMAKE_BINARY_DIR}/bin"
-      COMMAND ${CMAKE_COMMAND} -E "copy" ARGS "$<TARGET_FILE:${BINARY_NAME}>" "${CMAKE_BINARY_DIR}/bin")
+      COMMAND ${CMAKE_COMMAND} -E "make_directory" ARGS "${CMAKE_SOURCE_DIR}/bin"
+      COMMAND ${CMAKE_COMMAND} -E "copy" ARGS "$<TARGET_FILE:${BINARY_NAME}>" "${CMAKE_SOURCE_DIR}/bin")
 endmacro(set_options_and_post_build_steps)
    
    

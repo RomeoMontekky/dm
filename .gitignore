@@ -10,8 +10,3 @@ install_manifest.txt
 cmake.out
 make.out
 CMakeLists.txt.user
-.ninja_deps
-.ninja_log
-Project.cbp
-build.ninja
-rules.ninja
