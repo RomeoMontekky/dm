@@ -23,4 +23,4 @@ private:
 
 using TNamedEntityVector = std::vector<NamedEntity>;
 
-}; // namespace dm
+} // namespace dm

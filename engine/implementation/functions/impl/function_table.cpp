@@ -124,8 +124,8 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    return output;
 }
 
-}; // namespace
+} // namespace
 
 REGISTER_FUNCTION(FunctionImpl);
 
-}; // namespace dm
+} // namespace dm

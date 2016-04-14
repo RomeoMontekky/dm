@@ -31,4 +31,4 @@ public:
    virtual void Accept(ConstExpressionVisitor& visitor) const = 0;
 };
 
-}; // namespace dm
+} // namespace dm

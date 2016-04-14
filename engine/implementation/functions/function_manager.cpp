@@ -32,4 +32,4 @@ Function* FunctionManager::FindFunction(const StringPtrLen& name) const
    return nullptr;
 }
 
-}; // namespace dm
+} // namespace dm

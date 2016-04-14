@@ -19,4 +19,4 @@ Expression::Expression()
 {
 }
 
-}; // namespace dm
+} // namespace dm

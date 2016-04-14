@@ -17,4 +17,4 @@ bool IsLiteralToken(const StringPtrLen& str);
 LiteralType StringToLiteralType(const StringPtrLen& str);
 const char* LiteralTypeToString(LiteralType literal);
 
-}; // namespace dm
+} // namespace dm

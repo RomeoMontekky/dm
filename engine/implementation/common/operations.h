@@ -27,4 +27,4 @@ LiteralType PerformOperation(OperationType operation, const LiteralType values[]
 const char* OperationTypeToString(OperationType operation);
 OperationType StartsWithOperation(const StringPtrLen& str);
 
-}; // namespace dm
+} // namespace dm

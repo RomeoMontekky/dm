@@ -7,4 +7,4 @@ namespace dm
 
 void CheckQualifier(const StringPtrLen& str, const char* error_prefix);
 
-}; // namespace dm
+} // namespace dm

@@ -69,7 +69,7 @@ LiteralType Plus(LiteralType value1, LiteralType value2)
       LiteralType::True : LiteralType::False;
 }
 
-}; // namespace
+} // namespace
 
 bool IsOperationCommutative(OperationType operation)
 {
@@ -223,4 +223,4 @@ OperationType StartsWithOperation(const StringPtrLen& str)
    return operation;
 }
 
-}; // namespace dm
+} // namespace dm

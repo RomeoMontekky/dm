@@ -44,4 +44,4 @@ void TrimBrackets(StringPtrLen& str);
 const char* FindWithZeroBalance(const StringPtrLen& str, const char* sub);
 const char* FindWithZeroBalance(const StringPtrLen& str, char ch);
 
-}; // namespace dm
+} // namespace dm

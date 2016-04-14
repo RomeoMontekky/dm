@@ -20,7 +20,7 @@ namespace
 
 const char g_token_assignment[] = ":=";
 
-}; // namespace
+} // namespace
 
 ExpressionParser::ExpressionParser(const VariableManager& variable_mgr) :
    m_variable_mgr(variable_mgr), m_curr_variable(nullptr)
@@ -268,4 +268,4 @@ TExpressionPtr ExpressionParser::ParseNotParameterizedVariableExpression(StringP
    return TExpressionPtr();
 }
 
-}; // namespace dm
+} // namespace dm

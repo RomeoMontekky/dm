@@ -43,4 +43,4 @@ void TrimFunctionCall(StringPtrLen& str)
    str.TrimLeft();
 }
 
-}; // namespace dm
+} // namespace dm

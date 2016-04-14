@@ -12,7 +12,7 @@ namespace
 
 const char g_char_comment = '#';
 
-}; // namespace
+} // namespace
 
 StringPtrLen::StringPtrLen() :
    m_ptr(nullptr), m_len(-1)
@@ -260,4 +260,4 @@ std::ostream& operator<<(std::ostream& os, const StringPtrLen& str)
    return os.write(str.Ptr(), str.Len());
 }
 
-}; // namespace dm
+} // namespace dm

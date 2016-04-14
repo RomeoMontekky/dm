@@ -34,8 +34,8 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
       variable_mgr.AddVariable(std::move(variable_to)).ToString());
 }
 
-}; // namespace
+} // namespace
 
 REGISTER_FUNCTION(FunctionImpl);
 
-}; // namespace dm
+} // namespace dm

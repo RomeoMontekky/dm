@@ -27,7 +27,7 @@ void ExpressionEvaluatorVisitor::Visit(OperationExpression& expression)
 {
 }
 
-}; // namespace
+} // namespace
 
 void EvaluateExpression(TExpressionPtr& expression)
 {
@@ -36,4 +36,4 @@ void EvaluateExpression(TExpressionPtr& expression)
    expression->Accept(visitor);
 }
 
-}; // namespace dm
+} // namespace dm

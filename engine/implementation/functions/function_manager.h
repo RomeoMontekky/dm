@@ -21,4 +21,4 @@ private:
    std::map<std::string, TFunctionPtr> m_functions;
 };
 
-}; // namespace dm
+} // namespace dm

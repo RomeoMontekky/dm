@@ -25,4 +25,4 @@ void FormatString(std::stringstream& stream)
 {
 }
 
-}; // namespace dm
+} // namespace dm

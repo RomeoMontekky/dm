@@ -14,4 +14,4 @@ public:
    virtual const char* GetDescription() const = 0;
 };
 
-}; // namespace dm
+} // namespace dm

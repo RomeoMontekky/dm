@@ -53,5 +53,5 @@ using TStringPtrLenVector = std::vector<StringPtrLen>;
 
 std::ostream& operator<<(std::ostream& os, const StringPtrLen& str);
 
-}; // namespace dm
+} // namespace dm
 

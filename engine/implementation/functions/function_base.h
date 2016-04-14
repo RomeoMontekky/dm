@@ -40,4 +40,4 @@ private:
    long m_param_count;
 };
 
-}; // namespace dm
+} // namespace dm

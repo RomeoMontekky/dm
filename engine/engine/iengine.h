@@ -21,5 +21,5 @@ using TIEnginePtr = std::unique_ptr<IEngine>;
 
 ENGINE_API TIEnginePtr CreateEngine();
 
-}; // namespace dm
+} // namespace dm
 

@@ -30,4 +30,4 @@ private:
    mutable TVariablePtrMap::const_iterator m_curr_iterator;
 };
 
-}; // namespace dm
+} // namespace dm

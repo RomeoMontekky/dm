@@ -66,4 +66,4 @@ const Variable* VariableManager::GetNextVariable() const
    return (*m_curr_iterator).second.get();
 }
 
-}; // namespace dm
+} // namespace dm

@@ -38,4 +38,4 @@ void Error(const Args&... args)
    throw Exception(stream.str());
 }
 
-}; // namespace dm
+} // namespace dm

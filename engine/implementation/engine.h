@@ -30,4 +30,4 @@ private:
    TFunctionOutputPtr m_last_function_output;
 };
 
-}; // namespace dm
+} // namespace dm

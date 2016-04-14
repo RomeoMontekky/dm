@@ -34,4 +34,4 @@ private:
    long m_index;
 };
 
-}; // namespace dm
+} // namespace dm

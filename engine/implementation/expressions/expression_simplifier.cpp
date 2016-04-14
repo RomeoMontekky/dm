@@ -223,7 +223,7 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
    // Leave default values of m_value and m_is_raw
 }
 
-}; // namespace
+} // namespace
 
 void SimplifyExpression(TExpressionPtr& expression)
 {
@@ -240,4 +240,4 @@ void SimplifyExpression(TExpressionPtr& expression)
    }
 }
 
-}; // namespace dm
+} // namespace dm

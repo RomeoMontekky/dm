@@ -29,8 +29,8 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    return std::make_unique<FunctionOutput>("All variables were removed.");
 }
 
-}; // namespace
+} // namespace
 
 REGISTER_FUNCTION(FunctionImpl);
 
-}; // namespace dm
+} // namespace dm

@@ -29,4 +29,4 @@ protected:
    TNamedEntityVector m_parameters;
 };
 
-}; // namespace dm
+} // namespace dm

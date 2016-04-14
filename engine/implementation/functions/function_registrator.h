@@ -15,7 +15,7 @@ public:
    }
 };
 
-}; // namespace dm
+} // namespace dm
 
 #define REGISTER_FUNCTION(FUNCTION_CLASS) \
    static const FunctionRegistrator<FUNCTION_CLASS> g_registrator;

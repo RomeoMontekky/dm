@@ -108,7 +108,7 @@ void ExpressionNormalizerVisitor::Visit(OperationExpression& expression)
    }
 }
 
-}; // namespace
+} // namespace
 
 void NormalizeExpression(TExpressionPtr& expression)
 {
@@ -117,4 +117,4 @@ void NormalizeExpression(TExpressionPtr& expression)
    expression->Accept(visitor);
 }
 
-}; // namespace dm
+} // namespace dm

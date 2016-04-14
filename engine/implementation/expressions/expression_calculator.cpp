@@ -64,7 +64,7 @@ void ExpressionCalculatorVisitor::Visit(const OperationExpression& expression)
    m_value = PerformOperation(expression.GetOperation(), child_values, child_count);
 }
 
-}; // namespace
+} // namespace
 
 LiteralType CalculateExpression(const Expression* expression, const LiteralType param_values[])
 {
@@ -73,4 +73,4 @@ LiteralType CalculateExpression(const Expression* expression, const LiteralType 
    return visitor.GetValue();
 }
 
-}; // namespace dm
+} // namespace dm

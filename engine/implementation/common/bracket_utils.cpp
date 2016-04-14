@@ -14,7 +14,7 @@ const char g_char_br_opened = '(';
 const char g_char_br_closed = ')';
 const char g_char_comma     = ',';
 
-}; // namespace
+} // namespace
 
 ////////// BracketsBalancer //////////
 
@@ -212,4 +212,4 @@ const char* FindWithZeroBalance(const StringPtrLen& str, char ch)
    return nullptr;
 }
 
-}; // namespace dm
+} // namespace dm

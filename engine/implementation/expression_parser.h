@@ -30,4 +30,4 @@ private:
    const VariableDeclaration* m_curr_variable;
 };
 
-}; // namespace dm
+} // namespace dm

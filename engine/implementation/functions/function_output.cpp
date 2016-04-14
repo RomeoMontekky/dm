@@ -43,4 +43,4 @@ std::string FunctionOutput::ToString() const
    return m_output;
 }
 
-}; // namespace dm
+} // namespace dm

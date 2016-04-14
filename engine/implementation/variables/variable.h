@@ -30,4 +30,4 @@ private:
 
 using TVariablePtr = std::unique_ptr<Variable>;
 
-}; // namespace dm
+} // namespace dm

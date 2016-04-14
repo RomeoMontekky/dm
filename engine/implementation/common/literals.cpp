@@ -36,4 +36,4 @@ const char* LiteralTypeToString(LiteralType literal)
    return (literal == LiteralType::True ? g_token_1 : g_token_0);
 }
 
-}; // namespace dm
+} // namespace dm

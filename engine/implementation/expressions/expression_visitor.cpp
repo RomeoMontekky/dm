@@ -47,4 +47,4 @@ void ConstExpressionVisitor::Visit(const OperationExpression& expression)
 {
 }
 
-}; // namespace dm
+} // namespace dm

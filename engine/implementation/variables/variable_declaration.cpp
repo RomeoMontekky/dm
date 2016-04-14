@@ -90,4 +90,4 @@ std::string VariableDeclaration::ToString() const
    return ret;
 }
 
-}; // namespace dm
+} // namespace dm

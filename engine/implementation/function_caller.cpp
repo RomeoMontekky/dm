@@ -54,4 +54,4 @@ TFunctionOutputPtr FunctionCaller::ParseAndCall(StringPtrLen str)
    return function->Call(m_variable_mgr, params);
 }
 
-}; // namespace dm
+} // namespace dm

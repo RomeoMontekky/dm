@@ -66,4 +66,4 @@ std::string Function::GetParameterReportingString(const StringPtrLen& param)
    return stream.str();
 }
 
-}; // namespace dm
+} // namespace dm

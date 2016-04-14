@@ -39,4 +39,4 @@ void LiteralExpression::Accept(ConstExpressionVisitor& visitor) const
    visitor.Visit(*this);
 }
 
-}; // namespace dm
+} // namespace dm

@@ -9,4 +9,4 @@ bool IsCallToken(const StringPtrLen& str);
 bool IsFunctionCall(const StringPtrLen& str);
 void TrimFunctionCall(StringPtrLen& str);
 
-}; // namespace dm
+} // namespace dm

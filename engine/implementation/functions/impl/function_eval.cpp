@@ -31,8 +31,8 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    return std::make_unique<FunctionOutput>(variable->ToString());
 }
 
-}; // namespace
+} // namespace
 
 REGISTER_FUNCTION(FunctionImpl);
 
-}; // namespace dm
+} // namespace dm

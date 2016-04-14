@@ -18,4 +18,4 @@ private:
    VariableManager& m_variable_mgr;
 };
 
-}; // namespace dm
+} // namespace dm

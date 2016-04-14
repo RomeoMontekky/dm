@@ -28,4 +28,4 @@ private:
    std::string m_output;
 };
 
-}; // namespace dm
+} // namespace dm

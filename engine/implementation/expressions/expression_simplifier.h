@@ -7,4 +7,4 @@ namespace dm
 
 void SimplifyExpression(TExpressionPtr& expression);
 
-}; // namespace dm
+} // namespace dm

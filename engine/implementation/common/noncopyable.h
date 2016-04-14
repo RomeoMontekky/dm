@@ -13,4 +13,4 @@ private:
    NonCopyable& operator=(const NonCopyable&) = delete;
 };
 
-}; // namespace dm
+} // namespace dm

@@ -30,4 +30,4 @@ private:
    LiteralType m_literal;
 };
 
-}; // namespace dm
+} // namespace dm

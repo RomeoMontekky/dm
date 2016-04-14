@@ -23,4 +23,4 @@ const std::string& NamedEntity::GetName() const
    return m_name;
 }
 
-}; // namespace dm
+} // namespace dm

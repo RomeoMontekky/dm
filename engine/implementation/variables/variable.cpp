@@ -64,4 +64,4 @@ std::string Variable::ToString() const
    return ret;
 }
 
-}; // namespace dm
+} // namespace dm

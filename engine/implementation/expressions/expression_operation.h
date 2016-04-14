@@ -41,4 +41,4 @@ private:
    TExpressionPtrVector m_children;
 };
 
-}; // namespace dm
+} // namespace dm

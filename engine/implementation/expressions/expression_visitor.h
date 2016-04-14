@@ -30,4 +30,4 @@ public:
 };
 
 
-}; // namespace dm
+} // namespace dm

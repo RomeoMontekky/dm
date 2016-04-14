@@ -17,4 +17,4 @@ public:
    virtual std::string ToString() const = 0;
 };
 
-}; // namespace dm
+} // namespace dm

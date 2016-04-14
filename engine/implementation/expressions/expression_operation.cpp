@@ -162,4 +162,4 @@ void OperationExpression::Accept(ConstExpressionVisitor& visitor) const
 }
 
 
-}; // namespace dm
+} // namespace dm

@@ -43,7 +43,7 @@ bool IsReservedWord(const StringPtrLen& str)
    return (IsLiteralToken(str) || IsCallToken(str));
 }
 
-}; // namespace
+} // namespace
 
 void CheckQualifier(const StringPtrLen& str, const char* error_prefix)
 {
@@ -63,4 +63,4 @@ void CheckQualifier(const StringPtrLen& str, const char* error_prefix)
    }
 }
 
-}; // namespace dm
+} // namespace dm
