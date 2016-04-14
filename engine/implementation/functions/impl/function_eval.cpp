@@ -1,6 +1,6 @@
 #include "../function_base.h"
 #include "../function_registrator.h"
-#include "../../common/exception.h"
+#include "../../expressions/expression_evaluator.h"
 
 #include <sstream>
 #include <cassert>
@@ -26,15 +26,9 @@ FunctionImpl::FunctionImpl() : Function("eval", 1)
 TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStringPtrLenVector& params)
 {
    assert(params.size() == GetParameterCount());
-
-   auto variable = CheckAndGetConstVariable(variable_mgr, params[0]);
-
-   auto output = std::make_unique<FunctionOutput>();
-
-   // TODO: Implement
-   output->AddLine("Eval function called");
-
-   return output;
+   auto variable = CheckAndGetVariable(variable_mgr, params[0]);
+   EvaluateExpression(variable->GetExpression());
+   return std::make_unique<FunctionOutput>(variable->ToString());
 }
 
 }; // namespace

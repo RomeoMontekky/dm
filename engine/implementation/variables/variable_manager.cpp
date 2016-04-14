@@ -18,6 +18,17 @@ const Variable& VariableManager::AddVariable(TVariablePtr&& variable)
    return *((*ret.first).second);
 }
 
+void VariableManager::RemoveVariable(const StringPtrLen& name)
+{
+   auto ret = m_variables.erase(name);
+   assert(1 == ret);
+}
+
+void VariableManager::RemoveAllVariables()
+{
+   m_variables.clear();
+}
+
 const Variable* VariableManager::FindVariable(const StringPtrLen& name) const
 {
    auto it = m_variables.find(name);
@@ -28,15 +39,9 @@ const Variable* VariableManager::FindVariable(const StringPtrLen& name) const
    return nullptr;
 }
 
-void VariableManager::RemoveVariable(const StringPtrLen& name)
+Variable* VariableManager::FindVariable(const StringPtrLen& name)
 {
-   auto ret = m_variables.erase(name);
-   assert(1 == ret);
-}
-
-void VariableManager::RemoveAllVariables()
-{
-   m_variables.clear();
+   return const_cast<Variable*>(((const VariableManager*)this)->FindVariable(name));
 }
 
 const Variable* VariableManager::GetFirstVariable() const

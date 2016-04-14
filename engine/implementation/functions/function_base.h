@@ -30,6 +30,8 @@ protected:
 
    const Variable* CheckAndGetConstVariable(
       const VariableManager& variable_mgr, const StringPtrLen& param, bool must_exist = true);
+   Variable* CheckAndGetVariable(
+      VariableManager& variable_mgr, const StringPtrLen& param, bool must_exist = true);
 
 private:
    std::string GetParameterReportingString(const StringPtrLen& param_value);

@@ -14,9 +14,11 @@ public:
    VariableManager();
 
    const Variable& AddVariable(TVariablePtr&& variable);
-   const Variable* FindVariable(const StringPtrLen& name) const;
    void RemoveVariable(const StringPtrLen& name);
    void RemoveAllVariables();
+
+   const Variable* FindVariable(const StringPtrLen& name) const;
+   Variable* FindVariable(const StringPtrLen& name);
 
    const Variable* GetFirstVariable() const;
    const Variable* GetNextVariable() const;

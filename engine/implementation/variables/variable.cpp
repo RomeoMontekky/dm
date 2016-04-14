@@ -38,9 +38,14 @@ void Variable::SetExpression(TExpressionPtr&& expression)
    m_expression = std::move(expression);
 }
 
-const Expression* Variable::GetExpression() const
+const TExpressionPtr& Variable::GetExpression() const
 {
-   return m_expression.get();
+   return m_expression;
+}
+
+TExpressionPtr& Variable::GetExpression()
+{
+   return m_expression;
 }
 
 std::string Variable::ToString() const

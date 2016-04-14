@@ -18,7 +18,8 @@ public:
    Variable(const StringPtrLen& name, const Variable& rhs);
 
    void SetExpression(TExpressionPtr&& expression);
-   const Expression* GetExpression() const;
+   const TExpressionPtr& GetExpression() const;
+   TExpressionPtr& GetExpression();
 
    // IStringable
    virtual std::string ToString() const override;

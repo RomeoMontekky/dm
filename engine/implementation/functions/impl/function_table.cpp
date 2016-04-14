@@ -1,6 +1,5 @@
 #include "../function_base.h"
 #include "../function_registrator.h"
-#include "../../common/exception.h"
 #include "../../common/local_array.h"
 #include "../../expressions/expression_calculator.h"
 
@@ -111,7 +110,7 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    // Checking of carry-flag
    while (LiteralType::False == *all_values)
    {
-      const LiteralType func_value = CalculateExpression(variable->GetExpression(), param_values);
+      const LiteralType func_value = CalculateExpression(variable->GetExpression().get(), param_values);
 
       output->AddLine(ConstructRow(variable, param_values, func_value));
 

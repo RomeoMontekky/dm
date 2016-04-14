@@ -53,6 +53,12 @@ const Variable* Function::CheckAndGetConstVariable(
    return variable;
 }
 
+Variable* Function::CheckAndGetVariable(
+   VariableManager& variable_mgr, const StringPtrLen& param, bool must_exist)
+{
+   return const_cast<Variable*>(CheckAndGetConstVariable(variable_mgr, param, must_exist));
+}
+
 std::string Function::GetParameterReportingString(const StringPtrLen& param)
 {
    std::stringstream stream;

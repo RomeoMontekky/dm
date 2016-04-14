@@ -1,6 +1,5 @@
 #include "../function_base.h"
 #include "../function_registrator.h"
-#include "../../common/exception.h"
 
 #include <sstream>
 #include <cassert>
