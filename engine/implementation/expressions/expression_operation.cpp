@@ -33,7 +33,6 @@ OperationExpression::OperationExpression(const OperationExpression& rhs):
   Expression(),
   m_operation(rhs.m_operation),
   m_children()
-
 {
    m_children.reserve(rhs.m_children.size());
    for (const auto& child : rhs.m_children)
@@ -67,12 +66,14 @@ long OperationExpression::GetChildCount() const
 
 const TExpressionPtr& OperationExpression::GetChild(long index) const
 {
-   return m_children.at(index);
+   assert(index >=0 && index < (long)m_children.size());
+   return m_children[index];
 }
 
 TExpressionPtr& OperationExpression::GetChild(long index)
 {
-   return m_children.at(index);
+   assert(index >=0 && index < (long)m_children.size());
+   return m_children[index];
 }
 
 void OperationExpression::RemoveChild(long index)
@@ -95,6 +96,7 @@ void OperationExpression::InsertChild(long index, TExpressionPtr&& expression)
 void OperationExpression::InsertChildren(long index, TExpressionPtrVector&& expressions)
 {
    assert(index >=0 && index <= (long)m_children.size());
+   m_children.reserve(m_children.size() + expressions.size());
    for (auto& expression : expressions)
    {
       m_children.insert(m_children.cbegin() + index, std::move(expression));
