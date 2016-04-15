@@ -1,6 +1,7 @@
 #include "expression_normalizer.h"
 #include "expression_visitor.h"
 #include "expressions.h"
+#include "expression_mover.h"
 
 #include <cassert>
 
@@ -10,48 +11,10 @@ namespace dm
 namespace
 {
 
-/////////// ChildrenAbsorberVisitor /////////////
-
-class ChildrenAbsorberVisitor : public ExpressionVisitor
+class ExpressionNormalizer : public ExpressionVisitor
 {
 public:
-   ChildrenAbsorberVisitor();
-
-   TExpressionPtrVector& GetExpressions();
-
-   // ExpressionVisitor
-   virtual void Visit(OperationExpression& expression) override;
-
-private:
-   TExpressionPtrVector m_expressions;
-};
-
-ChildrenAbsorberVisitor::ChildrenAbsorberVisitor() :
-   m_expressions()
-{
-}
-
-TExpressionPtrVector& ChildrenAbsorberVisitor::GetExpressions()
-{
-   return m_expressions;
-}
-
-void ChildrenAbsorberVisitor::Visit(OperationExpression& expression)
-{
-   const long child_count = expression.GetChildCount();
-   m_expressions.reserve(child_count);
-   for (long index = 0; index < child_count; ++index)
-   {
-      m_expressions.push_back(std::move(expression.GetChild(index)));
-   }
-}
-
-/////////// ExpressionNormalizerVisitor /////////////
-
-class ExpressionNormalizerVisitor : public ExpressionVisitor
-{
-public:
-   ExpressionNormalizerVisitor();
+   ExpressionNormalizer();
 
    OperationType GetOperation() const;
 
@@ -63,17 +26,17 @@ private:
    OperationType m_operation;
 };
 
-ExpressionNormalizerVisitor::ExpressionNormalizerVisitor() :
+ExpressionNormalizer::ExpressionNormalizer() :
    m_operation(OperationType::None)
 {
 }
 
-OperationType ExpressionNormalizerVisitor::GetOperation() const
+OperationType ExpressionNormalizer::GetOperation() const
 {
    return m_operation;
 }
 
-void ExpressionNormalizerVisitor::Visit(OperationExpression& expression)
+void ExpressionNormalizer::Visit(OperationExpression& expression)
 {
    m_operation = expression.GetOperation();
 
@@ -82,28 +45,24 @@ void ExpressionNormalizerVisitor::Visit(OperationExpression& expression)
 
    for (long index = 0; index < child_count; ++index)
    {
-      ExpressionNormalizerVisitor child_visitor;
-      expression.GetChild(index)->Accept(child_visitor);
+      ExpressionNormalizer child_normalizer;
+      expression.GetChild(index)->Accept(child_normalizer);
 
       // The child expression can be normalized if following is true:
       //    - it is either first child, or current operation is associative;
       //    - it is operation expression and operation is the same as in the current expression;
 
       if ((is_associative || 0 == index) && 
-          (child_visitor.GetOperation() == expression.GetOperation()))
+          (child_normalizer.GetOperation() == expression.GetOperation()))
       {
-         ChildrenAbsorberVisitor absorber;
-         expression.GetChild(index)->Accept(absorber);
-         auto& expressions = absorber.GetExpressions();
+         auto expressions = MoveChildExpressions(expression.GetChild(index));
+         assert(!expressions.empty());
 
-         if (!expressions.empty())
-         {
-            const long expressions_count = expressions.size();
-            expression.RemoveChild(index);
-            expression.InsertChildren(index, std::move(expressions));
-            index += expressions_count - 1;
-            child_count += expressions_count - 1;
-         }
+         const long expressions_count = expressions.size();
+         expression.RemoveChild(index);
+         expression.InsertChildren(index, std::move(expressions));
+         index += expressions_count - 1;
+         child_count += expressions_count - 1;
       }
    }
 }
@@ -113,8 +72,8 @@ void ExpressionNormalizerVisitor::Visit(OperationExpression& expression)
 void NormalizeExpression(TExpressionPtr& expression)
 {
    assert(expression.get() != nullptr);
-   ExpressionNormalizerVisitor visitor;
-   expression->Accept(visitor);
+   ExpressionNormalizer normalizer;
+   expression->Accept(normalizer);
 }
 
 } // namespace dm

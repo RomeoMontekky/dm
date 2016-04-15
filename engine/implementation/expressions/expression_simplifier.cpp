@@ -13,10 +13,10 @@ namespace dm
 namespace
 {
 
-class ExpressionSimplifierVisitor : public ExpressionVisitor
+class ExpressionSimplifier : public ExpressionVisitor
 {
 public:
-   ExpressionSimplifierVisitor();
+   ExpressionSimplifier();
 
    LiteralType GetValue() const;
    bool GetIsRaw() const;
@@ -33,28 +33,28 @@ private:
    bool m_is_raw;   
 };
 
-ExpressionSimplifierVisitor::ExpressionSimplifierVisitor() :
+ExpressionSimplifier::ExpressionSimplifier() :
    m_value(LiteralType::None), m_is_raw(false)
 {
 }
 
-LiteralType ExpressionSimplifierVisitor::GetValue() const
+LiteralType ExpressionSimplifier::GetValue() const
 {
    return m_value;
 }
 
-bool ExpressionSimplifierVisitor::GetIsRaw() const
+bool ExpressionSimplifier::GetIsRaw() const
 {
    return m_is_raw;
 }
 
-void ExpressionSimplifierVisitor::Visit(LiteralExpression& expression)
+void ExpressionSimplifier::Visit(LiteralExpression& expression)
 {
    m_value = expression.GetLiteral();
    m_is_raw = true;
 }
 
-void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
+void ExpressionSimplifier::Visit(OperationExpression& expression)
 {
    long child_count = expression.GetChildCount();
 
@@ -66,11 +66,11 @@ void ExpressionSimplifierVisitor::Visit(OperationExpression& expression)
 
    for (long index = 0; index < child_count; ++index)
    {
-      ExpressionSimplifierVisitor child_visitor;
-      expression.GetChild(index)->Accept(child_visitor);
+      ExpressionSimplifier child_simplifier;
+      expression.GetChild(index)->Accept(child_simplifier);
 
-      child_values[index] = child_visitor.GetValue();
-      child_is_raws[index] = child_visitor.GetIsRaw();
+      child_values[index] = child_simplifier.GetValue();
+      child_is_raws[index] = child_simplifier.GetIsRaw();
 
       if (LiteralType::None == child_values[index])
       {
@@ -229,14 +229,14 @@ void SimplifyExpression(TExpressionPtr& expression)
 {
    assert(expression.get() != nullptr);
 
-   ExpressionSimplifierVisitor visitor;
-   expression->Accept(visitor);
+   ExpressionSimplifier simplifier;
+   expression->Accept(simplifier);
 
    // The visitor simplifies only child expressions of each operation expression, 
    // so the root can be still not simplifed. Let's correct this if so.
-   if (LiteralType::None != visitor.GetValue() && !visitor.GetIsRaw())
+   if (LiteralType::None != simplifier.GetValue() && !simplifier.GetIsRaw())
    {
-      expression = std::make_unique<LiteralExpression>(visitor.GetValue());
+      expression = std::make_unique<LiteralExpression>(simplifier.GetValue());
    }
 }
 
