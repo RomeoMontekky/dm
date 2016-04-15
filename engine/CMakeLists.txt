@@ -16,7 +16,6 @@ set(CPP_FILES
 
    "implementation/expressions/expression_base.cpp"
    "implementation/expressions/expression_calculator.cpp"
-   "implementation/expressions/expression_comparator.cpp"
    "implementation/expressions/expression_evaluator.cpp"
    "implementation/expressions/expression_literal.cpp"
    "implementation/expressions/expression_normalizer.cpp"
@@ -61,7 +60,6 @@ set(HEADER_FILES
 
    "implementation/expressions/expression_base.h"
    "implementation/expressions/expression_calculator.h"
-   "implementation/expressions/expression_comparator.h"
    "implementation/expressions/expression_evaluator.h"
    "implementation/expressions/expression_literal.h"
    "implementation/expressions/expression_normalizer.h"
