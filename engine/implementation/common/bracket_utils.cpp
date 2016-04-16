@@ -23,7 +23,7 @@ BracketsBalancer::BracketsBalancer() :
 {
 }
 
-void BracketsBalancer::ProcessChar(char ch)
+bool BracketsBalancer::ProcessChar(char ch)
 {
    if (g_char_br_opened == ch)
    {
@@ -53,6 +53,12 @@ void BracketsBalancer::ProcessChar(char ch)
          Error("Closing bracket can't be before an opening one.");
       }
    }
+   else
+   {
+      return false;
+   }
+
+   return true;
 }
 
 void BracketsBalancer::ProcessEnding()
@@ -185,8 +191,8 @@ const char* FindWithZeroBalance(const StringPtrLen& str, const char* sub)
    BracketsBalancer balancer;
    while (tail.Len() >= sub_len)
    {
-      balancer.ProcessChar(tail.At(0));
-      if (balancer.GetBalance() == 0 && tail.StartsWith(sub))
+      if (!balancer.ProcessChar(tail.At(0)) &&
+           balancer.GetBalance() == 0 && tail.StartsWith(sub))
       {
          return tail.Ptr();
       }
@@ -197,14 +203,15 @@ const char* FindWithZeroBalance(const StringPtrLen& str, const char* sub)
 
 const char* FindWithZeroBalance(const StringPtrLen& str, char ch)
 {
+   assert(ch != g_char_br_opened && ch != g_char_br_closed);
+
    BracketsBalancer balancer;
 
    const char* curr = str.Begin();
    const char* const end = str.End();
    for (; curr != end; ++curr)
    {
-      balancer.ProcessChar(*curr);
-      if (balancer.GetBalance() == 0 && (*curr == ch))
+      if (!balancer.ProcessChar(*curr) && balancer.GetBalance() == 0 && (*curr == ch))
       {
          return curr;
       }

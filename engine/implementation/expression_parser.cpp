@@ -128,8 +128,7 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
    // Maximum value means minimus arithmetic priority.
    for (; tail.Len() > 0; tail.RemoveLeft(1))
    {
-      balancer.ProcessChar(tail.At(0));
-      if (balancer.GetBalance() == 0)
+      if (!balancer.ProcessChar(tail.At(0)) && balancer.GetBalance() == 0)
       {
          OperationType operation = StartsWithOperation(tail); // TODO: Skip the whole operation symbols
          if (operation != OperationType::None)
@@ -160,7 +159,7 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
 
    if (OperationType::Negation == max_operation)
    {
-      if (max_operation_amount > 1 || !str.StartsWith(max_operation_str))
+      if (!str.StartsWith(max_operation_str))
       {
          Error("Incorrect usage of unary operation '", max_operation_str, "'.");
       }
@@ -176,8 +175,7 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
    tail = str;
    while (tail.Len() > 0)
    {
-      balancer.ProcessChar(tail.At(0));
-      if (balancer.GetBalance() == 0)
+      if (!balancer.ProcessChar(tail.At(0)) && balancer.GetBalance() == 0)
       {
          if (tail.StartsWith(max_operation_str))
          {

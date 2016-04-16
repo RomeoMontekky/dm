@@ -10,7 +10,8 @@ class BracketsBalancer
 public:
    BracketsBalancer();
 
-   void ProcessChar(char ch);
+   // Returns whether the input char was processed or not
+   bool ProcessChar(char ch);
    void ProcessEnding();
 
    long GetBalance() const;
