@@ -1,5 +1,5 @@
 # Negation #
-neg(x) := !(!x)
+neg(x, y) := !!(x->y)
 call eval(neg)
 
 # Conjunction #

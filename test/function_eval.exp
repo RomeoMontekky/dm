@@ -1,5 +1,5 @@
-neg(x) := !(!(x))
-neg(x) := x
+neg(x, y) := !(!((x -> y)))
+neg(x, y) := (x -> y)
 conj1(x) := (x & 0)
 conj1(x) := 0
 conj2(x) := (x & 1)
