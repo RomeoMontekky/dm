@@ -43,6 +43,8 @@ private:
    void EvaluateEquality(OperationExpression& expression);
    void EvaluatePlus(OperationExpression& expression);
 
+   void RemoveDuplicates(OperationExpression& expression);
+
 private:
    // Following three fields hold values for three possible variants
    // of visited expressions.
@@ -96,15 +98,15 @@ long ExpressionEvaluator::GetChildCount() const
    return m_children.size();
 }
 
-TExpressionPtr& ExpressionEvaluator::GetEvaluatedExpression()
-{
-   return m_evaluated_expression;
-}
-
 ExpressionEvaluator& ExpressionEvaluator::GetChild(long index)
 {
    assert(index >= 0 && index < (long)m_children.size());
    return m_children[index];
+}
+
+TExpressionPtr& ExpressionEvaluator::GetEvaluatedExpression()
+{
+   return m_evaluated_expression;
 }
 
 void ExpressionEvaluator::Visit(LiteralExpression& expression)
@@ -159,6 +161,27 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
 
    auto method = op_to_func.at(expression.GetOperation());
    (this->*method)(expression);
+
+   // If after evaluation the only operand is remained, then
+   // current expression can be evaluated to this operand.
+   if (expression.GetOperation() != OperationType::Negation &&
+       expression.GetChildCount() == 1)
+   {
+      // Evaluated expression shouln't be set already.
+      assert(m_evaluated_expression.get() == nullptr);
+      m_evaluated_expression = std::move(expression.GetChild(0));
+   }
+}
+
+bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
+{
+   return
+   (
+      (m_literal == rhs.m_literal) &&
+      (m_param_index == rhs.m_param_index) &&
+      (m_operation == rhs.m_operation) &&
+      (m_children == rhs.m_children)
+   );
 }
 
 void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
@@ -195,15 +218,7 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    }
 
    // If there are two equal operands, one of them should be removed.
-   for (long i = 0; i < child_count - 1; ++i)
-      for (long j = i + 1; j < child_count; ++j)
-         if (m_children[i] == m_children[j])
-         {
-            m_children.erase(m_children.cbegin() + j);
-            expression.RemoveChild(j);
-            --child_count;
-            --j;
-         }
+   RemoveDuplicates(expression);
 }
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
@@ -227,15 +242,7 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    }
 
    // If there are two equal operands, one of them should be removed.
-   for (long i = 0; i < child_count - 1; ++i)
-      for (long j = i + 1; j < child_count; ++j)
-         if (m_children[i] == m_children[j])
-         {
-            m_children.erase(m_children.cbegin() + j);
-            expression.RemoveChild(j);
-            --child_count;
-            --j;
-         }
+   RemoveDuplicates(expression);
 }
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
@@ -253,15 +260,23 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
 
 }
 
-bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
+void ExpressionEvaluator::RemoveDuplicates(OperationExpression& expression)
 {
-   return
-   (
-      (m_literal == rhs.m_literal) &&
-      (m_param_index == rhs.m_param_index) &&
-      (m_operation == rhs.m_operation) &&
-      (m_children == rhs.m_children)
-   );
+   int child_count = m_children.size();
+
+   for (long i = 0; i < child_count - 1; ++i)
+   {
+      for (long j = i + 1; j < child_count; ++j)
+      {
+         if (m_children[i] == m_children[j])
+         {
+            m_children.erase(m_children.cbegin() + j);
+            expression.RemoveChild(j);
+            --child_count;
+            --j;
+         }
+      }
+   }
 }
 
 } // namespace
