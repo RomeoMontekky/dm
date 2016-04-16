@@ -55,14 +55,14 @@ void ExpressionNormalizer::Visit(OperationExpression& expression)
       if ((is_associative || 0 == index) && 
           (child_normalizer.GetOperation() == expression.GetOperation()))
       {
-         auto expressions = MoveChildExpressions(expression.GetChild(index));
-         assert(!expressions.empty());
+         auto moved_children = MoveChildExpressions(expression.GetChild(index));
+         assert(!moved_children.empty());
 
-         const long expressions_count = expressions.size();
+         const long moved_children_count = moved_children.size();
          expression.RemoveChild(index);
-         expression.InsertChildren(index, std::move(expressions));
-         index += expressions_count - 1;
-         child_count += expressions_count - 1;
+         expression.InsertChildren(index, std::move(moved_children));
+         index += moved_children_count - 1;
+         child_count += moved_children_count - 1;
       }
    }
 }

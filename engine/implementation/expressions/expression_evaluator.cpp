@@ -3,6 +3,7 @@
 #include "expressions.h"
 #include "expression_mover.h"
 
+#include <map>
 #include <cassert>
 
 namespace dm
@@ -33,6 +34,14 @@ public:
    virtual void Visit(OperationExpression& expression) override;
 
    bool operator ==(const ExpressionEvaluator& rhs) const;
+
+private:
+   void EvaluateNegation(OperationExpression& expression);
+   void EvaluateConjunction(OperationExpression& expression);
+   void EvaluateDisjunction(OperationExpression& expression);
+   void EvaluateImplication(OperationExpression& expression);
+   void EvaluateEquality(OperationExpression& expression);
+   void EvaluatePlus(OperationExpression& expression);
 
 private:
    // Following three fields hold values for three possible variants
@@ -127,7 +136,65 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
       }
    }
 
-   // TODO: Evaluation depending on operation.
+   using base_map = std::map
+   <
+      OperationType,
+      void(ExpressionEvaluator::*)(OperationExpression& expression)
+   >;
+
+   static const class operation_to_function_map : public base_map
+   {
+   public:
+      operation_to_function_map() : base_map()
+      {
+         emplace(OperationType::Negation,    EvaluateNegation);
+         emplace(OperationType::Conjunction, EvaluateConjunction);
+         emplace(OperationType::Disjunction, EvaluateDisjunction);
+         emplace(OperationType::Implication, EvaluateImplication);
+         emplace(OperationType::Equality,    EvaluateEquality);
+         emplace(OperationType::Plus,        EvaluatePlus);
+      }
+   }
+   op_to_func;
+
+   auto method = op_to_func.at(expression.GetOperation());
+   (this->*method)(expression);
+}
+
+void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
+{
+   assert(m_children.size() == 1);
+   if (m_children[0].GetOperation() == OperationType::Negation)
+   {
+      auto moved_children = MoveChildExpressions(expression.GetChild(0));
+      assert(moved_children.size() == 1);
+      m_evaluated_expression = std::move(moved_children[0]);
+   }
+}
+
+void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
+{
+
+}
+
+void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
+{
+
+}
+
+void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
+{
+
+}
+
+void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
+{
+
+}
+
+void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
+{
+
 }
 
 bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
