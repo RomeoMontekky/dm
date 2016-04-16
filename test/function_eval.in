@@ -1,8 +1,8 @@
-# Negation #
+call print(--- negation ---)
 neg(x, y) := !!(x->y)
 call eval(neg)
 
-# Conjunction #
+call print(--- conjunction ---)
 conj1(x) := 0 & x
 call eval(conj1)
 conj2(x) := 1 & x
@@ -10,4 +10,11 @@ call eval(conj2)
 conj3(x, y) := (x->y) & (x->y) & x
 call eval(conj3)
 
+call print(--- disjunction ---)
+disj1(x) := 0 | x
+call eval(disj1)
+disj2(x) := 1 | x
+call eval(disj2)
+disj3(x, y) := (x->y) | (x->y) | x
+call eval(disj3)
 

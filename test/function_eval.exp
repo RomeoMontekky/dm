@@ -1,8 +1,17 @@
+--- negation ---
 neg(x, y) := !(!((x -> y)))
 neg(x, y) := (x -> y)
+--- conjunction ---
 conj1(x) := (x & 0)
 conj1(x) := 0
 conj2(x) := (x & 1)
 conj2(x) := (x)
 conj3(x, y) := ((x -> y) & (x -> y) & x)
 conj3(x, y) := ((x -> y) & x)
+--- disjunction ---
+disj1(x) := (x | 0)
+disj1(x) := (x)
+disj2(x) := (x | 1)
+disj2(x) := 1
+disj3(x, y) := ((x -> y) | (x -> y) | x)
+disj3(x, y) := ((x -> y) | x)

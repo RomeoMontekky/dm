@@ -208,7 +208,34 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
 {
+   int child_count = m_children.size();
+   assert(child_count > 1);
 
+   // If there exist operand "1", then all expression is "1"
+   if (m_children[child_count - 1].GetLiteral() == LiteralType::True)
+   {
+      m_evaluated_expression = std::move(expression.GetChild(child_count - 1));
+      return;
+   }
+
+   // If there exist operand "0", it should be removed.
+   if (m_children[child_count - 1].GetLiteral() == LiteralType::False)
+   {
+      m_children.resize(child_count - 1);
+      expression.RemoveChild(child_count - 1);
+      --child_count;
+   }
+
+   // If there are two equal operands, one of them should be removed.
+   for (long i = 0; i < child_count - 1; ++i)
+      for (long j = i + 1; j < child_count; ++j)
+         if (m_children[i] == m_children[j])
+         {
+            m_children.erase(m_children.cbegin() + j);
+            expression.RemoveChild(j);
+            --child_count;
+            --j;
+         }
 }
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
