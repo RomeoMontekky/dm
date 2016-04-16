@@ -213,8 +213,17 @@ bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
 void EvaluateExpression(TExpressionPtr& expression)
 {
    assert(expression.get() != nullptr);
+
    ExpressionEvaluator evaluator;
    expression->Accept(evaluator);
+
+   // The visitor evaluates only child expressions of each operation expression,
+   // so the root can be still not evaluated. Let's correct this if so.
+   auto& evaluated_expression = evaluator.GetEvaluatedExpression();
+   if (evaluated_expression.get() != nullptr)
+   {
+      expression = std::move(evaluated_expression);
+   }
 }
 
 } // namespace dm

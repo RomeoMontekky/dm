@@ -1,2 +1,2 @@
-f := true
-call eval(f)
+WithNegation(x) := !(!x)
+call eval(WithNegation)

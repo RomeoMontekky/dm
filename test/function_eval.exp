@@ -1,2 +1,2 @@
-f := 1
-f := 1
+WithNegation(x) := !(!(x))
+WithNegation(x) := x

@@ -40,6 +40,13 @@ void ExpressionNormalizer::Visit(OperationExpression& expression)
 {
    m_operation = expression.GetOperation();
 
+   if (OperationType::Negation == m_operation)
+   {
+      // Do not normalize negation.
+      // Removing of double negation is implied in operation evaluation.
+      return;
+   }
+
    long child_count = expression.GetChildCount();
    const bool is_associative = IsOperationAssociative(expression.GetOperation());
 
