@@ -18,3 +18,28 @@ call eval(disj2)
 disj3(x, y) := (x->y) | (x->y) | x
 call eval(disj3)
 
+call print(--- implication ---)
+
+call print(--- equality ---)
+eq1(x) := 1 = x
+call eval(eq1)
+eq2(x) := 0 = x
+call eval(eq2)
+eq3(x) := x = x
+call eval(eq3)
+eq4(x, y) := !x = !y
+call eval(eq4)
+eq5(x, y, z) := z = !(x->y) = (x->y) = 0
+call eval(eq5)
+
+call print(--- plus ---)
+plus1(x) := 1 + x
+call eval(plus1)
+plus2(x) := 0 + x
+call eval(plus2)
+plus3(x) := x + x
+call eval(plus3)
+plus4(x, y) := !x + !y
+call eval(plus4)
+plus5(x, y, z) := z + !(x->y) + (x->y) + 1
+call eval(plus5)

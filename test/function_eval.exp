@@ -15,3 +15,26 @@ disj2(x) := (x | 1)
 disj2(x) := 1
 disj3(x, y) := ((x -> y) | (x -> y) | x)
 disj3(x, y) := ((x -> y) | x)
+--- implication ---
+--- equality ---
+eq1(x) := (x = 1)
+eq1(x) := x
+eq2(x) := (x = 0)
+eq2(x) := (x = 0)
+eq3(x) := (x = x)
+eq3(x) := 1
+eq4(x, y) := (!(x) = !(y))
+eq4(x, y) := (x = y)
+eq5(x, y, z) := (z = !((x -> y)) = (x -> y) = 0)
+eq5(x, y, z) := z
+--- plus ---
+plus1(x) := (x + 1)
+plus1(x) := (x + 1)
+plus2(x) := (x + 0)
+plus2(x) := x
+plus3(x) := (x + x)
+plus3(x) := 0
+plus4(x, y) := (!(x) + !(y))
+plus4(x, y) := (x + y)
+plus5(x, y, z) := (z + !((x -> y)) + (x -> y) + 1)
+plus5(x, y, z) := z

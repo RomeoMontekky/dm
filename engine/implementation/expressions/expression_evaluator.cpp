@@ -16,16 +16,10 @@ class ExpressionEvaluator : public ExpressionVisitor
 {
 public:
    ExpressionEvaluator();
+   ExpressionEvaluator(ExpressionEvaluator&& rhs) = default;
+   ExpressionEvaluator& operator =(ExpressionEvaluator&& rhs) = default;
 
    void Reset();
-   
-   LiteralType GetLiteral() const;
-   long GetParamIndex() const;
-   OperationType GetOperation() const;
-   
-   long GetChildCount() const;
-   ExpressionEvaluator& GetChild(long index);
-
    TExpressionPtr& GetEvaluatedExpression();
 
    // ConstExpressionVisitor
@@ -43,7 +37,12 @@ private:
    void EvaluateEquality(OperationExpression& expression);
    void EvaluatePlus(OperationExpression& expression);
 
+private:
+   bool RemoveAllIfLiteralExists(OperationExpression& expression, LiteralType literal);
+   void RemoveLiteralIfExists(OperationExpression& expression, LiteralType literal);
    void RemoveDuplicates(OperationExpression& expression);
+   bool AbsorbDuplicates(OperationExpression& expression, LiteralType remaining_literal);
+   void AbsorbNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
 
 private:
    // Following three fields hold values for three possible variants
@@ -76,32 +75,6 @@ void ExpressionEvaluator::Reset()
    m_operation = OperationType::None;
    m_children.clear();
    m_evaluated_expression.reset();
-}
-
-LiteralType ExpressionEvaluator::GetLiteral() const
-{
-   return m_literal;
-}
-
-long ExpressionEvaluator::GetParamIndex() const
-{
-   return m_param_index;
-}
-
-OperationType ExpressionEvaluator::GetOperation() const
-{
-   return m_operation;
-}
-
-long ExpressionEvaluator::GetChildCount() const
-{
-   return m_children.size();
-}
-
-ExpressionEvaluator& ExpressionEvaluator::GetChild(long index)
-{
-   assert(index >= 0 && index < (long)m_children.size());
-   return m_children[index];
 }
 
 TExpressionPtr& ExpressionEvaluator::GetEvaluatedExpression()
@@ -189,7 +162,7 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
    assert(m_children.size() == 1);
 
    // Removing double negation
-   if (m_children[0].GetOperation() == OperationType::Negation)
+   if (m_children[0].m_operation == OperationType::Negation)
    {
       auto moved_children = MoveChildExpressions(expression.GetChild(0));
       assert(moved_children.size() == 1);
@@ -199,65 +172,71 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
 
 void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
 {
-   int child_count = m_children.size();
-   assert(child_count > 1);
-
-   // If there exist operand "0", then all expression is "0"
-   if (m_children[child_count - 1].GetLiteral() == LiteralType::False)
+   assert(m_children.size() > 1);
+   if (!RemoveAllIfLiteralExists(expression, LiteralType::False))
    {
-      m_evaluated_expression = std::move(expression.GetChild(child_count - 1));
-      return;
+      RemoveLiteralIfExists(expression, LiteralType::True);
+      RemoveDuplicates(expression);
    }
-
-   // If there exist operand "1", it should be removed.
-   if (m_children[child_count - 1].GetLiteral() == LiteralType::True)
-   {
-      m_children.resize(child_count - 1);
-      expression.RemoveChild(child_count - 1);
-      --child_count;
-   }
-
-   // If there are two equal operands, one of them should be removed.
-   RemoveDuplicates(expression);
 }
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
 {
-   int child_count = m_children.size();
-   assert(child_count > 1);
-
-   // If there exist operand "1", then all expression is "1"
-   if (m_children[child_count - 1].GetLiteral() == LiteralType::True)
+   assert(m_children.size() > 1);
+   if (!RemoveAllIfLiteralExists(expression, LiteralType::True))
    {
-      m_evaluated_expression = std::move(expression.GetChild(child_count - 1));
-      return;
+      RemoveLiteralIfExists(expression, LiteralType::False);
+      RemoveDuplicates(expression);
    }
-
-   // If there exist operand "0", it should be removed.
-   if (m_children[child_count - 1].GetLiteral() == LiteralType::False)
-   {
-      m_children.resize(child_count - 1);
-      expression.RemoveChild(child_count - 1);
-      --child_count;
-   }
-
-   // If there are two equal operands, one of them should be removed.
-   RemoveDuplicates(expression);
 }
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
 {
-
+   //assert(!"Not implemented");
 }
 
 void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
 {
-
+   assert(m_children.size() > 1);
+   RemoveLiteralIfExists(expression, LiteralType::True);
+   if (!AbsorbDuplicates(expression, LiteralType::True))
+   {
+      AbsorbNegations(expression, LiteralType::False);
+      AbsorbDuplicates(expression, LiteralType::True);
+   }
 }
 
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
 {
+   assert(m_children.size() > 1);
+   RemoveLiteralIfExists(expression, LiteralType::False);
+   if (!AbsorbDuplicates(expression, LiteralType::False))
+   {
+      AbsorbNegations(expression, LiteralType::True);
+      AbsorbDuplicates(expression, LiteralType::False);
+   }
+}
 
+bool ExpressionEvaluator::RemoveAllIfLiteralExists(
+   OperationExpression& expression, LiteralType literal)
+{
+   if (literal == m_children.back().m_literal)
+   {
+      m_evaluated_expression = std::move(
+         expression.GetChild(m_children.size() - 1));
+      return true;
+   }
+   return false;
+}
+
+void ExpressionEvaluator::RemoveLiteralIfExists(
+   OperationExpression& expression, LiteralType literal)
+{
+   if (literal == m_children.back().m_literal)
+   {
+      m_children.resize(m_children.size() - 1);
+      expression.RemoveChild(m_children.size());
+   }
 }
 
 void ExpressionEvaluator::RemoveDuplicates(OperationExpression& expression)
@@ -266,16 +245,92 @@ void ExpressionEvaluator::RemoveDuplicates(OperationExpression& expression)
 
    for (long i = 0; i < child_count - 1; ++i)
    {
-      for (long j = i + 1; j < child_count; ++j)
+      long j = i + 1;
+      while (j < child_count)
       {
          if (m_children[i] == m_children[j])
          {
             m_children.erase(m_children.cbegin() + j);
             expression.RemoveChild(j);
             --child_count;
+            continue;
+         }
+         ++j;
+      }
+   }
+}
+
+bool ExpressionEvaluator::AbsorbDuplicates(
+   OperationExpression& expression, LiteralType remaining_literal)
+{
+   int child_count = m_children.size();
+
+   long i = 0;
+   while (i < child_count - 1)
+   {
+      long j = i + 1;
+      while (j < child_count)
+      {
+         if (m_children[i] == m_children[j])
+         {
+            m_children.erase(m_children.cbegin() + j);
+            m_children.erase(m_children.cbegin() + i);
+            expression.RemoveChild(j);
+            expression.RemoveChild(i);
             --j;
+            child_count -= 2;
+            continue;
+         }
+         ++j;
+      }
+      ++i;
+   }
+
+   if (0 == child_count)
+   {
+      m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
+      return true;
+   }
+
+   return false;
+}
+
+void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, LiteralType eq_to_neg_literal)
+{
+   const long child_count = m_children.size();
+
+   long prev_negation = -1;
+   for (long index = 0; index < child_count; ++index)
+   {
+      if (OperationType::Negation == m_children[index].m_operation)
+      {
+         if (-1 == prev_negation)
+         {
+            prev_negation = index;
+         }
+         else
+         {
+            m_children[prev_negation] =
+               std::move(m_children[prev_negation].m_children[0]);
+            m_children[index] =
+               std::move(m_children[index].m_children[0]);
+            expression.GetChild(prev_negation) =
+               std::move(MoveChildExpressions(expression.GetChild(prev_negation))[0]);
+            expression.GetChild(index) =
+               std::move(MoveChildExpressions(expression.GetChild(index))[0]);
+            prev_negation = -1;
          }
       }
+   }
+
+   if (prev_negation != -1 && eq_to_neg_literal == m_children.back().m_literal)
+   {
+      m_children[prev_negation] =
+         std::move(m_children[prev_negation].m_children[0]);
+      expression.GetChild(prev_negation) =
+         std::move(MoveChildExpressions(expression.GetChild(prev_negation))[0]);
+      m_children.resize(m_children.size() - 1);
+      expression.RemoveChild(m_children.size());
    }
 }
 
