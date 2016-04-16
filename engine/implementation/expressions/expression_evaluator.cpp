@@ -50,7 +50,7 @@ private:
    long m_param_index;
    OperationType m_operation;
 
-   // Contains visitors for child expressions if current visited operation expression.
+   // Contains visitors for child expressions if current visited is operation expression.
    std::vector<ExpressionEvaluator> m_children;
 
    // Will be filled by evaluated new expression if the whole
@@ -164,6 +164,8 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
 void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
 {
    assert(m_children.size() == 1);
+
+   // Removing double negation
    if (m_children[0].GetOperation() == OperationType::Negation)
    {
       auto moved_children = MoveChildExpressions(expression.GetChild(0));
@@ -174,7 +176,34 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
 
 void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
 {
+   int child_count = m_children.size();
+   assert(child_count > 1);
 
+   // If there exist operand "0", then all expression is "0"
+   if (m_children[child_count - 1].GetLiteral() == LiteralType::False)
+   {
+      m_evaluated_expression = std::move(expression.GetChild(child_count - 1));
+      return;
+   }
+
+   // If there exist operand "1", it should be removed.
+   if (m_children[child_count - 1].GetLiteral() == LiteralType::True)
+   {
+      m_children.resize(child_count - 1);
+      expression.RemoveChild(child_count - 1);
+      --child_count;
+   }
+
+   // If there are two equal operands, one of them should be removed.
+   for (long i = 0; i < child_count - 1; ++i)
+      for (long j = i + 1; j < child_count; ++j)
+         if (m_children[i] == m_children[j])
+         {
+            m_children.erase(m_children.cbegin() + j);
+            expression.RemoveChild(j);
+            --child_count;
+            --j;
+         }
 }
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
