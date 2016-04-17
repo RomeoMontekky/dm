@@ -109,7 +109,7 @@ void OperationExpression::RemoveChildren(long indexFrom, long indexTo)
 {
    assert(indexFrom >=0 && indexFrom < (long)m_children.size());
    assert(indexTo >=0 && indexTo <= (long)m_children.size());
-   m_children.erase(m_children.cbegin + indexFrom, m_children.cbegin + indexTo);
+   m_children.erase(m_children.cbegin() + indexFrom, m_children.cbegin() + indexTo);
 }
 
 std::string OperationExpression::ToString() const

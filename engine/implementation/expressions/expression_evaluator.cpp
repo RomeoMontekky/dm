@@ -227,13 +227,33 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    {
       // According to rules 2 and 1, we can remove subexpression
       // (0 -> x) if it is at the beginning of the expression.
-      if (LiteralType::False = m_children[0].m_literal)
+      if (LiteralType::False == m_children[0].m_literal)
       {
-         m_children.erase(m_children.cbein(), m_children.cbein() + 2);
+         m_children.erase(m_children.cbegin(), m_children.cbegin() + 2);
          expression.RemoveChildren(0, 2);
          child_count -= 2;
       }
-      // TODO: Appliying of the rule 4 and others
+      // According to rule 4: (!x -> 0) => x, if it is at the beginning.
+      else if (OperationType::Negation == m_children[0].m_operation &&
+               LiteralType::False == m_children[1].m_literal)
+      {
+         m_children[0] = std::move(m_children[0].m_children[0]);
+         expression.GetChild(0) = std::move(MoveChildExpressions(expression.GetChild(0))[0]);
+         m_children.erase(m_children.cbegin() + 1);
+         expression.RemoveChild(1);
+      }
+      // TODO: Appliying other rules:
+      //    - 5
+      //    - 6 and 7
+      else
+      {
+         break;
+      }
+   }
+
+   if (0 == child_count)
+   {
+      m_evaluated_expression = std::make_unique<LiteralExpression>(LiteralType::True);
    }
 }
 
