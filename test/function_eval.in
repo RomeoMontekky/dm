@@ -19,6 +19,18 @@ disj3(x, y) := (x->y) | (x->y) | x
 call eval(disj3)
 
 call print(--- implication ---)
+imp1(x) := (x + 1) -> 1 -> x 
+call eval(imp1)
+imp2(x) := 0 -> (x + 1) -> x
+call eval(imp2)
+imp3(x) := (x + 1) -> (x + 1) -> x
+call eval(imp3)
+imp4(x) := !(x + 1) -> 0
+call eval(imp4)
+imp5(x) := !(x + 1) -> (x + 1)
+call eval(imp5)
+imp6(x) := (x + 1) -> !(x + 1)
+call eval(imp6)
 
 call print(--- equality ---)
 eq1(x) := 1 = x

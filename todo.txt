@@ -1,7 +1,9 @@
 - functions to operate with variables:
    - equal (must check equality of functions over the truth table)
 - function for evaluation of expressions 
-   - remains: finish implication and implement complex rules for other operations)
+   - implement case "x -> y -> (x -> y)"
+   - implement re-normalization when negation absorbed (TODO set in the code)
+   - implement "x & !x"-like rules for assosiative/commutative operations 
 - function to open brackets
 - function for DNF/SDNF/MinDNF building
 - function for CNF/SCNF/MinCNF building

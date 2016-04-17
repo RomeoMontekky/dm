@@ -19,6 +19,8 @@ public:
    ExpressionEvaluator(ExpressionEvaluator&& rhs) = default;
    ExpressionEvaluator& operator =(ExpressionEvaluator&& rhs) = default;
 
+   bool operator ==(const ExpressionEvaluator& rhs) const;
+
    void Reset();
    TExpressionPtr& GetEvaluatedExpression();
 
@@ -26,8 +28,6 @@ public:
    virtual void Visit(LiteralExpression& expression) override;
    virtual void Visit(ParamRefExpression& expression) override;
    virtual void Visit(OperationExpression& expression) override;
-
-   bool operator ==(const ExpressionEvaluator& rhs) const;
 
 private:
    void EvaluateNegation(OperationExpression& expression);
@@ -54,18 +54,25 @@ private:
    // Contains visitors for child expressions if current visited is operation expression.
    std::vector<ExpressionEvaluator> m_children;
 
-   // Will be filled by evaluated new expression if the whole
-   // operation expression was evaluated to some simple form.
+   // Will be filled by new evaluated expression if the whole
+   // operation expression was evaluated to a some simple form.
    TExpressionPtr m_evaluated_expression;
 };
 
-ExpressionEvaluator::ExpressionEvaluator() :
-    m_literal(LiteralType::None),
-    m_param_index(-1),
-    m_operation(OperationType::None),
-    m_children(),
-    m_evaluated_expression()
+ExpressionEvaluator::ExpressionEvaluator()
 {
+   Reset();
+}
+
+bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
+{
+   return
+   (
+      (m_literal == rhs.m_literal) &&
+      (m_param_index == rhs.m_param_index) &&
+      (m_operation == rhs.m_operation) &&
+      (m_children == rhs.m_children)
+   );
 }
 
 void ExpressionEvaluator::Reset()
@@ -97,7 +104,6 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
    m_operation = expression.GetOperation();
 
    const long child_count = expression.GetChildCount();
-
    m_children.resize(child_count);
    for (long index = 0; index < child_count; ++index)
    {
@@ -145,17 +151,6 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
       assert(m_evaluated_expression.get() == nullptr);
       m_evaluated_expression = std::move(expression.GetChild(0));
    }
-}
-
-bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
-{
-   return
-   (
-      (m_literal == rhs.m_literal) &&
-      (m_param_index == rhs.m_param_index) &&
-      (m_operation == rhs.m_operation) &&
-      (m_children == rhs.m_children)
-   );
 }
 
 void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
@@ -212,46 +207,56 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    // According to rules 3 and 1, if there exist "1" operand,
    // we can remove all operands to the left, including this "1" operand.
 
-   long child_count = m_children.size();
-   for (long index = child_count - 1; index >= 0; --index)
+   for (long index = m_children.size() - 1; index >= 0; --index)
    {
       if (LiteralType::True == m_children[index].m_literal)
       {
          m_children.erase(m_children.cbegin(), m_children.cbegin() + index + 1);
          expression.RemoveChildren(0, index + 1);
-         child_count -= index + 1;
       }
    }
 
-   while (child_count > 1)
+   while (m_children.size() > 1)
    {
-      // According to rules 2 and 1, we can remove subexpression
-      // (0 -> x) if it is at the beginning of the expression.
-      if (LiteralType::False == m_children[0].m_literal)
+      // According to rules 2 and 1, we can remove subexpression (0 -> x)
+      // if it is at the beginning of the expression.
+      // According to rules 5 and 1, we can remove subexpression (x -> x)
+      // if it is at the beginning of the expression
+      if (LiteralType::False == m_children[0].m_literal ||
+          m_children[0] == m_children[1])
       {
          m_children.erase(m_children.cbegin(), m_children.cbegin() + 2);
          expression.RemoveChildren(0, 2);
-         child_count -= 2;
       }
-      // According to rule 4: (!x -> 0) => x, if it is at the beginning.
+      // According to rule 4 perform transformation (!x -> 0) => x
       else if (OperationType::Negation == m_children[0].m_operation &&
                LiteralType::False == m_children[1].m_literal)
       {
          m_children[0] = std::move(m_children[0].m_children[0]);
-         expression.GetChild(0) = std::move(MoveChildExpressions(expression.GetChild(0))[0]);
+         auto moved_children = MoveChildExpressions(expression.GetChild(0));
+         assert(moved_children.size() == 1);
+         expression.GetChild(0) = std::move(moved_children[0]);
          m_children.erase(m_children.cbegin() + 1);
          expression.RemoveChild(1);
+         // TODO: Renormalization
       }
-      // TODO: Appliying other rules:
-      //    - 5
-      //    - 6 and 7
+      // According to rule 6, we can remove first operand in case of (!x ->  x)
+      // According to rule 7, we can remove first operand in case of ( x -> !x)
+      else if ((OperationType::Negation == m_children[0].m_operation &&
+                m_children[0].m_children[0] == m_children[1]) ||
+               (OperationType::Negation == m_children[1].m_operation &&
+                m_children[1].m_children[0] == m_children[0]))
+      {
+         m_children.erase(m_children.cbegin());
+         expression.RemoveChild(0);
+      }
       else
       {
          break;
       }
    }
 
-   if (0 == child_count)
+   if (m_children.empty())
    {
       m_evaluated_expression = std::make_unique<LiteralExpression>(LiteralType::True);
    }
@@ -376,11 +381,18 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
                std::move(m_children[prev_negation].m_children[0]);
             m_children[index] =
                std::move(m_children[index].m_children[0]);
-            expression.GetChild(prev_negation) =
-               std::move(MoveChildExpressions(expression.GetChild(prev_negation))[0]);
-            expression.GetChild(index) =
-               std::move(MoveChildExpressions(expression.GetChild(index))[0]);
+            {
+               auto moved_children = MoveChildExpressions(expression.GetChild(prev_negation));
+               assert(moved_children.size() == 1);
+               expression.GetChild(prev_negation) = std::move(moved_children[0]);
+            }
+            {
+               auto moved_children = MoveChildExpressions(expression.GetChild(index));
+               assert(moved_children.size() == 1);
+               expression.GetChild(index) = std::move(moved_children[0]);
+            }
             prev_negation = -1;
+            // TODO: Renormalization
          }
       }
    }
@@ -389,10 +401,11 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
    {
       m_children[prev_negation] =
          std::move(m_children[prev_negation].m_children[0]);
-      expression.GetChild(prev_negation) =
-         std::move(MoveChildExpressions(expression.GetChild(prev_negation))[0]);
-      m_children.resize(m_children.size() - 1);
+      auto moved_children = MoveChildExpressions(expression.GetChild(prev_negation));
+      assert(moved_children.size() == 1);
+      expression.GetChild(prev_negation) = std::move(moved_children[0]);      m_children.resize(m_children.size() - 1);
       expression.RemoveChild(m_children.size());
+      // TODO: Renormalization
    }
 }
 

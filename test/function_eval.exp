@@ -1,5 +1,5 @@
 --- negation ---
-neg(x, y) := !(!((x -> y)))
+neg(x, y) := !!(x -> y)
 neg(x, y) := (x -> y)
 --- conjunction ---
 conj1(x) := (x & 0)
@@ -16,6 +16,18 @@ disj2(x) := 1
 disj3(x, y) := ((x -> y) | (x -> y) | x)
 disj3(x, y) := ((x -> y) | x)
 --- implication ---
+imp1(x) := ((x + 1) -> 1 -> x)
+imp1(x) := x
+imp2(x) := (0 -> (x + 1) -> x)
+imp2(x) := x
+imp3(x) := ((x + 1) -> (x + 1) -> x)
+imp3(x) := x
+imp4(x) := (!(x + 1) -> 0)
+imp4(x) := (x + 1)
+imp5(x) := (!(x + 1) -> (x + 1))
+imp5(x) := (x + 1)
+imp6(x) := ((x + 1) -> !(x + 1))
+imp6(x) := !(x + 1)
 --- equality ---
 eq1(x) := (x = 1)
 eq1(x) := x
@@ -23,9 +35,9 @@ eq2(x) := (x = 0)
 eq2(x) := (x = 0)
 eq3(x) := (x = x)
 eq3(x) := 1
-eq4(x, y) := (!(x) = !(y))
+eq4(x, y) := (!x = !y)
 eq4(x, y) := (x = y)
-eq5(x, y, z) := (z = !((x -> y)) = (x -> y) = 0)
+eq5(x, y, z) := (z = !(x -> y) = (x -> y) = 0)
 eq5(x, y, z) := z
 --- plus ---
 plus1(x) := (x + 1)
@@ -34,7 +46,7 @@ plus2(x) := (x + 0)
 plus2(x) := x
 plus3(x) := (x + x)
 plus3(x) := 0
-plus4(x, y) := (!(x) + !(y))
+plus4(x, y) := (!x + !y)
 plus4(x, y) := (x + y)
-plus5(x, y, z) := (z + !((x -> y)) + (x -> y) + 1)
+plus5(x, y, z) := (z + !(x -> y) + (x -> y) + 1)
 plus5(x, y, z) := z

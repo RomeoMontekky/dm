@@ -118,9 +118,8 @@ std::string OperationExpression::ToString() const
       
    if (OperationType::Negation == m_operation)
    {
-      result += "!(";
+      result += "!";
       result += m_children.at(0)->ToString();
-      result += ")";
    }
    else
    {   
