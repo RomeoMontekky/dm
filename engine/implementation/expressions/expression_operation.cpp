@@ -76,12 +76,6 @@ TExpressionPtr& OperationExpression::GetChild(long index)
    return m_children[index];
 }
 
-void OperationExpression::RemoveChild(long index)
-{
-   assert(index >=0 && index < (long)m_children.size());
-   m_children.erase(m_children.cbegin() + index);
-}
-
 void OperationExpression::AddChild(TExpressionPtr&& expression)
 {
    m_children.push_back(std::move(expression));
@@ -103,6 +97,19 @@ void OperationExpression::InsertChildren(long index, TExpressionPtrVector&& expr
       ++index;
    }
    expressions.clear();
+}
+
+void OperationExpression::RemoveChild(long index)
+{
+   assert(index >=0 && index < (long)m_children.size());
+   m_children.erase(m_children.cbegin() + index);
+}
+
+void OperationExpression::RemoveChildren(long indexFrom, long indexTo)
+{
+   assert(indexFrom >=0 && indexFrom < (long)m_children.size());
+   assert(indexTo >=0 && indexTo <= (long)m_children.size());
+   m_children.erase(m_children.cbegin + indexFrom, m_children.cbegin + indexTo);
 }
 
 std::string OperationExpression::ToString() const

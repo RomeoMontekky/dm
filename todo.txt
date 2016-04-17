@@ -1,10 +1,7 @@
-- functions to operate with variables (remove, copy and so on).
-   - copy (done)
-   - remove (done)
-   - remove_all (done)
-   - display (done)
-   - display_all (done)
-- function for evaluation of expressions (dummy already created)
+- functions to operate with variables:
+   - equal (must check equality of functions over the truth table)
+- function for evaluation of expressions 
+   - remains: finish implication and implement complex rules for other operations)
 - function to open brackets
 - function for DNF/SDNF/MinDNF building
 - function for CNF/SCNF/MinCNF building

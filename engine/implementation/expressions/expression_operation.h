@@ -17,10 +17,11 @@ public:
    const TExpressionPtr& GetChild(long index) const;
    TExpressionPtr& GetChild(long index);
 
-   void RemoveChild(long index);
    void AddChild(TExpressionPtr&& expression);
    void InsertChild(long index, TExpressionPtr&& expression);
    void InsertChildren(long index, TExpressionPtrVector&& expressions);
+   void RemoveChild(long index);
+   void RemoveChildren(long indexFrom, long indexTo);
 
    // IStringable
    virtual std::string ToString() const override;

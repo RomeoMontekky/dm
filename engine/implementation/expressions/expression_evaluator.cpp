@@ -95,9 +95,10 @@ void ExpressionEvaluator::Visit(ParamRefExpression& expression)
 void ExpressionEvaluator::Visit(OperationExpression& expression)
 {
    m_operation = expression.GetOperation();
-   m_children.resize(expression.GetChildCount());
 
    const long child_count = expression.GetChildCount();
+
+   m_children.resize(child_count);
    for (long index = 0; index < child_count; ++index)
    {
       auto& child_expression = expression.GetChild(index);
@@ -192,7 +193,48 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
 {
-   //assert(!"Not implemented");
+   assert(m_children.size() > 1);
+
+   // As implication is not commutative/associative, we are able
+   // to evaluate operation expression only from left to right.
+   // This is why we may not reuse utility methods that are available
+   // in other EvaluateXXX methods.
+
+   // We have following rules of evaluation:
+   //   1. ( 1 ->  x) => x
+   //   2. ( 0 ->  x) => 1
+   //   3. ( x ->  1) => 1
+   //   4. (!x ->  0) => x
+   //   5. ( x ->  x) => 1
+   //   6. (!x ->  x) => x
+   //   7. ( x -> !x) => !x
+
+   // According to rules 3 and 1, if there exist "1" operand,
+   // we can remove all operands to the left, including this "1" operand.
+
+   long child_count = m_children.size();
+   for (long index = child_count - 1; index >= 0; --index)
+   {
+      if (LiteralType::True == m_children[index].m_literal)
+      {
+         m_children.erase(m_children.cbegin(), m_children.cbegin() + index + 1);
+         expression.RemoveChildren(0, index + 1);
+         child_count -= index + 1;
+      }
+   }
+
+   while (child_count > 1)
+   {
+      // According to rules 2 and 1, we can remove subexpression
+      // (0 -> x) if it is at the beginning of the expression.
+      if (LiteralType::False = m_children[0].m_literal)
+      {
+         m_children.erase(m_children.cbein(), m_children.cbein() + 2);
+         expression.RemoveChildren(0, 2);
+         child_count -= 2;
+      }
+      // TODO: Appliying of the rule 4 and others
+   }
 }
 
 void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
