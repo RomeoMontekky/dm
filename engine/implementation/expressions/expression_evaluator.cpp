@@ -160,9 +160,7 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
    // Removing double negation
    if (m_children[0].m_operation == OperationType::Negation)
    {
-      auto moved_children = MoveChildExpressions(expression.GetChild(0));
-      assert(moved_children.size() == 1);
-      m_evaluated_expression = std::move(moved_children[0]);
+      MoveChildExpression(m_evaluated_expression, expression.GetChild(0));
    }
 }
 
@@ -233,9 +231,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
                LiteralType::False == m_children[1].m_literal)
       {
          m_children[0] = std::move(m_children[0].m_children[0]);
-         auto moved_children = MoveChildExpressions(expression.GetChild(0));
-         assert(moved_children.size() == 1);
-         expression.GetChild(0) = std::move(moved_children[0]);
+         MoveChildExpressionInplace(expression.GetChild(0));
          m_children.erase(m_children.cbegin() + 1);
          expression.RemoveChild(1);
          // TODO: Renormalization
@@ -381,16 +377,8 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
                std::move(m_children[prev_negation].m_children[0]);
             m_children[index] =
                std::move(m_children[index].m_children[0]);
-            {
-               auto moved_children = MoveChildExpressions(expression.GetChild(prev_negation));
-               assert(moved_children.size() == 1);
-               expression.GetChild(prev_negation) = std::move(moved_children[0]);
-            }
-            {
-               auto moved_children = MoveChildExpressions(expression.GetChild(index));
-               assert(moved_children.size() == 1);
-               expression.GetChild(index) = std::move(moved_children[0]);
-            }
+            MoveChildExpressionInplace(expression.GetChild(prev_negation));
+            MoveChildExpressionInplace(expression.GetChild(index));
             prev_negation = -1;
             // TODO: Renormalization
          }
@@ -401,9 +389,8 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
    {
       m_children[prev_negation] =
          std::move(m_children[prev_negation].m_children[0]);
-      auto moved_children = MoveChildExpressions(expression.GetChild(prev_negation));
-      assert(moved_children.size() == 1);
-      expression.GetChild(prev_negation) = std::move(moved_children[0]);      m_children.resize(m_children.size() - 1);
+      MoveChildExpressionInplace(expression.GetChild(prev_negation));
+      m_children.resize(m_children.size() - 1);
       expression.RemoveChild(m_children.size());
       // TODO: Renormalization
    }

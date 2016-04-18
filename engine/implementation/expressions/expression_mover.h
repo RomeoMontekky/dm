@@ -5,6 +5,8 @@
 namespace dm
 {
 
-TExpressionPtrVector MoveChildExpressions(TExpressionPtr& expression);
+void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expression);
+void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expression);
+void MoveChildExpressionInplace(TExpressionPtr& expression);
 
 } // namespace dm

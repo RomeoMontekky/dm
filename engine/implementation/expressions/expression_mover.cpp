@@ -46,12 +46,25 @@ void ChildExpressionsMover::Visit(OperationExpression& expression)
 
 } // namespace
 
-TExpressionPtrVector MoveChildExpressions(TExpressionPtr& expression)
+void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expression)
 {
    assert(expression.get() != nullptr);
    ChildExpressionsMover mover;
    expression->Accept(mover);
-   return std::move(mover.GetExpressions());
+   target = std::move(mover.GetExpressions());
+}
+
+void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expression)
+{
+   TExpressionPtrVector moved_expressions;
+   MoveChildExpressions(moved_expressions, expression);
+   assert(moved_expressions.size() == 1);
+   target = std::move(moved_expressions[0]);
+}
+
+void MoveChildExpressionInplace(TExpressionPtr& expression)
+{
+   MoveChildExpression(expression, expression);
 }
 
 } // namespace dm

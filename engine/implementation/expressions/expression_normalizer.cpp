@@ -62,9 +62,8 @@ void ExpressionNormalizer::Visit(OperationExpression& expression)
       if ((is_associative || 0 == index) && 
           (child_normalizer.GetOperation() == expression.GetOperation()))
       {
-         auto moved_children = MoveChildExpressions(expression.GetChild(index));
-         assert(!moved_children.empty());
-
+         TExpressionPtrVector moved_children;
+         MoveChildExpressions(moved_children, expression.GetChild(index));
          const long moved_children_count = moved_children.size();
          expression.RemoveChild(index);
          expression.InsertChildren(index, std::move(moved_children));
