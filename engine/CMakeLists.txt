@@ -6,6 +6,7 @@ set(BINARY_NAME "engine")
 
 set(CPP_FILES 
    "implementation/common/bracket_utils.cpp"
+   "implementation/common/combinations.cpp"
    "implementation/common/exception.cpp"
    "implementation/common/function_utils.cpp"
    "implementation/common/literals.cpp"
@@ -49,6 +50,7 @@ set(CPP_FILES
 
 set(HEADER_FILES
    "implementation/common/bracket_utils.h"
+   "implementation/common/combinations.h"
    "implementation/common/exception.h"
    "implementation/common/function_utils.h"
    "implementation/common/literals.h"

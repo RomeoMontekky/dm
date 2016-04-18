@@ -1,12 +1,11 @@
 #include "../function_base.h"
 #include "../function_registrator.h"
-#include "../../common/local_array.h"
+#include "../../common/combinations.h"
 #include "../../expressions/expression_calculator.h"
 
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include <algorithm>
 #include <cassert>
 
 namespace dm
@@ -98,25 +97,13 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    output->AddLine(header);
    output->AddLine(horizontal_line);
 
-   // One element on each variable's parameter + one element
-   // to hold carry-flag from highest bit-element.
-   const long all_count = variable->GetParameterCount() + 1;
-   LOCAL_ARRAY(LiteralType, all_values, all_count);
-   std::fill(all_values, all_values + all_count, LiteralType::False);
-
-   // Element with carry-flag is skipped
-   const LiteralType* const param_values = all_values + 1;
-
-   // Checking of carry-flag
-   while (LiteralType::False == *all_values)
+   CombinationGenerator generator(variable->GetParameterCount());
+   const LiteralType* param_values = generator.GenerateFirst();
+   while (param_values != nullptr)
    {
       const LiteralType func_value = CalculateExpression(variable->GetExpression().get(), param_values);
-
       output->AddLine(ConstructRow(variable, param_values, func_value));
-
-      long i = all_count - 1;
-      for (; i > 0 && LiteralType::True == all_values[i]; all_values[i--] = LiteralType::False);
-      all_values[i] = LiteralType::True;
+      param_values = generator.GenerateNext();
    }
 
    output->AddLine(horizontal_line);
