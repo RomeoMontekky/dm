@@ -54,17 +54,17 @@ void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expressi
    target = std::move(mover.GetExpressions());
 }
 
-void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expression)
+void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expression, long child_index)
 {
    TExpressionPtrVector moved_expressions;
    MoveChildExpressions(moved_expressions, expression);
-   assert(moved_expressions.size() == 1);
+   assert(child_index >= 0 && child_index < moved_expressions.size());
    target = std::move(moved_expressions[0]);
 }
 
-void MoveChildExpressionInplace(TExpressionPtr& expression)
+void MoveChildExpressionInplace(TExpressionPtr& expression, long child_index)
 {
-   MoveChildExpression(expression, expression);
+   MoveChildExpression(expression, expression, child_index);
 }
 
 } // namespace dm
