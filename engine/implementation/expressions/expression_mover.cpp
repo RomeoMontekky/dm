@@ -59,7 +59,7 @@ void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expression, lon
    TExpressionPtrVector moved_expressions;
    MoveChildExpressions(moved_expressions, expression);
    assert(child_index >= 0 && child_index < moved_expressions.size());
-   target = std::move(moved_expressions[0]);
+   target = std::move(moved_expressions[child_index]);
 }
 
 void MoveChildExpressionInplace(TExpressionPtr& expression, long child_index)
