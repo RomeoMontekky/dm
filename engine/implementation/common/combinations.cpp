@@ -14,10 +14,13 @@ const LiteralType* CombinationGenerator::GenerateFirst()
 {
    // Array has got additional element to hold carry-flag.
    // It will be stored at element with index 0.
-
    const long count = m_dimension + 1;
 
-   m_combination = std::make_unique<LiteralType[]>(count);
+   if (m_combination.get() == nullptr)
+   {
+      m_combination = std::make_unique<LiteralType[]>(count);
+   }
+
    std::fill(m_combination.get(), m_combination.get() + count, LiteralType::False);
 
    return m_combination.get() + 1;
