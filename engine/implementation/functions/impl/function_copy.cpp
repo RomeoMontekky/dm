@@ -1,7 +1,6 @@
 #include "../function_base.h"
 #include "../function_registrator.h"
 
-#include <sstream>
 #include <cassert>
 
 namespace dm

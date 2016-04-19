@@ -2,7 +2,6 @@
 #include "../function_registrator.h"
 #include "../../expressions/expression_evaluator.h"
 
-#include <sstream>
 #include <cassert>
 
 namespace dm

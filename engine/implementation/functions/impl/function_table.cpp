@@ -43,7 +43,7 @@ std::string ConstructHeader(const Variable* variable)
    return header;
 }
 
-std::string ConstructRow(const Variable* variable, const LiteralType param_values[], LiteralType func_value)
+std::string ConstructRow(const Variable* variable, const LiteralType param_values[], LiteralType result)
 {
    assert(variable != nullptr);
    const auto declaration = variable->VariableDeclaration::ToString();
@@ -63,7 +63,7 @@ std::string ConstructRow(const Variable* variable, const LiteralType param_value
    row << g_char_vert_line;
    row << g_char_vert_line;
    row << g_char_filler;
-   row << std::setw(declaration.size()) << LiteralTypeToString(func_value);
+   row << std::setw(declaration.size()) << LiteralTypeToString(result);
    row << g_char_filler;
    row << g_char_vert_line;
 
@@ -101,8 +101,8 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    const LiteralType* param_values = generator.GenerateFirst();
    while (param_values != nullptr)
    {
-      const LiteralType func_value = CalculateExpression(variable->GetExpression().get(), param_values);
-      output->AddLine(ConstructRow(variable, param_values, func_value));
+      const LiteralType result = CalculateExpression(variable->GetExpression().get(), param_values);
+      output->AddLine(ConstructRow(variable, param_values, result));
       param_values = generator.GenerateNext();
    }
 

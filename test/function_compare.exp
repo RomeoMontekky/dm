@@ -1,0 +1,9 @@
+f1(x, y) := ((x | y) -> (x + 1))
+g1(x) := !x
+Variables 'f1' and 'g1' are not equal. Different number of parameters.
+f2(x, y, z) := (y | z)
+g2(x, y, z) := (x | y | z)
+Variables 'f2' and 'g2' are not equal. Different results on parameter combination (1, 0, 0).
+f3(x, y) := (x -> y -> x -> y)
+g3(x, y) := (x -> y)
+Variables 'f3' and 'g3' are equal.

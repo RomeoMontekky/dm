@@ -1,6 +1,4 @@
-- functions to operate with variables:
-   - equal (must check equality of functions over the truth table)
-- function for evaluation of expressions 
+- function for evaluation of expressions
    - implement case "x -> y -> (x -> y)"
    - implement re-normalization when negation absorbed (TODO set in the code)
    - implement "x & !x"-like rules for assosiative/commutative operations 

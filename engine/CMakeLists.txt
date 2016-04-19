@@ -30,6 +30,7 @@ set(CPP_FILES
    "implementation/functions/function_manager.cpp"
    "implementation/functions/function_output.cpp"
 
+   "implementation/functions/impl/function_compare.cpp"
    "implementation/functions/impl/function_copy.cpp"
    "implementation/functions/impl/function_display.cpp"
    "implementation/functions/impl/function_display_all.cpp"

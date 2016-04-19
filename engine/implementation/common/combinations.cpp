@@ -25,26 +25,20 @@ const LiteralType* CombinationGenerator::GenerateFirst()
 
 const LiteralType* CombinationGenerator::GenerateNext()
 {
-   if (m_combination.get() != nullptr)
+   // Generate next combination using algorithm of binary increment,
+   // implying combination array elements as bits in some binary number representation.
+
+   long i = m_dimension;
+   for (; i > 0 && LiteralType::True == m_combination[i]; m_combination[i--] = LiteralType::False);
+   m_combination[i] = LiteralType::True;
+   
+   // Check of carry-flag
+   if (LiteralType::True == m_combination[0])
    {
-      // Generate next combination using algorithm of binary increment,
-      // implying combination array elements as bits in some binary number representation.
-
-      long i = m_dimension;
-      for (; i > 0 && LiteralType::True == m_combination[i]; m_combination[i--] = LiteralType::False);
-      m_combination[i] = LiteralType::True;
-
-      // Check of carry-flag
-      if (LiteralType::True == m_combination[0])
-      {
-         m_combination.reset();
-         return nullptr;
-      }
-
-      return m_combination.get() + 1;
+      return nullptr;
    }
 
-   return nullptr;
+   return m_combination.get() + 1;
 }
 
 } // namespace dm

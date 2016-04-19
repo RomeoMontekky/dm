@@ -8,6 +8,7 @@ set FAILED_TESTS=0
 call :run_one_test expression_base
 call :run_one_test expression_normalization
 call :run_one_test expression_simplification
+call :run_one_test function_compare
 call :run_one_test function_copy
 call :run_one_test function_display
 call :run_one_test function_display_all

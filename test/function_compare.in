@@ -1,0 +1,11 @@
+f1(x, y) := x | y -> (x + 1)
+g1(x) := !x
+call compare(f1, g1)
+
+f2(x, y, z) := y | z
+g2(x, y, z) := x | y | z
+call compare(f2, g2)
+
+f3(x, y) := x -> y -> x -> y
+g3(x, y) := x -> y
+call compare(f3, g3)
