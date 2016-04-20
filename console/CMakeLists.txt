@@ -11,7 +11,7 @@ set(CPP_FILES
 include_directories("../engine")
 link_directories("../engine")
 
-add_executable(console ${CPP_FILES})
+add_executable(${BINARY_NAME} ${CPP_FILES})
 
 target_link_libraries(${BINARY_NAME} "engine")
 
