@@ -12,7 +12,7 @@ namespace
 
 const char g_token_call[] = "call";
 
-};
+} // namespace
 
 bool IsCallToken(const StringPtrLen& str)
 {
