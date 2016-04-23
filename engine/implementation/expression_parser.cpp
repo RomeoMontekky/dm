@@ -4,9 +4,9 @@
 #include "common/string_utils.h"
 #include "common/qualifier_utils.h"
 
-#include "expressions/expressions.h"
 #include "expressions/expression_simplifier.h"
 #include "expressions/expression_normalizer.h"
+#include "expressions/expressions.h"
 
 #include <string>
 #include <cstring>

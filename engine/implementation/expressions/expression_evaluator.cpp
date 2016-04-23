@@ -1,7 +1,10 @@
 #include "expression_evaluator.h"
 #include "expression_visitor.h"
-#include "expressions.h"
+
+#include "expression_simplifier.h"
+#include "expression_normalizer.h"
 #include "expression_mover.h"
+#include "expressions.h"
 
 #include <map>
 #include <cassert>
@@ -30,6 +33,8 @@ public:
    virtual void Visit(OperationExpression& expression) override;
 
 private:
+   void EvaluateOperation(OperationExpression& expression);
+
    void EvaluateNegation(OperationExpression& expression);
    void EvaluateConjunction(OperationExpression& expression);
    void EvaluateDisjunction(OperationExpression& expression);
@@ -38,6 +43,11 @@ private:
    void EvaluatePlus(OperationExpression& expression);
 
 private:
+   // This set of methods is used to re-use common rules of
+   // evaluation for associative/commutative operations.
+   // If a method returns true it means it set m_evaluated_expression
+   // member, so the calling side must return control up as soon as possible.
+
    bool RemoveAllIfLiteralExists(OperationExpression& expression, LiteralType literal);
    void RemoveLiteralIfExists(OperationExpression& expression, LiteralType literal);
    void RemoveDuplicates(OperationExpression& expression);
@@ -118,6 +128,11 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
       }
    }
 
+   EvaluateOperation(expression);
+}
+
+void ExpressionEvaluator::EvaluateOperation(OperationExpression& expression)
+{
    using base_map = std::map
    <
       OperationType,
