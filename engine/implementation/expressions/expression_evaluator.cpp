@@ -217,13 +217,14 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    // in other EvaluateXXX methods.
 
    // We have following rules of evaluation:
-   //   1. ( 1 ->  x) => x
-   //   2. ( 0 ->  x) => 1
-   //   3. ( x ->  1) => 1
-   //   4. (!x ->  0) => x
-   //   5. ( x ->  x) => 1
-   //   6. (!x ->  x) => x
-   //   7. ( x -> !x) => !x
+   //   1. ( 1 ->  x)     =>  x
+   //   2. ( 0 ->  x)     =>  1
+   //   3. ( x ->  1)     =>  1
+   //   4. (!x ->  0)     =>  x
+   //   5. ( x ->  x)     =>  1
+   //   6. (!x ->  x)     =>  x
+   //   7. ( x -> !x)     => !x
+   //   8. ( x -> 0 -> 0) =>  x
 
    // According to rules 3 and 1, if there exist "1" operand,
    // we can remove all operands to the left, including this "1" operand.
@@ -272,6 +273,17 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
       else
       {
          break;
+      }
+   }
+
+   // According to rule 8, we can remove two zero literals if they stay one after one.
+   for (long index = m_children.size() - 2; index >= 0; --index)
+   {
+      if (LiteralType::False == m_children[index].m_literal &&
+          LiteralType::False == m_children[index + 1].m_literal)
+      {
+         m_children.erase(m_children.cbegin() + index, m_children.cbegin() + index + 2);
+         expression.RemoveChildren(index, index + 2);
       }
    }
 

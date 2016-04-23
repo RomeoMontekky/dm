@@ -31,6 +31,8 @@ imp5(x) := !(x + 1) -> (x + 1)
 call eval(imp5)
 imp6(x) := (x + 1) -> !(x + 1)
 call eval(imp6)
+imp7(x) := (x + 1) -> 0 -> 0 -> x
+call eval(imp7)
 
 call print(--- equality ---)
 eq1(x) := 1 = x
