@@ -258,7 +258,12 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          MoveChildExpressionInplace(expression.GetChild(0));
          m_children.erase(m_children.cbegin() + 1);
          expression.RemoveChild(1);
-         // TODO: Renormalization
+
+         // If first child is also implication, we normalize it
+         if (OperationType::Implication == m_children[0].m_operation)
+         {
+            // TODO: Implement
+         }
       }
       // According to rule 6, we can remove first operand in case of (!x ->  x)
       // According to rule 7, we can remove first operand in case of ( x -> !x)
@@ -424,10 +429,8 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
          }
          else
          {
-            m_children[prev_negation] =
-               std::move(m_children[prev_negation].m_children[0]);
-            m_children[index] =
-               std::move(m_children[index].m_children[0]);
+            m_children[prev_negation] = std::move(m_children[prev_negation].m_children[0]);
+            m_children[index] = std::move(m_children[index].m_children[0]);
             MoveChildExpressionInplace(expression.GetChild(prev_negation));
             MoveChildExpressionInplace(expression.GetChild(index));
             prev_negation = -1;
@@ -438,8 +441,7 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
 
    if (prev_negation != -1 && eq_to_neg_literal == m_children.back().m_literal)
    {
-      m_children[prev_negation] =
-         std::move(m_children[prev_negation].m_children[0]);
+      m_children[prev_negation] = std::move(m_children[prev_negation].m_children[0]);
       MoveChildExpressionInplace(expression.GetChild(prev_negation));
       m_children.resize(m_children.size() - 1);
       expression.RemoveChild(m_children.size());
