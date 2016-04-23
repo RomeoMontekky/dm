@@ -172,7 +172,7 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
 {
    assert(m_children.size() == 1);
 
-   // Removing double negation
+   // !!x => x
    if (m_children[0].m_operation == OperationType::Negation)
    {
       MoveChildExpression(m_evaluated_expression, expression.GetChild(0));
@@ -182,9 +182,13 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
 void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
 {
    assert(m_children.size() > 1);
+
+   // (x & 0) => 0
    if (!RemoveAllIfLiteralExists(expression, LiteralType::False))
    {
+      // (x & 1) => x
       RemoveLiteralIfExists(expression, LiteralType::True);
+      // (x & x) => x
       RemoveDuplicates(expression);
    }
 }
@@ -192,9 +196,13 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
 {
    assert(m_children.size() > 1);
+
+   // (x | 1) => 1
    if (!RemoveAllIfLiteralExists(expression, LiteralType::True))
    {
+      // (x | 0) => x
       RemoveLiteralIfExists(expression, LiteralType::False);
+      // (x | x) => x
       RemoveDuplicates(expression);
    }
 }
@@ -276,10 +284,18 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
 void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
 {
    assert(m_children.size() > 1);
+
+   // (x = 1) => x
    RemoveLiteralIfExists(expression, LiteralType::True);
+
+   // (x = x) => 1
    if (!AbsorbDuplicates(expression, LiteralType::True))
    {
+      // (!x = !y) => (x = y)
+      // (!x = 0 ) => x
       AbsorbNegations(expression, LiteralType::False);
+
+      // And again: (x = x) => 1
       AbsorbDuplicates(expression, LiteralType::True);
    }
 }
@@ -287,10 +303,18 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
 {
    assert(m_children.size() > 1);
+
+   // (x + 0) => x
    RemoveLiteralIfExists(expression, LiteralType::False);
+
+   // (x = x) => 0
    if (!AbsorbDuplicates(expression, LiteralType::False))
    {
+      // (!x + !y) => (x + y)
+      // (!x + 1 ) => x
       AbsorbNegations(expression, LiteralType::True);
+
+      // And again: (x = x) => 0
       AbsorbDuplicates(expression, LiteralType::False);
    }
 }
