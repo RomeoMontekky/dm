@@ -15,3 +15,7 @@ g3(x) := ) x + 1(
 g4(x) := (x + 1)
 g5(x) := ((((((x))) + (((1))))))
 g6(x) := ((((((x))) + (((1))) & (x -> 1))))
+
+var(x) := x
+var(x) := x + 1    # error that such variable is already declared
+call display(var)  # check that variable was not overwritten

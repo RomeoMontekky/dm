@@ -11,3 +11,6 @@ Error: Closing bracket can't be before an opening one.
 g4(x) := (x + 1)
 g5(x) := (x + 1)
 g6(x) := (x + ((x -> 1) & 1))
+var(x) := x
+Error: Variable 'var' is already declared.
+var(x) := x

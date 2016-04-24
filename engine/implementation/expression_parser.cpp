@@ -65,6 +65,11 @@ TVariablePtr ExpressionParser::ParseVariableDeclaration(StringPtrLen str) const
    str.Trim();
    CheckQualifier(str, "Variable name");
 
+   if (m_variable_mgr.FindVariable(str) != nullptr)
+   {
+      Error("Variable '", str, "' is already declared.");
+   }
+
    TVariablePtr variable = std::make_unique<Variable>(str);
 
    StringPtrLen param;
