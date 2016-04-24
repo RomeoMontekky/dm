@@ -233,7 +233,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    {
       if (LiteralType::True == m_children[index].m_literal)
       {
-         m_children.erase(m_children.cbegin(), m_children.cbegin() + index + 1);
+         m_children.erase(m_children.begin(), m_children.begin() + index + 1);
          expression.RemoveChildren(0, index + 1);
       }
    }
@@ -247,7 +247,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
       if (LiteralType::False == m_children[0].m_literal ||
           m_children[0] == m_children[1])
       {
-         m_children.erase(m_children.cbegin(), m_children.cbegin() + 2);
+         m_children.erase(m_children.begin(), m_children.begin() + 2);
          expression.RemoveChildren(0, 2);
       }
       // According to rule 4 perform transformation (!x -> 0) => x
@@ -256,13 +256,25 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
       {
          m_children[0] = std::move(m_children[0].m_children[0]);
          MoveChildExpressionInplace(expression.GetChild(0));
-         m_children.erase(m_children.cbegin() + 1);
+         m_children.erase(m_children.begin() + 1);
          expression.RemoveChild(1);
 
-         // If first child is also implication, we normalize it
+         // If first child is also implication, we can normalize it.
          if (OperationType::Implication == m_children[0].m_operation)
          {
-            // TODO: Implement
+            TExpressionPtrVector moved_children;
+            MoveChildExpressions(moved_children, expression.GetChild(0));
+            expression.RemoveChild(0);
+            expression.InsertChildren(0, std::move(moved_children));
+
+            auto moved_children_evaluators = std::move(m_children[0].m_children);
+            m_children.erase(m_children.begin());
+            m_children.reserve(m_children.size() + moved_children_evaluators.size());
+            for (long index = moved_children_evaluators.size() - 1; index >= 0; --index)
+            {
+               m_children.emplace(m_children.begin(),
+                  std::move(moved_children_evaluators[index]));
+            }
          }
       }
       // According to rule 6, we can remove first operand in case of (!x ->  x)
@@ -272,7 +284,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
                (OperationType::Negation == m_children[1].m_operation &&
                 m_children[1].m_children[0] == m_children[0]))
       {
-         m_children.erase(m_children.cbegin());
+         m_children.erase(m_children.begin());
          expression.RemoveChild(0);
       }
       else
@@ -287,7 +299,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
       if (LiteralType::False == m_children[index].m_literal &&
           LiteralType::False == m_children[index + 1].m_literal)
       {
-         m_children.erase(m_children.cbegin() + index, m_children.cbegin() + index + 2);
+         m_children.erase(m_children.begin() + index, m_children.begin() + index + 2);
          expression.RemoveChildren(index, index + 2);
       }
    }
@@ -369,7 +381,7 @@ void ExpressionEvaluator::RemoveDuplicates(OperationExpression& expression)
       {
          if (m_children[i] == m_children[j])
          {
-            m_children.erase(m_children.cbegin() + j);
+            m_children.erase(m_children.begin() + j);
             expression.RemoveChild(j);
             --child_count;
             continue;
@@ -392,8 +404,8 @@ bool ExpressionEvaluator::AbsorbDuplicates(
       {
          if (m_children[i] == m_children[j])
          {
-            m_children.erase(m_children.cbegin() + j);
-            m_children.erase(m_children.cbegin() + i);
+            m_children.erase(m_children.begin() + j);
+            m_children.erase(m_children.begin() + i);
             expression.RemoveChild(j);
             expression.RemoveChild(i);
             --j;
