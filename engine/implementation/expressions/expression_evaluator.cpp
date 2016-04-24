@@ -23,6 +23,7 @@ public:
    ExpressionEvaluator& operator =(ExpressionEvaluator&& rhs) = default;
 
    bool operator ==(const ExpressionEvaluator& rhs) const;
+   bool operator !=(const ExpressionEvaluator& rhs) const;
 
    void Reset();
    TExpressionPtr& GetEvaluatedExpression();
@@ -86,6 +87,11 @@ bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
       (m_operation == rhs.m_operation) &&
       (m_children == rhs.m_children)
    );
+}
+
+bool ExpressionEvaluator::operator !=(const ExpressionEvaluator& rhs) const
+{
+   return !(*this == rhs);
 }
 
 void ExpressionEvaluator::Reset()
@@ -175,7 +181,9 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
 {
    assert(m_children.size() == 1);
 
-   // !!x => x
+   // We have the only rule:
+   //    1. x => x
+
    if (m_children[0].m_operation == OperationType::Negation)
    {
       MoveChildExpression(m_evaluated_expression, expression.GetChild(0));
@@ -186,12 +194,19 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
 {
    assert(m_children.size() > 1);
 
-   // (x & 0) => 0
+   // We have following rules:
+   //    1. (x  & 0) = 0
+   //    2. (x  & 1) = x
+   //    3. (x  & x) = x
+   //    4. (!x & x) = 0 - TODO
+
+   // According to rule 1, evaluate expression to literal 0 if it exist.
    if (!RemoveAllIfLiteralExists(expression, LiteralType::False))
    {
-      // (x & 1) => x
+      // According to rule 2, remove literal 1 if exist.
       RemoveLiteralIfExists(expression, LiteralType::True);
-      // (x & x) => x
+
+      // According to rule 3, remove all duplicates.
       RemoveDuplicates(expression);
    }
 }
@@ -200,12 +215,19 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
 {
    assert(m_children.size() > 1);
 
-   // (x | 1) => 1
+   // We have following rules:
+   //    1. (x  | 1) = 1
+   //    2. (x  | 0) = x
+   //    3. (x  | x) = x
+   //    4. (!x & x) = 1 - TODO
+
+   // According to rule 1, evaluate expression to literal 1 if it exist.
    if (!RemoveAllIfLiteralExists(expression, LiteralType::True))
    {
-      // (x | 0) => x
+      // According to rule 2, remove literal 0 if exist.
       RemoveLiteralIfExists(expression, LiteralType::False);
-      // (x | x) => x
+
+     // According to rule 3, remove all duplicates.
       RemoveDuplicates(expression);
    }
 }
@@ -219,15 +241,16 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    // This is why we may not reuse utility methods that are available
    // in other EvaluateXXX methods.
 
-   // We have following rules of evaluation:
-   //   1. ( 1 ->  x)     =>  x
-   //   2. ( 0 ->  x)     =>  1
-   //   3. ( x ->  1)     =>  1
-   //   4. (!x ->  0)     =>  x
-   //   5. ( x ->  x)     =>  1
-   //   6. (!x ->  x)     =>  x
-   //   7. ( x -> !x)     => !x
-   //   8. ( x -> 0 -> 0) =>  x
+   // We have following rules:
+   //    1. ( 1 ->  x)      =>  x
+   //    2. ( 0 ->  x)      =>  1
+   //    3. ( x ->  1)      =>  1
+   //    4. (!x ->  0)      =>  x
+   //    5. ( x ->  x)      =>  1
+   //    6. (!x ->  x)      =>  x
+   //    7. ( x -> !x)      => !x
+   //    8. ( x ->  0 -> 0) =>  x
+   //    9. ( x ->  y -> x) =>  x - TODO
 
    // According to rules 3 and 1, if there exist "1" operand,
    // we can remove all operands to the left, including this "1" operand.
@@ -290,7 +313,11 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          }
       } // while (m_children.size() > 1 && was_evaluated)
 
-      was_evaluated = false;
+      // Other rules require at least 3 operands.
+      if (m_children.size() < 3)
+      {
+         break;
+      }
 
       // According to rule 8, we can remove two zero literals if they stay one after one.
       for (long index = m_children.size() - 2; index >= 0; --index)
@@ -298,19 +325,15 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          if (LiteralType::False == m_children[index].m_literal &&
              LiteralType::False == m_children[index + 1].m_literal)
          {
-            // According to all evaluation done before,
-            // two zero literal can't be at the beginning
-            assert(index > 0);
-
             m_children.erase(m_children.begin() + index, m_children.begin() + index + 2);
             expression.RemoveChildren(index, index + 2);
             was_evaluated = true;
          }
       }
 
-      // It's possible following situation: x -> y -> (x -> y) -> (...).
-      // This expression we can group in the following way: (x -> y) -> (x -> y) -> (...).
-      // Then use rules 5 and 1 and evaluate this to: (...)
+      // It's possible following situation: x -> y -> (x -> y) -> z.
+      // This expression we can group in the following way: (x -> y) -> (x -> y) -> z.
+      // Then use rules 5 and 1 and evaluate this to z.
 
       for (long i = m_children.size() - 1; i > 1; --i)
       {
@@ -320,7 +343,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
             long j = 0;
             for (; j < i; ++j)
             {
-               if (!(m_children[j] == m_children[i].m_children[j]))
+               if (m_children[j] != m_children[i].m_children[j])
                {
                   break;
                }
@@ -351,38 +374,68 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
 {
    assert(m_children.size() > 1);
 
-   // (x = 1) => x
+   // We have following rules:
+   //    1. ( x =  1 ) => x
+   //    2. (!x =  0 ) => x
+   //    3. ( x =  x ) => 1
+   //    4. (!x = !y ) => (x = y)
+   //    5. ( x = !x ) => 0
+
+   // According to rule 1, remove literal 1.
    RemoveLiteralIfExists(expression, LiteralType::True);
 
-   // (x = x) => 1
-   if (!AbsorbDuplicates(expression, LiteralType::True))
+   // According to rule 3 and 1, remove duplicates
+   // and assign leteral 1 if all operands were removed.
+   if (AbsorbDuplicates(expression, LiteralType::True))
    {
-      // (!x = !y) => (x = y)
-      // (!x = 0 ) => x
-      AbsorbNegations(expression, LiteralType::False);
-
-      // And again: (x = x) => 1
-      AbsorbDuplicates(expression, LiteralType::True);
+      return;
    }
+
+   // According to rule 4 and 2, reduce even amount of negations
+   // and reduce the only remaining negation (if exists) with leteral 0.
+   AbsorbNegations(expression, LiteralType::False);
+
+   // Try to remove duplicates again.
+   if (AbsorbDuplicates(expression, LiteralType::True))
+   {
+      return;
+   }
+
+   // TODO: Apply rule 5
 }
 
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
 {
    assert(m_children.size() > 1);
 
-   // (x + 0) => x
+   // We have following rules:
+   //    1. ( x +  0 ) => x
+   //    2. (!x +  1 ) => x
+   //    3. ( x +  x ) => 0
+   //    4. (!x + !y ) => (x + y)
+   //    5. ( x + !x ) => 1
+
+   // According to rule 1, remove literal 0.
    RemoveLiteralIfExists(expression, LiteralType::False);
 
-   // (x = x) => 0
-   if (!AbsorbDuplicates(expression, LiteralType::False))
+   // According to rule 3 and 1, remove duplicates
+   // and assign leteral 0 if all operands were removed.
+   if (AbsorbDuplicates(expression, LiteralType::False))
    {
-      // (!x + !y) => (x + y)
-      // (!x + 1 ) => x
-      AbsorbNegations(expression, LiteralType::True);
-
-      // And again: (x = x) => 0
-      AbsorbDuplicates(expression, LiteralType::False);
+      return;
    }
+
+   // According to rule 4 and 2, reduce even amount of negations
+   // and reduce the only remaining negation (if exists) with leteral 1.
+   AbsorbNegations(expression, LiteralType::True);
+
+   // Try to remove duplicates again
+   if (AbsorbDuplicates(expression, LiteralType::False))
+   {
+      return;
+   }
+
+   // TODO: Apply rule 5
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
@@ -500,6 +553,8 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
 
 void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
 {
+   assert(expression.GetOperation() == OperationType::Implication);
+
    if (!m_children.empty() && OperationType::Implication == m_children[0].m_operation)
    {
       TExpressionPtrVector moved_children;
