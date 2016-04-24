@@ -55,6 +55,8 @@ eq4(x, y) := !x = !y
 call eval(eq4)
 eq5(x, y, z) := z = !(x->y) = (x->y) = 0
 call eval(eq5)
+eq6(x) := (x + 1) = !(x + 1)
+call eval(eq6)
 
 call print(--- plus ---)
 plus1(x) := 1 + x
@@ -67,3 +69,5 @@ plus4(x, y) := !x + !y
 call eval(plus4)
 plus5(x, y, z) := z + !(x->y) + (x->y) + 1
 call eval(plus5)
+plus6(x) := (x = 0) + !(x = 0)
+call eval(plus6)

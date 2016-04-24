@@ -55,6 +55,8 @@ private:
    void RemoveDuplicates(OperationExpression& expression);
    bool AbsorbDuplicates(OperationExpression& expression, LiteralType remaining_literal);
    void AbsorbNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
+   bool AbsorbNegNotNegs(OperationExpression& expression,
+                         LiteralType eq_to_neg_literal, LiteralType remaining_literal);
 
    // This method is used by implication evaluation.
    void InPlaceNormalization(OperationExpression& expression);
@@ -229,7 +231,7 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    //    1. (x  | 1) = 1
    //    2. (x  | 0) = x
    //    3. (x  | x) = x
-   //    4. (!x | x) = 1 - TODO
+   //    4. (!x | x) = 1
 
    // According to rule 1, evaluate expression to literal 1 if it exist.
    if (RemoveAllIfLiteralExists(expression, LiteralType::True))
@@ -420,7 +422,9 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
       return;
    }
 
-   // TODO: Apply rule 5
+   // According to rule 5 absorb operands that equal up to negation operation,
+   // count resulting 0 literals and reduce/add to the end.
+   AbsorbNegNotNegs(expression, LiteralType::False, LiteralType::True);
 }
 
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
@@ -454,7 +458,9 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
       return;
    }
 
-   // TODO: Apply rule 5
+   // According to rule 5 absorb operands that equal up to negation operation,
+   // count resulting 1 literals and reduce/add to the end.
+   AbsorbNegNotNegs(expression, LiteralType::True, LiteralType::False);
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
@@ -588,6 +594,66 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
       expression.RemoveChild(m_children.size());
       // TODO: Renormalization
    }
+}
+
+bool ExpressionEvaluator::AbsorbNegNotNegs(
+   OperationExpression& expression, LiteralType eq_to_neg_literal, LiteralType remaining_literal)
+{
+   int child_count = m_children.size();
+
+   int absorption_count = 0;
+
+   long i = 0;
+   while (i < child_count - 1)
+   {
+      long j = i + 1;
+      while (j < child_count)
+      {
+         if ((OperationType::Negation == m_children[i].m_operation &&
+              m_children[i].m_children[0] == m_children[j]) ||
+             (OperationType::Negation == m_children[j].m_operation &&
+              m_children[j].m_children[0] == m_children[i]))
+         {
+            ++absorption_count;
+            m_children.erase(m_children.begin() + j);
+            m_children.erase(m_children.begin() + i);
+            expression.RemoveChild(j);
+            expression.RemoveChild(i);
+            --j;
+            child_count -= 2;
+            continue;
+         }
+         ++j;
+      }
+      ++i;
+   }
+
+   // If absorption count is odd
+   if ((absorption_count & 1) == 1)
+   {
+      if (child_count > 0 &&
+          m_children.back().m_literal == eq_to_neg_literal)
+      {
+         m_children.pop_back();
+         expression.RemoveChild(child_count - 1);
+         --child_count;
+      }
+      else
+      {
+         m_children.resize(m_children.size() + 1);
+         m_children.back().m_literal = eq_to_neg_literal;
+         expression.AddChild(std::make_unique<LiteralExpression>(eq_to_neg_literal));
+         ++child_count;
+      }
+   }
+
+   if (0 == child_count)
+   {
+      m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
+      return true;
+   }
+
+   return false;
 }
 
 void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)

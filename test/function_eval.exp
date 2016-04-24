@@ -49,6 +49,8 @@ eq4(x, y) := (!x = !y)
 eq4(x, y) := (x = y)
 eq5(x, y, z) := (z = !(x -> y) = (x -> y) = 0)
 eq5(x, y, z) := z
+eq6(x) := ((x + 1) = !(x + 1))
+eq6(x) := 0
 --- plus ---
 plus1(x) := (x + 1)
 plus1(x) := (x + 1)
@@ -60,3 +62,5 @@ plus4(x, y) := (!x + !y)
 plus4(x, y) := (x + y)
 plus5(x, y, z) := (z + !(x -> y) + (x -> y) + 1)
 plus5(x, y, z) := z
+plus6(x) := ((x = 0) + !(x = 0))
+plus6(x) := 1
