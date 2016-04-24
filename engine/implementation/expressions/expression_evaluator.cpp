@@ -43,7 +43,7 @@ private:
    void EvaluatePlus(OperationExpression& expression);
 
 private:
-   // This set of methods is used to re-use common rules of
+   // Following set of methods is used to re-use common rules of
    // evaluation for associative/commutative operations.
    // If a method returns true it means it set m_evaluated_expression
    // member, so the calling side must return control up as soon as possible.
@@ -53,6 +53,9 @@ private:
    void RemoveDuplicates(OperationExpression& expression);
    bool AbsorbDuplicates(OperationExpression& expression, LiteralType remaining_literal);
    void AbsorbNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
+
+   // This method is used by implication evaluation.
+   void InPlaceNormalization(OperationExpression& expression);
 
 private:
    // Following three fields hold values for three possible variants
@@ -235,74 +238,108 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
       {
          m_children.erase(m_children.begin(), m_children.begin() + index + 1);
          expression.RemoveChildren(0, index + 1);
-      }
-   }
-
-   while (m_children.size() > 1)
-   {
-      // According to rules 2 and 1, we can remove subexpression (0 -> x)
-      // if it is at the beginning of the expression.
-      // According to rules 5 and 1, we can remove subexpression (x -> x)
-      // if it is at the beginning of the expression
-      if (LiteralType::False == m_children[0].m_literal ||
-          m_children[0] == m_children[1])
-      {
-         m_children.erase(m_children.begin(), m_children.begin() + 2);
-         expression.RemoveChildren(0, 2);
-      }
-      // According to rule 4 perform transformation (!x -> 0) => x
-      else if (OperationType::Negation == m_children[0].m_operation &&
-               LiteralType::False == m_children[1].m_literal)
-      {
-         m_children[0] = std::move(m_children[0].m_children[0]);
-         MoveChildExpressionInplace(expression.GetChild(0));
-         m_children.erase(m_children.begin() + 1);
-         expression.RemoveChild(1);
-
-         // If first child is also implication, we can normalize it.
-         if (OperationType::Implication == m_children[0].m_operation)
-         {
-            TExpressionPtrVector moved_children;
-            MoveChildExpressions(moved_children, expression.GetChild(0));
-            expression.RemoveChild(0);
-            expression.InsertChildren(0, std::move(moved_children));
-
-            auto moved_children_evaluators = std::move(m_children[0].m_children);
-            m_children.erase(m_children.begin());
-            m_children.reserve(m_children.size() + moved_children_evaluators.size());
-            for (long index = moved_children_evaluators.size() - 1; index >= 0; --index)
-            {
-               m_children.emplace(m_children.begin(),
-                  std::move(moved_children_evaluators[index]));
-            }
-         }
-      }
-      // According to rule 6, we can remove first operand in case of (!x ->  x)
-      // According to rule 7, we can remove first operand in case of ( x -> !x)
-      else if ((OperationType::Negation == m_children[0].m_operation &&
-                m_children[0].m_children[0] == m_children[1]) ||
-               (OperationType::Negation == m_children[1].m_operation &&
-                m_children[1].m_children[0] == m_children[0]))
-      {
-         m_children.erase(m_children.begin());
-         expression.RemoveChild(0);
-      }
-      else
-      {
+         InPlaceNormalization(expression);
          break;
       }
    }
 
-   // According to rule 8, we can remove two zero literals if they stay one after one.
-   for (long index = m_children.size() - 2; index >= 0; --index)
+   bool was_evaluated = true;
+
+   do
    {
-      if (LiteralType::False == m_children[index].m_literal &&
-          LiteralType::False == m_children[index + 1].m_literal)
+      while (m_children.size() > 1 && was_evaluated)
       {
-         m_children.erase(m_children.begin() + index, m_children.begin() + index + 2);
-         expression.RemoveChildren(index, index + 2);
+         was_evaluated = false;
+
+         // According to rules 2 and 1, we can remove subexpression (0 -> x)
+         // if it is at the beginning of the expression.
+         // According to rules 5 and 1, we can remove subexpression (x -> x)
+         // if it is at the beginning of the expression
+
+         if (LiteralType::False == m_children[0].m_literal ||
+             m_children[0] == m_children[1])
+         {
+            m_children.erase(m_children.begin(), m_children.begin() + 2);
+            expression.RemoveChildren(0, 2);
+            InPlaceNormalization(expression);
+            was_evaluated = true;
+         }
+         // According to rule 4 perform transformation (!x -> 0) => x
+         else if (OperationType::Negation == m_children[0].m_operation &&
+                  LiteralType::False == m_children[1].m_literal)
+         {
+            m_children[0] = std::move(m_children[0].m_children[0]);
+            MoveChildExpressionInplace(expression.GetChild(0));
+            m_children.erase(m_children.begin() + 1);
+            expression.RemoveChild(1);
+            InPlaceNormalization(expression);
+            was_evaluated = true;
+         }
+         // According to rule 6, we can remove first operand in case of (!x ->  x)
+         // According to rule 7, we can remove first operand in case of ( x -> !x)
+
+         else if ((OperationType::Negation == m_children[0].m_operation &&
+                   m_children[0].m_children[0] == m_children[1]) ||
+                  (OperationType::Negation == m_children[1].m_operation &&
+                   m_children[1].m_children[0] == m_children[0]))
+         {
+            m_children.erase(m_children.begin());
+            expression.RemoveChild(0);
+            InPlaceNormalization(expression);
+            was_evaluated = true;
+         }
+      } // while (m_children.size() > 1 && was_evaluated)
+
+      was_evaluated = false;
+
+      // According to rule 8, we can remove two zero literals if they stay one after one.
+      for (long index = m_children.size() - 2; index >= 0; --index)
+      {
+         if (LiteralType::False == m_children[index].m_literal &&
+             LiteralType::False == m_children[index + 1].m_literal)
+         {
+            // According to all evaluation done before,
+            // two zero literal can't be at the beginning
+            assert(index > 0);
+
+            m_children.erase(m_children.begin() + index, m_children.begin() + index + 2);
+            expression.RemoveChildren(index, index + 2);
+            was_evaluated = true;
+         }
+      }
+
+      // It's possible following situation: x -> y -> (x -> y) -> (...).
+      // This expression we can group in the following way: (x -> y) -> (x -> y) -> (...).
+      // Then use rules 5 and 1 and evaluate this to: (...)
+
+      for (long i = m_children.size() - 1; i > 1; --i)
+      {
+         if (OperationType::Implication == m_children[i].m_operation &&
+             m_children[i].m_children.size() == i)
+         {
+            long j = 0;
+            for (; j < i; ++j)
+            {
+               if (!(m_children[j] == m_children[i].m_children[j]))
+               {
+                  break;
+               }
+            }
+
+            // If all are equal
+            if (j == i)
+            {
+               m_children.erase(m_children.begin(), m_children.begin() + i + 1);
+               expression.RemoveChildren(0, i + 1);
+            }
+
+            InPlaceNormalization(expression);
+            was_evaluated = true;
+            break;
+         }
       }
    }
+   while (was_evaluated);
 
    if (m_children.empty())
    {
@@ -458,6 +495,26 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
       m_children.resize(m_children.size() - 1);
       expression.RemoveChild(m_children.size());
       // TODO: Renormalization
+   }
+}
+
+void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
+{
+   if (!m_children.empty() && OperationType::Implication == m_children[0].m_operation)
+   {
+      TExpressionPtrVector moved_children;
+      MoveChildExpressions(moved_children, expression.GetChild(0));
+      expression.RemoveChild(0);
+      expression.InsertChildren(0, std::move(moved_children));
+
+      auto moved_children_evaluators = std::move(m_children[0].m_children);
+      m_children.erase(m_children.begin());
+      m_children.reserve(m_children.size() + moved_children_evaluators.size());
+      for (long index = moved_children_evaluators.size() - 1; index >= 0; --index)
+      {
+         m_children.emplace(m_children.begin(),
+            std::move(moved_children_evaluators[index]));
+      }
    }
 }
 
