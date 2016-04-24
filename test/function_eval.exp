@@ -8,6 +8,8 @@ conj2(x) := (x & 1)
 conj2(x) := x
 conj3(x, y) := ((x -> y) & (x -> y) & x)
 conj3(x, y) := ((x -> y) & x)
+conj4(x) := ((x + 1) & x & !(x + 1))
+conj4(x) := 0
 --- disjunction ---
 disj1(x) := (x | 0)
 disj1(x) := x
@@ -15,6 +17,8 @@ disj2(x) := (x | 1)
 disj2(x) := 1
 disj3(x, y) := ((x -> y) | (x -> y) | x)
 disj3(x, y) := ((x -> y) | x)
+disj4(x) := ((x + 1) | x | !(x + 1))
+disj4(x) := 1
 --- implication ---
 imp1(x) := ((x + 1) -> 1 -> x)
 imp1(x) := x

@@ -50,6 +50,7 @@ private:
    // member, so the calling side must return control up as soon as possible.
 
    bool RemoveAllIfLiteralExists(OperationExpression& expression, LiteralType literal);
+   bool RemoveAllIfNegNotNegExists(OperationExpression& expression, LiteralType remaining_literal);
    void RemoveLiteralIfExists(OperationExpression& expression, LiteralType literal);
    void RemoveDuplicates(OperationExpression& expression);
    bool AbsorbDuplicates(OperationExpression& expression, LiteralType remaining_literal);
@@ -198,17 +199,26 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    //    1. (x  & 0) = 0
    //    2. (x  & 1) = x
    //    3. (x  & x) = x
-   //    4. (!x & x) = 0 - TODO
+   //    4. (!x & x) = 0
 
    // According to rule 1, evaluate expression to literal 0 if it exist.
-   if (!RemoveAllIfLiteralExists(expression, LiteralType::False))
+   if (RemoveAllIfLiteralExists(expression, LiteralType::False))
    {
-      // According to rule 2, remove literal 1 if exist.
-      RemoveLiteralIfExists(expression, LiteralType::True);
-
-      // According to rule 3, remove all duplicates.
-      RemoveDuplicates(expression);
+      return;
    }
+
+   // According to rule 4, evaluate expression to literal 0
+   // if there exist pair x and !x.
+   if (RemoveAllIfNegNotNegExists(expression, LiteralType::False))
+   {
+      return;
+   }
+
+   // According to rule 2, remove literal 1 if exist.
+   RemoveLiteralIfExists(expression, LiteralType::True);
+
+   // According to rule 3, remove all duplicates.
+   RemoveDuplicates(expression);
 }
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
@@ -219,17 +229,26 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    //    1. (x  | 1) = 1
    //    2. (x  | 0) = x
    //    3. (x  | x) = x
-   //    4. (!x & x) = 1 - TODO
+   //    4. (!x | x) = 1 - TODO
 
    // According to rule 1, evaluate expression to literal 1 if it exist.
-   if (!RemoveAllIfLiteralExists(expression, LiteralType::True))
+   if (RemoveAllIfLiteralExists(expression, LiteralType::True))
    {
-      // According to rule 2, remove literal 0 if exist.
-      RemoveLiteralIfExists(expression, LiteralType::False);
-
-     // According to rule 3, remove all duplicates.
-      RemoveDuplicates(expression);
+      return;
    }
+
+   // According to rule 4, evaluate expression to literal 1
+   // if there exist pair x and !x.
+   if (RemoveAllIfNegNotNegExists(expression, LiteralType::True))
+   {
+      return;
+   }
+
+   // According to rule 2, remove literal 0 if exist.
+   RemoveLiteralIfExists(expression, LiteralType::False);
+
+   // According to rule 3, remove all duplicates.
+   RemoveDuplicates(expression);
 }
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
@@ -447,6 +466,26 @@ bool ExpressionEvaluator::RemoveAllIfLiteralExists(
          expression.GetChild(m_children.size() - 1));
       return true;
    }
+   return false;
+}
+
+bool ExpressionEvaluator::RemoveAllIfNegNotNegExists(
+   OperationExpression& expression, LiteralType remaining_literal)
+{
+   const long child_count = m_children.size();
+
+   for (int i = 0; i < child_count - 1; ++i)
+      for (int j = i + 1; j < child_count; ++j)
+         if ((OperationType::Negation == m_children[i].m_operation &&
+              m_children[i].m_children[0] == m_children[j]) ||
+             (OperationType::Negation == m_children[j].m_operation &&
+              m_children[j].m_children[0] == m_children[i]))
+         {
+            m_evaluated_expression =
+               std::make_unique<LiteralExpression>(remaining_literal);
+            return true;
+         }
+
    return false;
 }
 

@@ -9,6 +9,8 @@ conj2(x) := 1 & x
 call eval(conj2)
 conj3(x, y) := (x->y) & (x->y) & x
 call eval(conj3)
+conj4(x) := (x + 1) & x & !(x + 1)
+call eval(conj4)
 
 call print(--- disjunction ---)
 disj1(x) := 0 | x
@@ -17,6 +19,8 @@ disj2(x) := 1 | x
 call eval(disj2)
 disj3(x, y) := (x->y) | (x->y) | x
 call eval(disj3)
+disj4(x) := (x + 1) | x | !(x + 1)
+call eval(disj4)
 
 call print(--- implication ---)
 imp1(x) := (x + 1) -> 1 -> x 
