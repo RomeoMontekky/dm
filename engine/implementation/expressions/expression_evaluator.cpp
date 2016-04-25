@@ -185,7 +185,7 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
    assert(m_children.size() == 1);
 
    // We have the only rule:
-   //    1. x => x
+   //    1. !!x => x
 
    if (m_children[0].m_operation == OperationType::Negation)
    {
@@ -412,19 +412,16 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
       return;
    }
 
-   // According to rule 4 and 2, reduce even amount of negations
-   // and reduce the only remaining negation (if exists) with leteral 0.
-   AbsorbNegations(expression, LiteralType::False);
-
-   // Try to remove duplicates again.
-   if (AbsorbDuplicates(expression, LiteralType::True))
+   // According to rule 5 absorb operands that equal up to negation operation,
+   // count resulting 0 literals and reduce/add to the end.
+   if (AbsorbNegNotNegs(expression, LiteralType::False, LiteralType::True))
    {
       return;
    }
-
-   // According to rule 5 absorb operands that equal up to negation operation,
-   // count resulting 0 literals and reduce/add to the end.
-   AbsorbNegNotNegs(expression, LiteralType::False, LiteralType::True);
+   
+   // According to rule 4 and 2, reduce even amount of negations
+   // and reduce the only remaining negation (if exists) with leteral 0.
+   AbsorbNegations(expression, LiteralType::False);
 }
 
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
@@ -447,20 +444,17 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    {
       return;
    }
-
-   // According to rule 4 and 2, reduce even amount of negations
-   // and reduce the only remaining negation (if exists) with leteral 1.
-   AbsorbNegations(expression, LiteralType::True);
-
-   // Try to remove duplicates again
-   if (AbsorbDuplicates(expression, LiteralType::False))
+   
+   // According to rule 5 absorb operands that equal up to negation operation,
+   // count resulting 1 literals and reduce/add to the end.
+   if (AbsorbNegNotNegs(expression, LiteralType::True, LiteralType::False))
    {
       return;
    }
-
-   // According to rule 5 absorb operands that equal up to negation operation,
-   // count resulting 1 literals and reduce/add to the end.
-   AbsorbNegNotNegs(expression, LiteralType::True, LiteralType::False);
+   
+   // According to rule 4 and 2, reduce even amount of negations
+   // and reduce the only remaining negation (if exists) with leteral 1.
+   AbsorbNegations(expression, LiteralType::True);
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
