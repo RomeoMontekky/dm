@@ -15,20 +15,22 @@ namespace dm
 namespace
 {
 
-class ExpressionEvaluator : public ExpressionVisitor
+class ExpressionEvaluator : private ExpressionVisitor
 {
 public:
    ExpressionEvaluator();
    ExpressionEvaluator(ExpressionEvaluator&& rhs) = default;
    ExpressionEvaluator& operator =(ExpressionEvaluator&& rhs) = default;
-
+   
+   void Evaluate(TExpressionPtr& expression);
+   
    bool operator ==(const ExpressionEvaluator& rhs) const;
    bool operator !=(const ExpressionEvaluator& rhs) const;
-
+   
+private:   
    void Reset();
-   TExpressionPtr& GetEvaluatedExpression();
 
-   // ConstExpressionVisitor
+   // ExpressionVisitor
    virtual void Visit(LiteralExpression& expression) override;
    virtual void Visit(ParamRefExpression& expression) override;
    virtual void Visit(OperationExpression& expression) override;
@@ -67,13 +69,16 @@ private:
    LiteralType m_literal;
    long m_param_index;
    OperationType m_operation;
-
-   // Contains visitors for child expressions if current visited is operation expression.
-   std::vector<ExpressionEvaluator> m_children;
+   
+   // Is normalization/simplification needed on high level.
+   bool m_is_normalization_needed;
 
    // Will be filled by new evaluated expression if the whole
    // operation expression was evaluated to a some simple form.
    TExpressionPtr m_evaluated_expression;
+   
+   // Contains visitors for child expressions if current visited is operation expression.
+   std::vector<ExpressionEvaluator> m_children;
 };
 
 ExpressionEvaluator::ExpressionEvaluator()
@@ -81,8 +86,36 @@ ExpressionEvaluator::ExpressionEvaluator()
    Reset();
 }
 
+void ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
+{
+   while (true)
+   {
+      Reset();
+      
+      expression->Accept(*this);
+      
+      if (m_evaluated_expression.get() != nullptr)
+      {
+         expression = std::move(m_evaluated_expression);
+      } 
+      else if (m_is_normalization_needed)
+      {
+         NormalizeExpression(expression);
+         SimplifyExpression(expression);
+      }
+      else
+      {
+         break;
+      }
+   }
+}
+
 bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
 {
+   // Following values isn't checked intentionally:
+   //    1. m_is_normalization_needed
+   //    2. m_evaluated_expression
+   
    return
    (
       (m_literal == rhs.m_literal) &&
@@ -102,13 +135,9 @@ void ExpressionEvaluator::Reset()
    m_literal = LiteralType::None;
    m_param_index = -1;
    m_operation = OperationType::None;
+   m_is_normalization_needed = false;
    m_children.clear();
    m_evaluated_expression.reset();
-}
-
-TExpressionPtr& ExpressionEvaluator::GetEvaluatedExpression()
-{
-   return m_evaluated_expression;
 }
 
 void ExpressionEvaluator::Visit(LiteralExpression& expression)
@@ -129,15 +158,7 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
    m_children.resize(child_count);
    for (long index = 0; index < child_count; ++index)
    {
-      auto& child_expression = expression.GetChild(index);
-      child_expression->Accept(m_children[index]);
-      auto& evaluated_expression = m_children[index].GetEvaluatedExpression();
-      if (evaluated_expression.get() != nullptr)
-      {
-         child_expression = std::move(evaluated_expression);
-         m_children[index].Reset();
-         child_expression->Accept(m_children[index]);
-      }
+      m_children[index].Evaluate(expression.GetChild(index));
    }
 
    EvaluateOperation(expression);
@@ -570,23 +591,32 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
          }
          else
          {
-            m_children[prev_negation] = std::move(m_children[prev_negation].m_children[0]);
-            m_children[index] = std::move(m_children[index].m_children[0]);
+            {
+               auto temp = std::move(m_children[prev_negation].m_children[0]);
+               m_children[prev_negation] = std::move(temp);
+            }
+            {
+               auto temp = std::move(m_children[index].m_children[0]);
+               m_children[index] = std::move(temp);
+            }
             MoveChildExpressionInplace(expression.GetChild(prev_negation));
             MoveChildExpressionInplace(expression.GetChild(index));
             prev_negation = -1;
-            // TODO: Renormalization
+            m_is_normalization_needed = true;
          }
       }
    }
 
    if (prev_negation != -1 && eq_to_neg_literal == m_children.back().m_literal)
    {
-      m_children[prev_negation] = std::move(m_children[prev_negation].m_children[0]);
+      {
+         auto temp = std::move(m_children[prev_negation].m_children[0]);
+         m_children[prev_negation] = std::move(temp);
+      }
       MoveChildExpressionInplace(expression.GetChild(prev_negation));
       m_children.resize(m_children.size() - 1);
       expression.RemoveChild(m_children.size());
-      // TODO: Renormalization
+      m_is_normalization_needed = true;
    }
 }
 
@@ -677,17 +707,8 @@ void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
 void EvaluateExpression(TExpressionPtr& expression)
 {
    assert(expression.get() != nullptr);
-
    ExpressionEvaluator evaluator;
-   expression->Accept(evaluator);
-
-   // The visitor evaluates only child expressions of each operation expression,
-   // so the root can be still not evaluated. Let's correct this if so.
-   auto& evaluated_expression = evaluator.GetEvaluatedExpression();
-   if (evaluated_expression.get() != nullptr)
-   {
-      expression = std::move(evaluated_expression);
-   }
+   evaluator.Evaluate(expression);
 }
 
 } // namespace dm
