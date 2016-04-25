@@ -43,6 +43,12 @@ call eval(imp8)
 # grouping, reduction, in-place normalization
 imp9(x, y) := x -> y -> 0 -> (x -> y -> 0) -> (x -> 0) -> 0
 call eval(imp9)
+# (x -> y -> x) => (x). Without grouping.
+imp10(x) := (x + 1) -> x -> (x + 1)
+call eval(imp10)
+# (x -> y -> x) => (x). With grouping.
+imp11(x, y, z) := x -> y -> z -> (x + y + z) -> (x -> y -> z)
+call eval(imp11)
 
 call print(--- equality ---)
 eq1(x) := 1 = x

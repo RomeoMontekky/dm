@@ -46,7 +46,7 @@ private:
    void EvaluatePlus(OperationExpression& expression);
 
 private:
-   // Following set of methods is used to re-use common rules of
+   // Following set of methods is intended to re-use common rules of
    // evaluation for associative/commutative operations.
    // If a method returns true it means it set m_evaluated_expression
    // member, so the calling side must return control up as soon as possible.
@@ -60,8 +60,10 @@ private:
    bool AbsorbNegNotNegs(OperationExpression& expression,
                          LiteralType eq_to_neg_literal, LiteralType remaining_literal);
 
-   // This method is used by implication evaluation.
+   // These methods are used by implication evaluation.
    void InPlaceNormalization(OperationExpression& expression);
+   bool RemoveBeginningIfEqualToChild(OperationExpression& expression,
+                                      long operands_between, bool include_child);
 
 private:
    // Following three fields hold values for three possible variants
@@ -219,9 +221,9 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    assert(m_children.size() > 1);
 
    // We have following rules:
-   //    1. (x  & 0) = 0
-   //    2. (x  & 1) = x
-   //    3. (x  & x) = x
+   //    1. ( x & 0) = 0
+   //    2. ( x & 1) = x
+   //    3. ( x & x) = x
    //    4. (!x & x) = 0
 
    // According to rule 1, evaluate expression to literal 0 if it exist.
@@ -249,9 +251,9 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    assert(m_children.size() > 1);
 
    // We have following rules:
-   //    1. (x  | 1) = 1
-   //    2. (x  | 0) = x
-   //    3. (x  | x) = x
+   //    1. ( x | 1) = 1
+   //    2. ( x | 0) = x
+   //    3. ( x | x) = x
    //    4. (!x | x) = 1
 
    // According to rule 1, evaluate expression to literal 1 if it exist.
@@ -290,9 +292,9 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    //    4. (!x ->  0)      =>  x
    //    5. ( x ->  x)      =>  1
    //    6. (!x ->  x)      =>  x
-   //    7. ( x -> !x)      => !x
+   //    7. ( x -> !x)      => !x - TODO: Grouping
    //    8. ( x ->  0 -> 0) =>  x
-   //    9. ( x ->  y -> x) =>  x - TODO
+   //    9. ( x ->  y -> x) =>  x
 
    // According to rules 3 and 1, if there exist "1" operand,
    // we can remove all operands to the left, including this "1" operand.
@@ -320,7 +322,6 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          // if it is at the beginning of the expression.
          // According to rules 5 and 1, we can remove subexpression (x -> x)
          // if it is at the beginning of the expression
-
          if (LiteralType::False == m_children[0].m_literal ||
              m_children[0] == m_children[1])
          {
@@ -342,7 +343,6 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          }
          // According to rule 6, we can remove first operand in case of (!x ->  x)
          // According to rule 7, we can remove first operand in case of ( x -> !x)
-
          else if ((OperationType::Negation == m_children[0].m_operation &&
                    m_children[0].m_children[0] == m_children[1]) ||
                   (OperationType::Negation == m_children[1].m_operation &&
@@ -350,6 +350,14 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          {
             m_children.erase(m_children.begin());
             expression.RemoveChild(0);
+            InPlaceNormalization(expression);
+            was_evaluated = true;
+         }
+         // According to rule 9, we can remove first two operands in case of (x -> y -> x)
+         else if (m_children.size() > 2 && m_children[0] == m_children[2])
+         {
+            m_children.erase(m_children.begin(), m_children.begin() + 2);
+            expression.RemoveChildren(0, 2);
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
@@ -361,7 +369,8 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          break;
       }
 
-      // According to rule 8, we can remove two zero literals if they stay one after one.
+      // According to rule 8, we can remove two zero literals
+      // if they stay one after another.
       for (long index = m_children.size() - 2; index >= 0; --index)
       {
          if (LiteralType::False == m_children[index].m_literal &&
@@ -373,35 +382,23 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          }
       }
 
-      // It's possible following situation: x -> y -> (x -> y) -> z.
-      // This expression we can group in the following way: (x -> y) -> (x -> y) -> z.
-      // Then use rules 5 and 1 and evaluate this to z.
+      // Now try to evaluate the expression, using grouping of some amount
+      // of first operands and using basic rules.
 
-      for (long i = m_children.size() - 1; i > 1; --i)
+      // Expression (x1 -> ... -> xn -> (x1 -> ... -> xn) -> z)
+      // can be grouped and the whole expression can be evaluated to (z),
+      // using rule 5 and 1.
+      if (RemoveBeginningIfEqualToChild(expression, 0, true))
       {
-         if (OperationType::Implication == m_children[i].m_operation &&
-             m_children[i].m_children.size() == i)
-         {
-            long j = 0;
-            for (; j < i; ++j)
-            {
-               if (m_children[j] != m_children[i].m_children[j])
-               {
-                  break;
-               }
-            }
+         was_evaluated = true;
+      }
 
-            // If all are equal
-            if (j == i)
-            {
-               m_children.erase(m_children.begin(), m_children.begin() + i + 1);
-               expression.RemoveChildren(0, i + 1);
-            }
-
-            InPlaceNormalization(expression);
-            was_evaluated = true;
-            break;
-         }
+      // Expression (x1 -> .. -> xn -> y -> (x1 -> ... -> xn))
+      // can be grouped and the whole expression can be evaluated to
+      // (x1 -> ... -> xn), using rule 9.
+      if (RemoveBeginningIfEqualToChild(expression, 1, false))
+      {
+         was_evaluated = true;
       }
    }
    while (was_evaluated);
@@ -698,6 +695,38 @@ void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
             std::move(moved_children_evaluators[index]));
       }
    }
+}
+
+bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
+   OperationExpression& expression, long operands_between, bool include_child)
+{
+   for (long i = m_children.size() - 1; i > 1 + operands_between; --i)
+   {
+      if (OperationType::Implication == m_children[i].m_operation &&
+          m_children[i].m_children.size() == i - operands_between)
+      {
+         long j = 0;
+         for (; j < i - operands_between; ++j)
+         {
+            if (m_children[j] != m_children[i].m_children[j])
+            {
+               break;
+            }
+         }
+
+         // If all are equal
+         if (j == i - operands_between)
+         {
+            const long right_bound = include_child ? (i + 1) : i;
+            m_children.erase(m_children.begin(), m_children.begin() + right_bound);
+            expression.RemoveChildren(0, right_bound);
+            InPlaceNormalization(expression);
+            return true;
+         }
+      }
+   }
+
+   return false;
 }
 
 } // namespace
