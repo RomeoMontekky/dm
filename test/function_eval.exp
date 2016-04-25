@@ -51,6 +51,8 @@ eq5(x, y, z) := (z = !(x -> y) = (x -> y) = 0)
 eq5(x, y, z) := z
 eq6(x) := ((x + 1) = !(x + 1))
 eq6(x) := 0
+eq7(x, y) := (!(x = 0) = !(y = 0))
+eq7(x, y) := (x = y)
 --- plus ---
 plus1(x) := (x + 1)
 plus1(x) := (x + 1)
@@ -64,3 +66,5 @@ plus5(x, y, z) := (z + !(x -> y) + (x -> y) + 1)
 plus5(x, y, z) := z
 plus6(x) := ((x = 0) + !(x = 0))
 plus6(x) := 1
+plus7(x, y) := (!(x + 1) + !(y + 1))
+plus7(x, y) := (x + y)
