@@ -38,10 +38,12 @@ imp8(x) := (!(x -> 0) -> 0 -> 0)
 imp8(x) := x
 imp9(x, y) := (x -> y -> 0 -> (x -> y -> 0) -> (x -> 0) -> 0)
 imp9(x, y) := x
-imp10(x) := ((x + 1) -> x -> (x + 1))
-imp10(x) := (x + 1)
-imp11(x, y, z) := (x -> y -> z -> (x + y + z) -> (x -> y -> z))
-imp11(x, y, z) := (x -> y -> z)
+imp10(x) := ((x + 1) -> x -> !((x + 1) -> x))
+imp10(x) := !((x + 1) -> x)
+imp11(x) := ((x + 1) -> x -> (x + 1))
+imp11(x) := (x + 1)
+imp12(x, y, z) := (x -> y -> z -> (x + y + z) -> (x -> y -> z))
+imp12(x, y, z) := (x -> y -> z)
 --- equality ---
 eq1(x) := (x = 1)
 eq1(x) := x

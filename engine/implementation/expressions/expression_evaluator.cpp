@@ -63,7 +63,8 @@ private:
    // These methods are used by implication evaluation.
    void InPlaceNormalization(OperationExpression& expression);
    bool RemoveBeginningIfEqualToChild(OperationExpression& expression,
-                                      long operands_between, bool include_child);
+                                      long operands_between, bool include_child, 
+                                      bool negated_child = false);
 
 private:
    // Following three fields hold values for three possible variants
@@ -292,7 +293,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    //    4. (!x ->  0)      =>  x
    //    5. ( x ->  x)      =>  1
    //    6. (!x ->  x)      =>  x
-   //    7. ( x -> !x)      => !x - TODO: Grouping
+   //    7. ( x -> !x)      => !x
    //    8. ( x ->  0 -> 0) =>  x
    //    9. ( x ->  y -> x) =>  x
 
@@ -393,6 +394,14 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          was_evaluated = true;
       }
 
+      // Expression (x1 -> .. -> xn -> !(x1 -> ... -> xn))
+      // can be grouped and the whole expression can be evaluated to
+      // !(x1 -> ... -> xn), using rule 6.
+      if (RemoveBeginningIfEqualToChild(expression, 0, false, true))
+      {
+         was_evaluated = true;
+      }
+      
       // Expression (x1 -> .. -> xn -> y -> (x1 -> ... -> xn))
       // can be grouped and the whole expression can be evaluated to
       // (x1 -> ... -> xn), using rule 9.
@@ -700,24 +709,44 @@ void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
 }
 
 bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
-   OperationExpression& expression, long operands_between, bool include_child)
+   OperationExpression& expression, long operands_between, bool include_child, bool negated_child)
 {
    for (long i = m_children.size() - 1; i > 1 + operands_between; --i)
    {
-      if (OperationType::Implication == m_children[i].m_operation &&
-          m_children[i].m_children.size() == i - operands_between)
+      const auto& curr_child = m_children[i];
+      const long amount_to_check = i - operands_between;
+      
+      const decltype(m_children)* children_to_check = nullptr;
+      if (negated_child)
+      {
+         if (OperationType::Negation == curr_child.m_operation &&
+             OperationType::Implication == curr_child.m_children[0].m_operation)
+         {
+            children_to_check = &curr_child.m_children[0].m_children;
+         }
+      }
+      else
+      {
+         if (OperationType::Implication == curr_child.m_operation)
+         {
+            children_to_check = &curr_child.m_children;
+         }
+      }
+      
+      if (children_to_check != nullptr && 
+          children_to_check->size() == amount_to_check)
       {
          long j = 0;
-         for (; j < i - operands_between; ++j)
+         for (; j < amount_to_check; ++j)
          {
-            if (m_children[j] != m_children[i].m_children[j])
+            if (m_children[j] != (*children_to_check)[j])
             {
                break;
             }
          }
 
          // If all are equal
-         if (j == i - operands_between)
+         if (amount_to_check == j)
          {
             const long right_bound = include_child ? (i + 1) : i;
             m_children.erase(m_children.begin(), m_children.begin() + right_bound);
