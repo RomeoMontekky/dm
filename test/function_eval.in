@@ -83,4 +83,7 @@ call eval(plus6)
 # absorbation of negation, normalization, simplification
 plus7(x, y) := !(x + 1) + !(y + 1)
 call eval(plus7)
+# checked correct pairs reduction
+plus8(x1, x2, x3, x4, x5, x6) := x1 + x2 + x6 + x2 + x1 + x3 + x4 + x4 + x5 + x6
+call eval(plus8)
 
