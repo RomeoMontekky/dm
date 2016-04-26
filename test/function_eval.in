@@ -52,6 +52,9 @@ call eval(imp11)
 # (x -> y -> x) => (x). With grouping.
 imp12(x, y, z) := x -> y -> z -> (x + y + z) -> (x -> y -> z)
 call eval(imp12)
+# multilevel evaluation/normalization/simplification
+imp13(x) := x -> (!((x + 1) -> 1 -> (x -> 0)) -> (x -> 0) -> 0)
+call eval(imp13)
 
 call print(--- equality ---)
 eq1(x) := 1 = x

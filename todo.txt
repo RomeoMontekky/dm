@@ -1,7 +1,5 @@
 - function for evaluation of expressions
-   - implement re-normalization when negation absorbed (TODO set in the code)
-   - implement "x & !x"-like rules for assosiative/commutative operations 
-   - implement tests for multi-level evaluation (e.g. (!(x -> 0) -> (x -> 0) -> 0))
+   - implement additonal evaluations for negation (e.g !(x + 1))
 - function to open brackets
 - function for DNF/SDNF/MinDNF building
 - function for CNF/SCNF/MinCNF building
