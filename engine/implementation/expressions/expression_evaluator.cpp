@@ -555,6 +555,7 @@ bool ExpressionEvaluator::AbsorbDuplicates(
             m_children.erase(m_children.begin() + i);
             expression.RemoveChild(j);
             expression.RemoveChild(i);
+            j = i + 1;
             child_count -= 2;
             continue;
          }
@@ -639,6 +640,7 @@ bool ExpressionEvaluator::AbsorbNegNotNegs(
             m_children.erase(m_children.begin() + i);
             expression.RemoveChild(j);
             expression.RemoveChild(i);
+            j = i + 1;
             child_count -= 2;
             continue;
          }
