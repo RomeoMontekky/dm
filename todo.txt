@@ -1,5 +1,6 @@
 - function for evaluation of expressions
    - implement additonal evaluations for negation (e.g !(x + 1))
+   - implement correct evaluation of (!!(x + 1) + 1)
 - function to open brackets
 - function for DNF/SDNF/MinDNF building
 - function for CNF/SCNF/MinCNF building
