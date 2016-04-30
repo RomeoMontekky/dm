@@ -597,32 +597,33 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
          }
          else
          {
-            {
-               auto temp = std::move(m_children[prev_negation].m_children[0]);
-               m_children[prev_negation] = std::move(temp);
-            }
-            {
-               auto temp = std::move(m_children[index].m_children[0]);
-               m_children[index] = std::move(temp);
-            }
+            m_children[prev_negation] = std::move(m_children[prev_negation].m_children[0]);
+            m_children[index] = std::move(m_children[index].m_children[0]);
             MoveChildExpressionInplace(expression.GetChild(prev_negation));
             MoveChildExpressionInplace(expression.GetChild(index));
+
+            if (m_children[prev_negation].m_operation == expression.GetOperation() ||
+                m_children[index].m_operation == expression.GetOperation())
+            {
+               m_is_normalization_needed = true;
+            }
+
             prev_negation = -1;
-            m_is_normalization_needed = true;
          }
       }
    }
 
    if (prev_negation != -1 && eq_to_neg_literal == m_children.back().m_literal)
    {
-      {
-         auto temp = std::move(m_children[prev_negation].m_children[0]);
-         m_children[prev_negation] = std::move(temp);
-      }
+      m_children[prev_negation] = std::move(m_children[prev_negation].m_children[0]);
       MoveChildExpressionInplace(expression.GetChild(prev_negation));
       m_children.resize(m_children.size() - 1);
       expression.RemoveChild(m_children.size());
-      m_is_normalization_needed = true;
+
+      if (m_children[prev_negation].m_operation == expression.GetOperation())
+      {
+         m_is_normalization_needed = true;
+      }
    }
 }
 
