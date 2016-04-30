@@ -130,7 +130,7 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
    StringPtrLen tail = str;
 
    // Find operation with zero bracket balance and with maximum value.
-   // Maximum value means minimus arithmetic priority.
+   // Maximum value means minimal arithmetic priority.
    for (; tail.Len() > 0; tail.RemoveLeft(1))
    {
       if (!balancer.ProcessChar(tail.At(0)) && balancer.GetBalance() == 0)
@@ -203,11 +203,11 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
 TExpressionPtr ExpressionParser::ParseLiteralExpression(StringPtrLen str) const
 {
    LiteralType literal = StringToLiteralType(str);
-   if (literal != LiteralType::None)
+   if (LiteralType::None == literal)
    {
-      return std::make_unique<LiteralExpression>(literal);
+      return TExpressionPtr();
    }
-   return TExpressionPtr();
+   return std::make_unique<LiteralExpression>(literal);
 }
 
 TExpressionPtr ExpressionParser::ParseParameterizedVariableExpression(StringPtrLen str) const
@@ -250,25 +250,27 @@ TExpressionPtr ExpressionParser::ParseParameterizedVariableExpression(StringPtrL
 TExpressionPtr ExpressionParser::ParseParameterExpression(StringPtrLen str) const
 {
    long param_index = m_curr_variable->FindParameter(str);
-   if (param_index >= 0)
+   if (-1 == param_index)
    {
-      return std::make_unique<ParamRefExpression>(*m_curr_variable, param_index);
+      return TExpressionPtr();
    }
-   return TExpressionPtr();
+   return std::make_unique<ParamRefExpression>(*m_curr_variable, param_index);
 }
 
 TExpressionPtr ExpressionParser::ParseNotParameterizedVariableExpression(StringPtrLen str) const
 {
    auto variable = m_variable_mgr.FindVariable(str);
-   if (variable != nullptr)
+   if (nullptr == variable)
    {
-      if (variable->GetParameterCount() > 0)
-      {
-         Error("Parameters are missing during usage of variable '", variable->GetName(), "'.");
-      }
-      return variable->GetExpression()->Clone();
+      return TExpressionPtr();
    }
-   return TExpressionPtr();
+
+   if (variable->GetParameterCount() > 0)
+   {
+      Error("Parameters are missing during usage of variable '", variable->GetName(), "'.");
+   }
+
+   return variable->GetExpression()->Clone();
 }
 
 } // namespace dm
