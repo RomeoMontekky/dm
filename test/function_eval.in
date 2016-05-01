@@ -1,6 +1,14 @@
 call print(--- negation ---)
-neg(x, y) := !!(x->y)
-call eval(neg)
+neg1(x, y) := !!(x->y)
+call eval(neg1)
+neg2(x) := !(x + 1)
+call eval(neg2)
+neg3(x, y) := !(x + y + 1)
+call eval(neg3)
+neg4(x) := !(x = 0)
+call eval(neg4)
+neg5(x) := !(x -> 0)
+call eval(neg5)
 
 call print(--- conjunction ---)
 conj1(x) := 0 & x
@@ -9,7 +17,7 @@ conj2(x) := 1 & x
 call eval(conj2)
 conj3(x, y) := (x->y) & (x->y) & x
 call eval(conj3)
-conj4(x) := (x + 1) & x & !(x + 1)
+conj4(x, y) := (x + y) & x & !(x + y)
 call eval(conj4)
 
 call print(--- disjunction ---)
@@ -19,7 +27,7 @@ disj2(x) := 1 | x
 call eval(disj2)
 disj3(x, y) := (x->y) | (x->y) | x
 call eval(disj3)
-disj4(x) := (x + 1) | x | !(x + 1)
+disj4(x, y) := (x + y) | x | !(x + y)
 call eval(disj4)
 
 call print(--- implication ---)
@@ -29,11 +37,11 @@ imp2(x) := 0 -> (x + 1) -> x
 call eval(imp2)
 imp3(x) := (x + 1) -> (x + 1) -> x
 call eval(imp3)
-imp4(x) := !(x + 1) -> 0
+imp4(x, y) := !(x + y) -> 0
 call eval(imp4)
-imp5(x) := !(x + 1) -> (x + 1)
+imp5(x, y) := !(x + y) -> (x + y)
 call eval(imp5)
-imp6(x) := (x + 1) -> !(x + 1)
+imp6(x, y) := (x + y) -> !(x + y)
 call eval(imp6)
 imp7(x) := (x + 1) -> 0 -> 0 -> x
 call eval(imp7)
@@ -67,7 +75,7 @@ eq4(x, y) := !x = !y
 call eval(eq4)
 eq5(x, y, z) := z = !(x->y) = (x->y) = 0
 call eval(eq5)
-eq6(x) := (x + 1) = !(x + 1)
+eq6(x, y) := (x + y) = !(x + y)
 call eval(eq6)
 # absorbation of negation, normalization, simplification
 eq7(x, y) := !(x = 0) = !(y = 0)
@@ -87,7 +95,7 @@ plus4(x, y) := !x + !y
 call eval(plus4)
 plus5(x, y, z) := z + !(x->y) + (x->y) + 1
 call eval(plus5)
-plus6(x) := (x = 0) + !(x = 0)
+plus6(x, y) := (x = y) + !(x = y)
 call eval(plus6)
 # absorbation of negation, normalization, simplification
 plus7(x, y) := !(x + 1) + !(y + 1)

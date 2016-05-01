@@ -1,6 +1,14 @@
 --- negation ---
-neg(x, y) := !!(x -> y)
-neg(x, y) := (x -> y)
+neg1(x, y) := !!(x -> y)
+neg1(x, y) := (x -> y)
+neg2(x) := !(x + 1)
+neg2(x) := x
+neg3(x, y) := !(x + y + 1)
+neg3(x, y) := (x + y)
+neg4(x) := !(x = 0)
+neg4(x) := x
+neg5(x) := !(x -> 0)
+neg5(x) := x
 --- conjunction ---
 conj1(x) := (x & 0)
 conj1(x) := 0
@@ -8,8 +16,8 @@ conj2(x) := (x & 1)
 conj2(x) := x
 conj3(x, y) := ((x -> y) & (x -> y) & x)
 conj3(x, y) := ((x -> y) & x)
-conj4(x) := ((x + 1) & x & !(x + 1))
-conj4(x) := 0
+conj4(x, y) := ((x + y) & x & !(x + y))
+conj4(x, y) := 0
 --- disjunction ---
 disj1(x) := (x | 0)
 disj1(x) := x
@@ -17,8 +25,8 @@ disj2(x) := (x | 1)
 disj2(x) := 1
 disj3(x, y) := ((x -> y) | (x -> y) | x)
 disj3(x, y) := ((x -> y) | x)
-disj4(x) := ((x + 1) | x | !(x + 1))
-disj4(x) := 1
+disj4(x, y) := ((x + y) | x | !(x + y))
+disj4(x, y) := 1
 --- implication ---
 imp1(x) := ((x + 1) -> 1 -> x)
 imp1(x) := x
@@ -26,12 +34,12 @@ imp2(x) := (0 -> (x + 1) -> x)
 imp2(x) := x
 imp3(x) := ((x + 1) -> (x + 1) -> x)
 imp3(x) := x
-imp4(x) := (!(x + 1) -> 0)
-imp4(x) := (x + 1)
-imp5(x) := (!(x + 1) -> (x + 1))
-imp5(x) := (x + 1)
-imp6(x) := ((x + 1) -> !(x + 1))
-imp6(x) := !(x + 1)
+imp4(x, y) := (!(x + y) -> 0)
+imp4(x, y) := (x + y)
+imp5(x, y) := (!(x + y) -> (x + y))
+imp5(x, y) := (x + y)
+imp6(x, y) := ((x + y) -> !(x + y))
+imp6(x, y) := !(x + y)
 imp7(x) := ((x + 1) -> 0 -> 0 -> x)
 imp7(x) := ((x + 1) -> x)
 imp8(x) := (!(x -> 0) -> 0 -> 0)
@@ -45,7 +53,7 @@ imp11(x) := (x + 1)
 imp12(x, y, z) := (x -> y -> z -> (x + y + z) -> (x -> y -> z))
 imp12(x, y, z) := (x -> y -> z)
 imp13(x) := (x -> (!((x + 1) -> 1 -> (x -> 0)) -> (x -> 0) -> 0))
-imp13(x) := 1
+imp13(x) := (x -> (x -> (x -> 0) -> 0))
 --- equality ---
 eq1(x) := (x = 1)
 eq1(x) := x
@@ -57,8 +65,8 @@ eq4(x, y) := (!x = !y)
 eq4(x, y) := (x = y)
 eq5(x, y, z) := (z = !(x -> y) = (x -> y) = 0)
 eq5(x, y, z) := z
-eq6(x) := ((x + 1) = !(x + 1))
-eq6(x) := 0
+eq6(x, y) := ((x + y) = !(x + y))
+eq6(x, y) := 0
 eq7(x, y) := (!(x = 0) = !(y = 0))
 eq7(x, y) := (x = y)
 eq8(x) := (!!(x = 0) = 0)
@@ -74,8 +82,8 @@ plus4(x, y) := (!x + !y)
 plus4(x, y) := (x + y)
 plus5(x, y, z) := (z + !(x -> y) + (x -> y) + 1)
 plus5(x, y, z) := z
-plus6(x) := ((x = 0) + !(x = 0))
-plus6(x) := 1
+plus6(x, y) := ((x = y) + !(x = y))
+plus6(x, y) := 1
 plus7(x, y) := (!(x + 1) + !(y + 1))
 plus7(x, y) := (x + y)
 plus8(x1, x2, x3, x4, x5, x6) := (x1 + x2 + x6 + x2 + x1 + x3 + x4 + x4 + x5 + x6)

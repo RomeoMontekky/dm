@@ -9,4 +9,6 @@ void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expressi
 void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expression, long child_index = 0);
 void MoveChildExpressionInplace(TExpressionPtr& expression, long child_index = 0);
 
+void RemoveChildExpression(TExpressionPtr& expression, long child_index);
+
 } // namespace dm

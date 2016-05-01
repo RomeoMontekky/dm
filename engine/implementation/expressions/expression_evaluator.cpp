@@ -50,7 +50,7 @@ private:
 private:
    // Used by negation evaluation.
 
-   void ReduceCurNegAndLiteralUnderNestedOperation(
+   void ReduceCurNegWithLiteralUnderNestedOperation(
       OperationExpression& expression, LiteralType eq_to_neg_literal);
 
    // Following set of methods is intended to re-use common rules of
@@ -99,6 +99,8 @@ ExpressionEvaluator::ExpressionEvaluator()
 
 bool ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
 {
+   bool was_evaluated_to_expression = false;
+
    while (true)
    {
       Reset();
@@ -108,7 +110,7 @@ bool ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
       if (m_evaluated_expression.get() != nullptr)
       {
          expression = std::move(m_evaluated_expression);
-         return true;
+         was_evaluated_to_expression = true;
       } 
       else if (m_is_normalization_needed)
       {
@@ -121,7 +123,7 @@ bool ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
       }
    }
 
-   return false;
+   return was_evaluated_to_expression;
 }
 
 bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
@@ -226,20 +228,22 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
    assert(m_children.size() == 1);
 
    // We have following rules:
-   //    1. !!x => x
-   //    2. !(x = 0) = x
-   //    3. !(x + 1) = x
+   //    1. !!x       => x
+   //    2. !(x -> 0) => x
+   //    3. !(x = 0)  => x
+   //    4. !(x + 1)  => x
 
    switch (m_children[0].m_operation)
    {
       case OperationType::Negation:
          MoveChildExpression(m_evaluated_expression, expression.GetChild(0));
       break;
+      case OperationType::Implication:
       case OperationType::Equality:
-         ReduceCurNegAndLiteralUnderNestedOperation(expression, LiteralType::False);
+         ReduceCurNegWithLiteralUnderNestedOperation(expression, LiteralType::False);
       break;
       case OperationType::Plus:
-         ReduceCurNegAndLiteralUnderNestedOperation(expression, LiteralType::True);
+         ReduceCurNegWithLiteralUnderNestedOperation(expression, LiteralType::True);
       break;
    }
 }
@@ -511,14 +515,25 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    AbsorbNegations(expression, LiteralType::True);
 }
 
-void ExpressionEvaluator::ReduceCurNegAndLiteralUnderNestedOperation(
+void ExpressionEvaluator::ReduceCurNegWithLiteralUnderNestedOperation(
    OperationExpression &expression, LiteralType eq_to_neg_literal)
 {
-   if (eq_to_neg_literal == m_children[0].m_children.back().m_literal)
+   auto& negation_children = m_children[0].m_children;
+   if (eq_to_neg_literal == negation_children.back().m_literal)
    {
-      // TODO:
-      // MoveChildExpressionInplace(m_evaluated_expression, expression.GetChild(0));
-      // m_evaluated_expression->RemoveChild()
+      m_evaluated_expression = std::move(expression.GetChild(0));
+
+      // If there is more than 2 operands...
+      if (negation_children.size() > 2)
+      {
+         // Just remove the last literal expression.
+         RemoveChildExpression(m_evaluated_expression, negation_children.size() - 1);
+      }
+      else
+      {
+         // Otherwise move the only actual operand (0-th) up.
+         MoveChildExpressionInplace(m_evaluated_expression);
+      }
    }
 }
 

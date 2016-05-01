@@ -44,6 +44,28 @@ void ChildExpressionsMover::Visit(OperationExpression& expression)
    }
 }
 
+class ChildExpressionRemover : public ExpressionVisitor
+{
+public:
+   ChildExpressionRemover(long index);
+
+   // ExpressionVisitor
+   virtual void Visit(OperationExpression& expression) override;
+
+private:
+   long m_child_index;
+};
+
+ChildExpressionRemover::ChildExpressionRemover(long child_index) :
+   m_child_index(child_index)
+{
+}
+
+void ChildExpressionRemover::Visit(OperationExpression& expression)
+{
+   expression.RemoveChild(m_child_index);
+}
+
 } // namespace
 
 void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expression)
@@ -65,6 +87,13 @@ void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expression, lon
 void MoveChildExpressionInplace(TExpressionPtr& expression, long child_index)
 {
    MoveChildExpression(expression, expression, child_index);
+}
+
+void RemoveChildExpression(TExpressionPtr& expression, long child_index)
+{
+   assert(expression.get() != nullptr);
+   ChildExpressionRemover remover(child_index);
+   expression->Accept(remover);
 }
 
 } // namespace dm
