@@ -48,6 +48,11 @@ private:
    void EvaluatePlus(OperationExpression& expression);
 
 private:
+   // Used by negation evaluation.
+
+   void ReduceCurNegAndLiteralUnderNestedOperation(
+      OperationExpression& expression, LiteralType eq_to_neg_literal);
+
    // Following set of methods is intended to re-use common rules of
    // evaluation for associative/commutative operations.
    // If a method returns true it means it set m_evaluated_expression
@@ -63,6 +68,7 @@ private:
                          LiteralType eq_to_neg_literal, LiteralType remaining_literal);
 
    // These methods are used by implication evaluation.
+
    void InPlaceNormalization(OperationExpression& expression);
    bool RemoveBeginningIfEqualToChild(OperationExpression& expression,
                                       long operands_between, bool include_child, 
@@ -219,12 +225,22 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
 {
    assert(m_children.size() == 1);
 
-   // We have the only rule:
+   // We have following rules:
    //    1. !!x => x
+   //    2. !(x = 0) = x
+   //    3. !(x + 1) = x
 
-   if (m_children[0].m_operation == OperationType::Negation)
+   switch (m_children[0].m_operation)
    {
-      MoveChildExpression(m_evaluated_expression, expression.GetChild(0));
+      case OperationType::Negation:
+         MoveChildExpression(m_evaluated_expression, expression.GetChild(0));
+      break;
+      case OperationType::Equality:
+         ReduceCurNegAndLiteralUnderNestedOperation(expression, LiteralType::False);
+      break;
+      case OperationType::Plus:
+         ReduceCurNegAndLiteralUnderNestedOperation(expression, LiteralType::True);
+      break;
    }
 }
 
@@ -493,6 +509,17 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    // According to rule 4 and 2, reduce even amount of negations
    // and reduce the only remaining negation (if exists) with leteral 1.
    AbsorbNegations(expression, LiteralType::True);
+}
+
+void ExpressionEvaluator::ReduceCurNegAndLiteralUnderNestedOperation(
+   OperationExpression &expression, LiteralType eq_to_neg_literal)
+{
+   if (eq_to_neg_literal == m_children[0].m_children.back().m_literal)
+   {
+      // TODO:
+      // MoveChildExpressionInplace(m_evaluated_expression, expression.GetChild(0));
+      // m_evaluated_expression->RemoveChild()
+   }
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
