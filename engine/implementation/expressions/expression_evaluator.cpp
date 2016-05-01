@@ -22,7 +22,9 @@ public:
    ExpressionEvaluator(ExpressionEvaluator&& rhs) = default;
    ExpressionEvaluator& operator =(ExpressionEvaluator&& rhs) = default;
    
-   void Evaluate(TExpressionPtr& expression);
+   // Returns information about whether current expression
+   // has been evaluated to a certain other expression.
+   bool Evaluate(TExpressionPtr& expression);
    
    bool operator ==(const ExpressionEvaluator& rhs) const;
    bool operator !=(const ExpressionEvaluator& rhs) const;
@@ -89,7 +91,7 @@ ExpressionEvaluator::ExpressionEvaluator()
    Reset();
 }
 
-void ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
+bool ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
 {
    while (true)
    {
@@ -100,6 +102,7 @@ void ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
       if (m_evaluated_expression.get() != nullptr)
       {
          expression = std::move(m_evaluated_expression);
+         return true;
       } 
       else if (m_is_normalization_needed)
       {
@@ -111,6 +114,8 @@ void ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
          break;
       }
    }
+
+   return false;
 }
 
 bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
@@ -161,7 +166,13 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
    m_children.resize(child_count);
    for (long index = 0; index < child_count; ++index)
    {
-      m_children[index].Evaluate(expression.GetChild(index));
+      auto& child = m_children[index];
+
+      if (child.Evaluate(expression.GetChild(index)) &&
+          child.m_operation == expression.GetOperation())
+      {
+         m_is_normalization_needed = true;
+      }
    }
 
    EvaluateOperation(expression);

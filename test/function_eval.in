@@ -72,6 +72,9 @@ call eval(eq6)
 # absorbation of negation, normalization, simplification
 eq7(x, y) := !(x = 0) = !(y = 0)
 call eval(eq7)
+# re-normalization on high level
+eq8(x) := !!(x = 0) = 0
+call eval(eq8)
 
 call print(--- plus ---)
 plus1(x) := 1 + x
