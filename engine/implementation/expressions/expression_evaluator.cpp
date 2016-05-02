@@ -7,6 +7,7 @@
 #include "expressions.h"
 
 #include <map>
+#include <algorithm>
 #include <cassert>
 
 namespace dm
@@ -73,6 +74,12 @@ private:
    bool RemoveBeginningIfEqualToChild(OperationExpression& expression,
                                       long operands_between, bool include_child, 
                                       bool negated_child = false);
+
+   // Utility
+
+   static bool IsNegationEquivalent(const ExpressionEvaluator& value);
+   static bool CheckNegNotNeg(const ExpressionEvaluator& negated_value,
+                              const ExpressionEvaluator& value);
 
 private:
    // Following three fields hold values for three possible variants
@@ -788,31 +795,80 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
       }
       
       if (children_to_check != nullptr && 
-          children_to_check->size() == amount_to_check)
+          children_to_check->size() == amount_to_check &&
+          std::equal(m_children.begin(), m_children.begin() + amount_to_check,
+                     children_to_check->begin(), children_to_check->begin() + amount_to_check))
       {
-         long j = 0;
-         for (; j < amount_to_check; ++j)
-         {
-            if (m_children[j] != (*children_to_check)[j])
-            {
-               break;
-            }
-         }
-
-         // If all are equal
-         if (amount_to_check == j)
-         {
-            const long right_bound = include_child ? (i + 1) : i;
-            m_children.erase(m_children.begin(), m_children.begin() + right_bound);
-            expression.RemoveChildren(0, right_bound);
-            InPlaceNormalization(expression);
-            return true;
-         }
+         const long right_bound = include_child ? (i + 1) : i;
+         m_children.erase(m_children.begin(), m_children.begin() + right_bound);
+         expression.RemoveChildren(0, right_bound);
+         InPlaceNormalization(expression);
+         return true;
       }
    }
 
    return false;
 }
+
+bool ExpressionEvaluator::IsNegationEquivalent(const ExpressionEvaluator& value)
+{
+   // We have following rules of negation equivalents:
+   //    1. !x
+   //    2.  x -> 0
+   //    3.  x = 0
+   //    4.  x + 1
+
+   return (OperationType::Negation == value.m_operation) ||
+          (OperationType::Implication == value.m_operation &&
+             (LiteralType::False == value.m_children.back().m_literal)) ||
+          (OperationType::Equality == value.m_operation &&
+             (LiteralType::False == value.m_children.back().m_literal)) ||
+          (OperationType::Plus == value.m_operation &&
+             (LiteralType::True == value.m_children.back().m_literal));
+}
+
+bool ExpressionEvaluator::CheckNegNotNeg(
+   const ExpressionEvaluator& negated_value, const ExpressionEvaluator& value)
+{
+   if (!IsNegationEquivalent(negated_value))
+   {
+      return false;
+   }
+
+   switch (negated_value.m_operation)
+   {
+      case OperationType::Negation:
+         return true;
+
+      // Rule 2.
+      case OperationType::Implication:
+      {
+         return (LiteralType::False == negated_value.m_children.back().m_literal) &&
+         ((
+            // Subcase when value is simple.
+            negated_value.m_children.size() == 2 &&
+            negated_value.m_children.front() == value
+         )
+         ||
+         (
+            // Subcase when value is complex.
+            OperationType::Implication == value.m_operation &&
+            negated_value.m_children.size() - 1 == value.m_children.size() &&
+            std::equal(negated_value.m_children.begin(), negated_value.m_children.begin() + value.m_children.size(),
+                       value.m_children.begin(), value.m_children.begin() + value.m_children.size())
+         ));
+      }
+
+      case OperationType::Equality:
+      case OperationType::Plus:
+         ;
+         // TODO: Implement equality of operands in any order.
+   }
+
+   // To avoid warnings
+   return false;
+}
+
 
 } // namespace
 
