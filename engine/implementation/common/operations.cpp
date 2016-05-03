@@ -1,6 +1,5 @@
 #include "operations.h"
 
-#include <map>
 #include <cassert>
 
 namespace dm
@@ -132,22 +131,6 @@ bool IsOperationAssociative(OperationType operation)
 
 LiteralType PerformOperation(OperationType operation, const LiteralType values[], long amount)
 {
-   using base_map = std::map<OperationType, LiteralType(&)(LiteralType, LiteralType)>;
-
-   static const class operation_to_function_map : public base_map
-   {
-   public:
-      operation_to_function_map() : base_map()
-      {
-         emplace(OperationType::Conjunction, Conjunction);
-         emplace(OperationType::Disjunction, Disjunction);
-         emplace(OperationType::Implication, Implication);
-         emplace(OperationType::Equality,    Equality);  
-         emplace(OperationType::Plus,        Plus);      
-      }
-   }
-   op_to_func;
-
    LiteralType result = LiteralType::None;
    
    if (OperationType::Negation == operation)
@@ -158,7 +141,20 @@ LiteralType PerformOperation(OperationType operation, const LiteralType values[]
    else
    {
       assert(amount > 1);
-      auto func = op_to_func.at(operation);
+
+      using TOperationFunctionPtr = LiteralType(*)(LiteralType, LiteralType);
+
+      static TOperationFunctionPtr functions[] =
+      {
+         nullptr,
+         Conjunction,
+         Disjunction,
+         Implication,
+         Equality,
+         Plus
+      };
+
+      auto func = functions[static_cast<int>(operation)];
       result = values[0];
       for (long i = 1; i < amount; ++i)
       {
@@ -171,24 +167,17 @@ LiteralType PerformOperation(OperationType operation, const LiteralType values[]
 
 const char* OperationTypeToString(OperationType operation)
 {
-   using base_map = std::map<OperationType, const char*>;
-
-   static const class operation_to_string_map : public base_map
+   static const char* operation_tokens[] =
    {
-   public:
-      operation_to_string_map() : base_map()
-      {
-         emplace(OperationType::Negation,    g_token_negation);
-         emplace(OperationType::Conjunction, g_token_conjunction);
-         emplace(OperationType::Disjunction, g_token_disjunction);
-         emplace(OperationType::Implication, g_token_implication);
-         emplace(OperationType::Equality,    g_token_equality);
-         emplace(OperationType::Plus,        g_token_plus);
-      }
-   }
-   op_to_str;
-   
-   return op_to_str.at(operation);
+      g_token_negation,
+      g_token_conjunction,
+      g_token_disjunction,
+      g_token_implication,
+      g_token_equality,
+      g_token_plus
+   };
+
+   return operation_tokens[static_cast<int>(operation)];
 }
 
 OperationType StartsWithOperation(const StringPtrLen& str)

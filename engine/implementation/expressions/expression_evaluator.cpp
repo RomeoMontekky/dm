@@ -6,7 +6,6 @@
 #include "expression_mover.h"
 #include "expressions.h"
 
-#include <map>
 #include <algorithm>
 #include <cassert>
 
@@ -196,28 +195,19 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
 
 void ExpressionEvaluator::EvaluateOperation(OperationExpression& expression)
 {
-   using base_map = std::map
-   <
-      OperationType,
-      void(ExpressionEvaluator::*)(OperationExpression& expression)
-   >;
+   using TEvaluateMetodPtr = void(ExpressionEvaluator::*)(OperationExpression& expression);
 
-   static const class operation_to_function_map : public base_map
+   static TEvaluateMetodPtr methods[] =
    {
-   public:
-      operation_to_function_map() : base_map()
-      {
-         emplace(OperationType::Negation,    EvaluateNegation);
-         emplace(OperationType::Conjunction, EvaluateConjunction);
-         emplace(OperationType::Disjunction, EvaluateDisjunction);
-         emplace(OperationType::Implication, EvaluateImplication);
-         emplace(OperationType::Equality,    EvaluateEquality);
-         emplace(OperationType::Plus,        EvaluatePlus);
-      }
-   }
-   op_to_func;
+      EvaluateNegation,
+      EvaluateConjunction,
+      EvaluateDisjunction,
+      EvaluateImplication,
+      EvaluateEquality,
+      EvaluatePlus
+   };
 
-   auto method = op_to_func.at(expression.GetOperation());
+   auto method = methods[static_cast<int>(expression.GetOperation())];
    (this->*method)(expression);
 
    // If after evaluation the only operand is remained, then
