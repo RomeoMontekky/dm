@@ -65,7 +65,7 @@ void ChildExpressionRemover::Visit(OperationExpression& expression)
 {
    if (m_child_index < 0)
    {
-      m_child_index = expression.GetChildCount() - m_child_index;
+      m_child_index = expression.GetChildCount() + m_child_index;
    }
    expression.RemoveChild(m_child_index);
 }

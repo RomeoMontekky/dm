@@ -23,7 +23,7 @@ public:
    ExpressionEvaluator& operator =(ExpressionEvaluator&& rhs) = default;
    
    // Returns information about whether current expression
-   // has been evaluated to a certain other expression.
+   // has been fully evaluated to a certain other expression.
    bool Evaluate(TExpressionPtr& expression);
    
    bool operator ==(const ExpressionEvaluator& rhs) const;
@@ -38,8 +38,10 @@ private:
    virtual void Visit(OperationExpression& expression) override;
 
 private:
+   bool EvaluateNestedNegationEquivalents(OperationExpression& expression);
    void EvaluateOperation(OperationExpression& expression);
 
+   // Following set of methods are called from EvaluateOperation, using pointer.
    void EvaluateNegation(OperationExpression& expression);
    void EvaluateConjunction(OperationExpression& expression);
    void EvaluateDisjunction(OperationExpression& expression);
@@ -49,15 +51,13 @@ private:
 
 private:
    // Used by negation evaluation.
-
-   void ReduceCurNegWithLiteralUnderNestedOperation(
+   void ReduceNegWithNestedNegEquivalent(
       OperationExpression& expression, LiteralType eq_to_neg_literal);
 
    // Following set of methods is intended to re-use common rules of
    // evaluation for associative/commutative operations.
    // If a method returns true it means it set m_evaluated_expression
    // member, so the calling side must return control up as soon as possible.
-
    bool RemoveAllIfLiteralExists(OperationExpression& expression, LiteralType literal);
    bool RemoveAllIfNegNotNegExists(OperationExpression& expression, LiteralType remaining_literal);
    void RemoveLiteralIfExists(OperationExpression& expression, LiteralType literal);
@@ -68,16 +68,13 @@ private:
                          LiteralType eq_to_neg_literal, LiteralType remaining_literal);
 
    // These methods are used by implication evaluation.
-
    void InPlaceNormalization(OperationExpression& expression);
    bool RemoveBeginningIfEqualToChild(OperationExpression& expression,
                                       long operands_between, bool include_child, 
                                       bool negated_child = false);
 
    // Utility
-
    static bool IsNegationEquivalent(const ExpressionEvaluator& value);
-   static bool IsSimpleNegationEquivalent(const ExpressionEvaluator& value);
    static bool CheckNegNotNeg(const ExpressionEvaluator& negated_value,
                               const ExpressionEvaluator& value);
 
@@ -228,8 +225,8 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
    // We have following rules:
    //    1. !!x       => x
    //    2. !(x -> 0) => x
-   //    3. !(x = 0)  => x
-   //    4. !(x + 1)  => x
+   //    3. !(x =  0) => x
+   //    4. !(x +  1) => x
 
    switch (m_children[0].m_operation)
    {
@@ -238,10 +235,10 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
       break;
       case OperationType::Implication:
       case OperationType::Equality:
-         ReduceCurNegWithLiteralUnderNestedOperation(expression, LiteralType::False);
+         ReduceNegWithNestedNegEquivalent(expression, LiteralType::False);
       break;
       case OperationType::Plus:
-         ReduceCurNegWithLiteralUnderNestedOperation(expression, LiteralType::True);
+         ReduceNegWithNestedNegEquivalent(expression, LiteralType::True);
       break;
    }
 }
@@ -513,7 +510,7 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    AbsorbNegations(expression, LiteralType::True);
 }
 
-void ExpressionEvaluator::ReduceCurNegWithLiteralUnderNestedOperation(
+void ExpressionEvaluator::ReduceNegWithNestedNegEquivalent(
    OperationExpression &expression, LiteralType eq_to_neg_literal)
 {
    auto& negation_children = m_children[0].m_children;
@@ -525,7 +522,7 @@ void ExpressionEvaluator::ReduceCurNegWithLiteralUnderNestedOperation(
       if (negation_children.size() > 2)
       {
          // Just remove the last literal expression.
-         RemoveChildExpression(m_evaluated_expression, negation_children.size() - 1);
+         RemoveChildExpression(m_evaluated_expression, -1);
       }
       else
       {
@@ -740,6 +737,8 @@ bool ExpressionEvaluator::AbsorbNegNotNegs(
 
 void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
 {
+   // InPlaceNormalization can be done for implication only.
+   // For other operations full normalization/simplification must be performed.
    assert(expression.GetOperation() == OperationType::Implication);
 
    if (!m_children.empty() && OperationType::Implication == m_children[0].m_operation)
@@ -816,13 +815,6 @@ bool ExpressionEvaluator::IsNegationEquivalent(const ExpressionEvaluator& value)
              (LiteralType::False == value.m_children.back().m_literal)) ||
           (OperationType::Plus == value.m_operation &&
              (LiteralType::True == value.m_children.back().m_literal));
-}
-
-bool ExpressionEvaluator::IsSimpleNegationEquivalent(const ExpressionEvaluator& value)
-{
-   return (IsNegationEquivalent(value) &&
-             (OperationType::Negation == value.m_operation ||
-              value.m_children.size() == 2));
 }
 
 bool ExpressionEvaluator::CheckNegNotNeg(
