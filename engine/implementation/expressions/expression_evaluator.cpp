@@ -78,6 +78,7 @@ private:
    // Utility
 
    static bool IsNegationEquivalent(const ExpressionEvaluator& value);
+   static bool IsSimpleNegationEquivalent(const ExpressionEvaluator& value);
    static bool CheckNegNotNeg(const ExpressionEvaluator& negated_value,
                               const ExpressionEvaluator& value);
 
@@ -825,6 +826,13 @@ bool ExpressionEvaluator::IsNegationEquivalent(const ExpressionEvaluator& value)
              (LiteralType::False == value.m_children.back().m_literal)) ||
           (OperationType::Plus == value.m_operation &&
              (LiteralType::True == value.m_children.back().m_literal));
+}
+
+bool ExpressionEvaluator::IsSimpleNegationEquivalent(const ExpressionEvaluator& value)
+{
+   return (IsNegationEquivalent(value) &&
+             (OperationType::Negation == value.m_operation ||
+              value.m_children.size() == 2));
 }
 
 bool ExpressionEvaluator::CheckNegNotNeg(
