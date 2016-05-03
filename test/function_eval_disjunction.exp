@@ -1,0 +1,8 @@
+disj1(x) := (x | 0)
+disj1(x) := x
+disj2(x) := (x | 1)
+disj2(x) := 1
+disj3(x, y) := ((x -> y) | (x -> y) | x)
+disj3(x, y) := ((x -> y) | x)
+disj4(x, y) := ((x + y) | x | !(x + y))
+disj4(x, y) := 1

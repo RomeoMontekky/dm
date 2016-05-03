@@ -1,0 +1,8 @@
+conj1(x) := 0 & x
+call eval(conj1)
+conj2(x) := 1 & x
+call eval(conj2)
+conj3(x, y) := (x->y) & (x->y) & x
+call eval(conj3)
+conj4(x, y) := (x + y) & x & !(x + y)
+call eval(conj4)

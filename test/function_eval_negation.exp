@@ -1,0 +1,10 @@
+neg1(x, y) := !!(x -> y)
+neg1(x, y) := (x -> y)
+neg2(x) := !(x + 1)
+neg2(x) := x
+neg3(x, y) := !(x + y + 1)
+neg3(x, y) := (x + y)
+neg4(x) := !(x = 0)
+neg4(x) := x
+neg5(x) := !(x -> 0)
+neg5(x) := x

@@ -1,0 +1,8 @@
+disj1(x) := 0 | x
+call eval(disj1)
+disj2(x) := 1 | x
+call eval(disj2)
+disj3(x, y) := (x->y) | (x->y) | x
+call eval(disj3)
+disj4(x, y) := (x + y) | x | !(x + y)
+call eval(disj4)

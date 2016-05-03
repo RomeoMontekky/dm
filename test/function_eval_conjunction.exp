@@ -1,0 +1,8 @@
+conj1(x) := (x & 0)
+conj1(x) := 0
+conj2(x) := (x & 1)
+conj2(x) := x
+conj3(x, y) := ((x -> y) & (x -> y) & x)
+conj3(x, y) := ((x -> y) & x)
+conj4(x, y) := ((x + y) & x & !(x + y))
+conj4(x, y) := 0
