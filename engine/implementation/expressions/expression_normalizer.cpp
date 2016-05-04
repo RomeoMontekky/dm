@@ -48,7 +48,7 @@ void ExpressionNormalizer::Visit(OperationExpression& expression)
    }
 
    long child_count = expression.GetChildCount();
-   const bool is_order_independed = IsOperationOrderIndepended(expression.GetOperation());
+   const bool are_operands_movable = AreOperandsMovable(expression.GetOperation());
 
    for (long index = 0; index < child_count; ++index)
    {
@@ -59,7 +59,7 @@ void ExpressionNormalizer::Visit(OperationExpression& expression)
       //    - it is either first child, or current operation is associative;
       //    - it is operation expression and operation is the same as in the current expression;
 
-      if ((is_order_independed || 0 == index) && 
+      if ((are_operands_movable || 0 == index) && 
           (child_normalizer.GetOperation() == expression.GetOperation()))
       {
          TExpressionPtrVector moved_children;

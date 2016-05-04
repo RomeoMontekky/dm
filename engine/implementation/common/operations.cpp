@@ -70,16 +70,16 @@ LiteralType Plus(LiteralType value1, LiteralType value2)
 
 } // namespace
 
-bool IsOperationOrderIndepended(OperationType operation)
+bool AreOperandsMovable(OperationType operation)
 {
    // Each time you add new operation to OperationType enum,
-   // check the condition in IsOperationOrderIndepended.
+   // check the condition in AreOperandsMovable.
    //
    // After that you can add new operation to assert
    // condition manully. 
    //
    // Such an approach will guarantee that new operation
-   // will not be forgotten to be checked for associativity.
+   // will not be forgotten to be checked for movability.
 
    assert
    (
@@ -91,10 +91,10 @@ bool IsOperationOrderIndepended(OperationType operation)
       OperationType::Plus == operation
    );
 
-   return (// OperationType::Negation == operation is not order independed
+   return (// OperationType::Negation operand isn't movable
               OperationType::Conjunction == operation ||
               OperationType::Disjunction == operation ||
-           // OperationType::Implication is not order independed
+           // OperationType::Implication operands aren't movable
               OperationType::Equality  == operation ||
               OperationType::Plus  == operation);
 }

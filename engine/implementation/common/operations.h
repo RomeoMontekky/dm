@@ -20,7 +20,7 @@ enum class OperationType
 };
 
 // Actually it means that operation is commutative and associative.
-bool IsOperationOrderIndepended(OperationType operation);
+bool AreOperandsMovable(OperationType operation);
 
 LiteralType PerformOperation(OperationType operation, const LiteralType values[], long amount);
 
