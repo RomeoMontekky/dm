@@ -89,9 +89,7 @@ void ExpressionSimplifier::Visit(OperationExpression& expression)
       return;
    }
 
-   const bool is_children_movable = 
-      IsOperationCommutative(expression.GetOperation()) && 
-      IsOperationAssociative(expression.GetOperation());
+   const bool is_order_independed = IsOperationOrderIndepended(expression.GetOperation());
 
    if (0 == non_actual_values_count)
    {
@@ -100,7 +98,7 @@ void ExpressionSimplifier::Visit(OperationExpression& expression)
 
       m_value = PerformOperation(expression.GetOperation(), child_values, child_count);
    }
-   else if (!is_children_movable || first_actual_values_count == actual_values_count)
+   else if (!is_order_independed || first_actual_values_count == actual_values_count)
    {
       if (first_actual_values_count > 1)
       {
@@ -115,7 +113,7 @@ void ExpressionSimplifier::Visit(OperationExpression& expression)
          const LiteralType value = PerformOperation(expression.GetOperation(), child_values, first_actual_values_count);
          auto value_expression = std::make_unique<LiteralExpression>(value);
    
-         if (is_children_movable)
+         if (is_order_independed)
          {
             expression.AddChild(std::move(value_expression));
             return;
@@ -134,7 +132,7 @@ void ExpressionSimplifier::Visit(OperationExpression& expression)
          child_count -= first_actual_values_count - 1;
       }
       // first_actual_values_count == 1
-      else if (is_children_movable)
+      else if (is_order_independed)
       {
          TExpressionPtr actual_expression;
          if (!child_is_raws[0])
@@ -161,7 +159,7 @@ void ExpressionSimplifier::Visit(OperationExpression& expression)
          }
       }
    }
-   else if (is_children_movable)
+   else if (is_order_independed)
    {
       if (actual_values_count > 1)
       {

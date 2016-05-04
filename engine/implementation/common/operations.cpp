@@ -70,40 +70,10 @@ LiteralType Plus(LiteralType value1, LiteralType value2)
 
 } // namespace
 
-bool IsOperationCommutative(OperationType operation)
+bool IsOperationOrderIndepended(OperationType operation)
 {
-   // Each time you add new operation to OperationType
-   // check the condition in IsOperationCommutative.
-   //
-   // After that you can add new operation to assert
-   // condition manully. 
-   //
-   // Such an approach will guarantee that new operation
-   // will not be forgotten to be checked for commutativity.
-
-   assert
-   (
-      OperationType::Negation == operation ||
-      OperationType::Conjunction == operation ||
-      OperationType::Disjunction == operation ||
-      OperationType::Implication == operation ||
-      OperationType::Equality == operation ||
-      OperationType::Plus == operation
-   );
-
-   return (// OperationType::Negation == operation is not commutative
-              OperationType::Conjunction == operation ||
-              OperationType::Disjunction == operation ||
-           // OperationType::Implication is not commutative
-              OperationType::Equality  == operation ||
-              OperationType::Plus  == operation);
-
-}
-
-bool IsOperationAssociative(OperationType operation)
-{
-   // Each time you add new operation to OperationType
-   // check the condition in IsOperationAssociative.
+   // Each time you add new operation to OperationType enum,
+   // check the condition in IsOperationOrderIndepended.
    //
    // After that you can add new operation to assert
    // condition manully. 
@@ -121,10 +91,10 @@ bool IsOperationAssociative(OperationType operation)
       OperationType::Plus == operation
    );
 
-   return (// OperationType::Negation == operation is not associative
+   return (// OperationType::Negation == operation is not order independed
               OperationType::Conjunction == operation ||
               OperationType::Disjunction == operation ||
-           // OperationType::Implication is not associative
+           // OperationType::Implication is not order independed
               OperationType::Equality  == operation ||
               OperationType::Plus  == operation);
 }

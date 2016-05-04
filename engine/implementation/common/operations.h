@@ -19,8 +19,8 @@ enum class OperationType
    Plus
 };
 
-bool IsOperationCommutative(OperationType operation);
-bool IsOperationAssociative(OperationType operation);
+// Actually it means that operation is commutative and associative.
+bool IsOperationOrderIndepended(OperationType operation);
 
 LiteralType PerformOperation(OperationType operation, const LiteralType values[], long amount);
 
