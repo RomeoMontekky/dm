@@ -1,0 +1,8 @@
+base1(x, y) := ((x -> y) + (x -> y))
+base1(x, y) := 0
+base2(x, y) := ((x -> y) + (y -> x))
+base2(x, y) := ((x -> y) + (y -> x))
+base3(x, y) := ((x = y) + (x = y))
+base3(x, y) := 0
+base4(x, y) := ((x = y) + (y = x))
+base4(x, y) := 0

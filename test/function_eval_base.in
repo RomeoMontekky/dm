@@ -1,0 +1,9 @@
+# check of operators' movability.
+base1(x, y) := (x -> y) + (x -> y)
+call eval(base1)
+base2(x, y) := (x -> y) + (y -> x)
+call eval(base2)
+base3(x, y) := (x = y) + (x = y)
+call eval(base3)
+base4(x, y) := (x = y) + (y = x)
+call eval(base4)

@@ -1,6 +1,5 @@
 - function for evaluation of expressions
    - implement negation equivalents (e.g. (x + 1) & x)
-   - implement order independed comparison (e.g. (x + y) = (y + x))
    - implement gluing rules.
 - function to open brackets
 - function for DNF/SDNF/MinDNF building

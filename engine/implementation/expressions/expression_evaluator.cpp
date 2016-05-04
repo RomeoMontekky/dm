@@ -6,6 +6,8 @@
 #include "expression_mover.h"
 #include "expressions.h"
 
+#include "../common/local_array.h"
+
 #include <algorithm>
 #include <cassert>
 
@@ -136,13 +138,60 @@ bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
    //    1. m_is_normalization_needed
    //    2. m_evaluated_expression
    
-   return
-   (
-      (m_literal == rhs.m_literal) &&
-      (m_param_index == rhs.m_param_index) &&
-      (m_operation == rhs.m_operation) &&
-      (m_children == rhs.m_children)
-   );
+   if ((m_literal != rhs.m_literal) ||
+       (m_param_index != rhs.m_param_index) ||
+       (m_operation != rhs.m_operation))
+   {
+      return false;
+   }
+   
+   if (OperationType::None == m_operation)
+   {
+      return true;
+   }
+   
+   if (!AreOperandsMovable(m_operation))
+   {
+      return (m_children == rhs.m_children);
+   }
+   
+   // If operands are movable, it's not enough just to use comparison of operands.
+   // We need to check whether two vectors contains the same set of operands
+   // up to a permutation.
+   
+   if (m_children.size() != rhs.m_children.size())
+   {
+      return false;
+   }
+   
+   const long child_count = m_children.size();
+   
+   // Contains information about whether i-th child from second vector was
+   // linked to some child of the first vector during conformity detection.
+   LOCAL_ARRAY(bool, child_linked_flags, m_children.size());
+   std::fill_n(child_linked_flags, child_count, false);
+   
+   for (long i = 0, j; i < child_count; ++i)
+   {
+      for (j = 0; j < child_count; ++j)
+      {
+         if ((false == child_linked_flags[j]) && 
+             (m_children[i] == rhs.m_children[j]))
+         {
+            child_linked_flags[j] = true;
+            break;
+         }
+      }
+      
+      if (child_count == j)
+      {
+         // No equal pair for m_children[i].
+         return false;
+      }
+   }
+   
+   // Full conformity is detected.
+   return true;
 }
 
 bool ExpressionEvaluator::operator !=(const ExpressionEvaluator& rhs) const

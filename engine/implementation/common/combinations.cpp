@@ -21,7 +21,7 @@ const LiteralType* CombinationGenerator::GenerateFirst()
       m_combination = std::make_unique<LiteralType[]>(count);
    }
 
-   std::fill(m_combination.get(), m_combination.get() + count, LiteralType::False);
+   std::fill_n(m_combination.get(), count, LiteralType::False);
 
    return m_combination.get() + 1;
 }
