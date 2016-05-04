@@ -155,10 +155,11 @@ bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
       return (m_children == rhs.m_children);
    }
    
-   // If operands are movable, it's not enough just to use comparison of operands.
-   // We need to check whether two vectors contains the same set of operands
+   // If operands are movable, it's not enough just to use comparison of vectors.
+   // We need to check whether two vectors contain the same set of operands
    // up to a permutation.
    
+   // If sizes aren't equal, then conformity is definitly absent.
    if (m_children.size() != rhs.m_children.size())
    {
       return false;
@@ -166,11 +167,15 @@ bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
    
    const long child_count = m_children.size();
    
-   // Contains information about whether i-th child from second vector was
-   // linked to some child of the first vector during conformity detection.
+   // Contains information about whether i-th element of rhs.m_children was
+   // linked to some element of m_children, during conformity detection.
    LOCAL_ARRAY(bool, child_linked_flags, m_children.size());
    std::fill_n(child_linked_flags, child_count, false);
-   
+
+   // Let's establish one-to-one corresponce between elements of
+   // m_children and rhs.m_children, using child_linked_flags to mark
+   // element of rhs.m_children as linked.
+
    for (long i = 0, j; i < child_count; ++i)
    {
       for (j = 0; j < child_count; ++j)
