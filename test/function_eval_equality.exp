@@ -10,6 +10,8 @@ eq5(x, y, z) := (z = !(x -> y) = (x -> y) = 0)
 eq5(x, y, z) := z
 eq6(x, y) := ((x + y) = !(x + y))
 eq6(x, y) := 0
+eq6a(x, y) := ((x + y) = (y + x + 1))
+eq6a(x, y) := 0
 eq7(x, y) := (!(x = 0) = !(y = 0))
 eq7(x, y) := (x = y)
 eq8(x1, x2, x3, x4, x5, x6) := (x1 = x2 = x6 = x2 = x1 = x3 = x4 = x4 = x5 = x6)

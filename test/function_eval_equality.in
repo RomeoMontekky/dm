@@ -10,6 +10,8 @@ eq5(x, y, z) := z = !(x->y) = (x->y) = 0
 call eval(eq5)
 eq6(x, y) := (x + y) = !(x + y)
 call eval(eq6)
+eq6a(x, y) := (x + y) = (y + x + 1)
+call eval(eq6a)
 # absorbation of negation, normalization, simplification
 eq7(x, y) := !(x = 0) = !(y = 0)
 call eval(eq7)

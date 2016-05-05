@@ -6,3 +6,7 @@ disj3(x, y) := ((x -> y) | (x -> y) | x)
 disj3(x, y) := ((x -> y) | x)
 disj4(x, y) := ((x + y) | x | !(x + y))
 disj4(x, y) := 1
+disj5(x) := (x | (x = 0))
+disj5(x) := 1
+disj6(x, y) := ((x + y) | x | (y + x + 1))
+disj6(x, y) := 1

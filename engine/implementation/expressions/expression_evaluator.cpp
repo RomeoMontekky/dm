@@ -401,10 +401,8 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          }
          // According to rule 6, we can remove first operand in case of (!x ->  x)
          // According to rule 7, we can remove first operand in case of ( x -> !x)
-         else if ((OperationType::Negation == m_children[0].m_operation &&
-                   m_children[0].m_children[0] == m_children[1]) ||
-                  (OperationType::Negation == m_children[1].m_operation &&
-                   m_children[1].m_children[0] == m_children[0]))
+         else if (CheckNegNotNeg(m_children[0], m_children[1]) ||
+                  CheckNegNotNeg(m_children[1], m_children[0]))
          {
             m_children.erase(m_children.begin());
             expression.RemoveChild(0);
@@ -582,10 +580,8 @@ bool ExpressionEvaluator::RemoveAllIfNegNotNegExists(
 
    for (int i = 0; i < child_count - 1; ++i)
       for (int j = i + 1; j < child_count; ++j)
-         if ((OperationType::Negation == m_children[i].m_operation &&
-              m_children[i].m_children[0] == m_children[j]) ||
-             (OperationType::Negation == m_children[j].m_operation &&
-              m_children[j].m_children[0] == m_children[i]))
+         if (CheckNegNotNeg(m_children[i], m_children[j]) ||
+             CheckNegNotNeg(m_children[j], m_children[i]))
          {
             m_evaluated_expression =
                std::make_unique<LiteralExpression>(remaining_literal);
@@ -600,7 +596,7 @@ void ExpressionEvaluator::RemoveLiteralIfExists(
 {
    if (literal == m_children.back().m_literal)
    {
-      m_children.resize(m_children.size() - 1);
+      m_children.pop_back();
       expression.RemoveChild(m_children.size());
    }
 }
@@ -696,7 +692,7 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
    {
       m_children[prev_negation] = std::move(m_children[prev_negation].m_children[0]);
       MoveChildExpressionInplace(expression.GetChild(prev_negation));
-      m_children.resize(m_children.size() - 1);
+      m_children.pop_back();
       expression.RemoveChild(m_children.size());
 
       if (m_children[prev_negation].m_operation == expression.GetOperation())
@@ -719,10 +715,8 @@ bool ExpressionEvaluator::AbsorbNegNotNegs(
       long j = i + 1;
       while (j < child_count)
       {
-         if ((OperationType::Negation == m_children[i].m_operation &&
-              m_children[i].m_children[0] == m_children[j]) ||
-             (OperationType::Negation == m_children[j].m_operation &&
-              m_children[j].m_children[0] == m_children[i]))
+         if (CheckNegNotNeg(m_children[i], m_children[j]) ||
+             CheckNegNotNeg(m_children[j], m_children[i]))
          {
             ++absorption_count;
             m_children.erase(m_children.begin() + j);
@@ -801,6 +795,7 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
       const decltype(m_children)* children_to_check = nullptr;
       if (negated_child)
       {
+         // TODO: Implement negation by implication.
          if (OperationType::Negation == curr_child.m_operation &&
              OperationType::Implication == curr_child.m_children[0].m_operation)
          {
@@ -855,56 +850,51 @@ bool ExpressionEvaluator::CheckNegNotNeg(
    {
       return false;
    }
-   
-   // TODO: Generalize this and remove switch.
 
-   switch (negated_value.m_operation)
+   if (OperationType::Negation == negated_value.m_operation)
    {
-      case OperationType::Negation:
-         return (negated_value.m_children.front() == value);
-
-      // Rule 2.
-      case OperationType::Implication:
-      {
-         return (LiteralType::False == negated_value.m_children.back().m_literal) &&
-         ((
-            // Subcase when value is simple.
-            negated_value.m_children.size() == 2 &&
-            negated_value.m_children.front() == value
-         )
-         ||
-         (
-            // Subcase when value is complex.
-            negated_value.m_operation == value.m_operation &&
-            negated_value.m_children.size() - 1 == value.m_children.size() &&
-            std::equal(negated_value.m_children.begin(), negated_value.m_children.begin() + value.m_children.size(),
-                       value.m_children.begin(), value.m_children.begin() + value.m_children.size())
-         ));
-      }
-
-      case OperationType::Equality:
-      case OperationType::Plus:
-      {         
-         const LiteralType eq_to_neg_literal = (OperationType::Equality == negated_value.m_operation) ?
-                                                LiteralType::False : LiteralType::True;
-         
-         return (eq_to_neg_literal == negated_value.m_children.back().m_literal) &&
-         ((
-            // Subcase when value is simple.
-             negated_value.m_children.size() == 2 &&
-             negated_value.m_children.front() == value
-         )
-         ||
-         (
-             // Subcase when value is complex.
-             negated_value.m_operation == value.m_operation &&
-             negated_value.m_children.size() - 1 == value.m_children.size() &&
-             AreEvaluatorSetsEqual(negated_value.m_children, value.m_children, value.m_children.size())
-         ));
-      }  
+      return (negated_value.m_children.front() == value);
    }
 
-   // To avoid warnings
+   if (OperationType::Implication != negated_value.m_operation &&
+       OperationType::Equality != negated_value.m_operation &&
+       OperationType::Plus != negated_value.m_operation)
+   {
+      return false;
+   }
+
+   // We have 2 cases that must be checked:
+   //    1. Simple case, e.g. (x + 1) and x.
+   //    2. Complex case, e.g. (x + y + 1) and (x + y)
+
+   // 1. Simple case.
+   if (negated_value.m_children.size() == 2 &&
+       negated_value.m_children.front() == value)
+   {
+      return true;
+   }
+
+   // 2. Complex case.
+   if (negated_value.m_operation == value.m_operation &&
+       negated_value.m_children.size() - 1 == value.m_children.size())
+   {
+      // There is 2 sub-cases:
+      //    - if operation is commutative, we must compare children as sets.
+      //    - if operation isn't commutative, we must compare children as vectors.
+
+      if (AreOperandsMovable(value.m_operation))
+      {
+         return AreEvaluatorSetsEqual(
+            negated_value.m_children, value.m_children, value.m_children.size());
+      }
+      else
+      {
+         return std::equal(
+            negated_value.m_children.begin(), negated_value.m_children.begin() + value.m_children.size(),
+            value.m_children.begin(), value.m_children.begin() + value.m_children.size());
+      }
+   }
+
    return false;
 }
 

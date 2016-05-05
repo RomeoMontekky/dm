@@ -1,6 +1,10 @@
 - function for evaluation of expressions
    - implement negation equivalents (e.g. (x + 1) & x)
    - implement gluing rules.
+   - implement complex negation absorption rule for commutative operations
+     (e.g. !(x + y) + x + z + y )
+   - check for OperationType::Negation occurrences in evaluator and analization
+     whether it should be replaced by call of CheckNegNotNeg.
 - function to open brackets
 - function for DNF/SDNF/MinDNF building
 - function for CNF/SCNF/MinCNF building

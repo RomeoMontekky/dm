@@ -10,6 +10,8 @@ plus5(x, y, z) := z + !(x->y) + (x->y) + 1
 call eval(plus5)
 plus6(x, y) := (x = y) + !(x = y)
 call eval(plus6)
+plus6a(x, y) := (x = y) + (y = x = 0)
+call eval(plus6a)
 # absorbation of negation, normalization, simplification
 plus7(x, y) := !(x + 1) + !(y + 1)
 call eval(plus7)

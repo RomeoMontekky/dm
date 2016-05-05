@@ -6,3 +6,7 @@ conj3(x, y) := (x->y) & (x->y) & x
 call eval(conj3)
 conj4(x, y) := (x + y) & x & !(x + y)
 call eval(conj4)
+conj5(x) := x & (x = 0)
+call eval(conj5)
+conj6(x, y) := (x + y) & x & (y + x + 1)
+call eval(conj6)
