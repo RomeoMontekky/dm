@@ -16,6 +16,9 @@ namespace dm
 
 namespace
 {
+   
+class ExpressionEvaluator;
+using TExpressionEvaluatorVector = std::vector<ExpressionEvaluator>;
 
 class ExpressionEvaluator : private ExpressionVisitor
 {
@@ -79,6 +82,11 @@ private:
    static bool IsNegationEquivalent(const ExpressionEvaluator& value);
    static bool CheckNegNotNeg(const ExpressionEvaluator& negated_value,
                               const ExpressionEvaluator& value);
+   
+   // Checks that first size elements of vectors vec1 and vec2 have
+   // one-to-one accordance each with another.
+   static bool AreEvaluatorSetsEqual(const TExpressionEvaluatorVector& vec1,
+                                     const TExpressionEvaluatorVector& vec2, long size2);
 
 private:
    // Following three fields hold values for three possible variants
@@ -95,7 +103,7 @@ private:
    TExpressionPtr m_evaluated_expression;
    
    // Contains visitors for child expressions if current visited is operation expression.
-   std::vector<ExpressionEvaluator> m_children;
+   TExpressionEvaluatorVector m_children;
 };
 
 ExpressionEvaluator::ExpressionEvaluator()
@@ -165,38 +173,7 @@ bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
       return false;
    }
    
-   const long child_count = m_children.size();
-   
-   // Contains information about whether i-th element of rhs.m_children was
-   // linked to some element of m_children, during conformity detection.
-   LOCAL_ARRAY(bool, child_linked_flags, m_children.size());
-   std::fill_n(child_linked_flags, child_count, false);
-
-   // Let's establish one-to-one corresponce between elements of
-   // m_children and rhs.m_children, using child_linked_flags to mark
-   // element of rhs.m_children as linked.
-
-   for (long i = 0, j; i < child_count; ++i)
-   {
-      for (j = 0; j < child_count; ++j)
-      {
-         if ((false == child_linked_flags[j]) && 
-             (m_children[i] == rhs.m_children[j]))
-         {
-            child_linked_flags[j] = true;
-            break;
-         }
-      }
-      
-      if (child_count == j)
-      {
-         // No equal pair for m_children[i].
-         return false;
-      }
-   }
-   
-   // Full conformity is detected.
-   return true;
+   return AreEvaluatorSetsEqual(m_children, rhs.m_children, m_children.size());
 }
 
 bool ExpressionEvaluator::operator !=(const ExpressionEvaluator& rhs) const
@@ -878,11 +855,13 @@ bool ExpressionEvaluator::CheckNegNotNeg(
    {
       return false;
    }
+   
+   // TODO: Generalize this and remove switch.
 
    switch (negated_value.m_operation)
    {
       case OperationType::Negation:
-         return true;
+         return (negated_value.m_children.front() == value);
 
       // Rule 2.
       case OperationType::Implication:
@@ -896,7 +875,7 @@ bool ExpressionEvaluator::CheckNegNotNeg(
          ||
          (
             // Subcase when value is complex.
-            OperationType::Implication == value.m_operation &&
+            negated_value.m_operation == value.m_operation &&
             negated_value.m_children.size() - 1 == value.m_children.size() &&
             std::equal(negated_value.m_children.begin(), negated_value.m_children.begin() + value.m_children.size(),
                        value.m_children.begin(), value.m_children.begin() + value.m_children.size())
@@ -905,14 +884,66 @@ bool ExpressionEvaluator::CheckNegNotNeg(
 
       case OperationType::Equality:
       case OperationType::Plus:
-         ;
-         // TODO: Implement equality of operands in any order.
+      {         
+         const LiteralType eq_to_neg_literal = (OperationType::Equality == negated_value.m_operation) ?
+                                                LiteralType::False : LiteralType::True;
+         
+         return (eq_to_neg_literal == negated_value.m_children.back().m_literal) &&
+         ((
+            // Subcase when value is simple.
+             negated_value.m_children.size() == 2 &&
+             negated_value.m_children.front() == value
+         )
+         ||
+         (
+             // Subcase when value is complex.
+             negated_value.m_operation == value.m_operation &&
+             negated_value.m_children.size() - 1 == value.m_children.size() &&
+             AreEvaluatorSetsEqual(negated_value.m_children, value.m_children, value.m_children.size())
+         ));
+      }  
    }
 
    // To avoid warnings
    return false;
 }
 
+bool ExpressionEvaluator::AreEvaluatorSetsEqual(
+   const TExpressionEvaluatorVector& vec1, const TExpressionEvaluatorVector& vec2, long size)
+{
+   assert(size <= vec1.size());
+   assert(size <= vec2.size());
+   
+   // Contains information about whether i-th element of vec2 was
+   // linked to some element of m_children, during conformity detection.
+   LOCAL_ARRAY(bool, child_linked_flags, size);
+   std::fill_n(child_linked_flags, size, false);
+
+   // Let's establish one-to-one corresponce between elements of vec1 and vec2,
+   // using child_linked_flags to mark element of vec2 as linked.
+
+   for (long i = 0, j; i < size; ++i)
+   {
+      for (j = 0; j < size; ++j)
+      {
+         if ((false == child_linked_flags[j]) && 
+             (vec1[i] == vec2[j]))
+         {
+            child_linked_flags[j] = true;
+            break;
+         }
+      }
+      
+      if (size == j)
+      {
+         // No equal pair for m_children[i].
+         return false;
+      }
+   }
+   
+   // Full conformity is detected.
+   return true;
+}
 
 } // namespace
 
