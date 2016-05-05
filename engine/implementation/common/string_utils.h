@@ -11,7 +11,7 @@ struct StringPtrLen
 {
 public:
    StringPtrLen();
-   StringPtrLen(const char* ptr, long len);
+   StringPtrLen(const char* ptr, long len = -1);
 
    operator std::string() const;
 
