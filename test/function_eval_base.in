@@ -1,4 +1,4 @@
-# check of operators' movability.
+# check of operands' movability.
 base1(x, y) := (x -> y) + (x -> y)
 call eval(base1)
 base2(x, y) := (x -> y) + (y -> x)
