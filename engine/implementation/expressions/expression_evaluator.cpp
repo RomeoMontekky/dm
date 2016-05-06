@@ -851,18 +851,21 @@ bool ExpressionEvaluator::CheckNegNotNeg(
       return false;
    }
 
-   if (OperationType::Negation == negated_value.m_operation)
+   switch (negated_value.m_operation)
    {
-      return (negated_value.m_children.front() == value);
+      case OperationType::Negation:
+         return (negated_value.m_children.front() == value);
+         
+      case OperationType::Implication:
+      case OperationType::Equality:
+      case OperationType::Plus:
+         break;
+         
+      default:
+         // Other operations can't form negation equivalent.
+         return false;
    }
-
-   if (OperationType::Implication != negated_value.m_operation &&
-       OperationType::Equality != negated_value.m_operation &&
-       OperationType::Plus != negated_value.m_operation)
-   {
-      return false;
-   }
-
+   
    // We have 2 cases that must be checked:
    //    1. Simple case, e.g. (x + 1) and x.
    //    2. Complex case, e.g. (x + y + 1) and (x + y)
