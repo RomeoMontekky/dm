@@ -370,7 +370,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
          // if it is at the beginning of the expression.
          // According to rules 5 and 1, we can remove subexpression (x -> x)
          // if it is at the beginning of the expression
-         if (LiteralType::False == m_children[0].m_literal ||
+         if (LiteralType::False == m_children.front().m_literal ||
              m_children[0] == m_children[1])
          {
             m_children.erase(m_children.begin(), m_children.begin() + 2);
@@ -379,11 +379,10 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
             was_evaluated = true;
          }
          // According to rule 4 perform transformation (!x -> 0) => x
-         else if (OperationType::Negation == m_children[0].m_operation &&
+         else if (IsNegationEquivalent(m_children.front()) &&
                   LiteralType::False == m_children[1].m_literal)
          {
-            m_children[0] = std::move(m_children[0].m_children[0]);
-            MoveChildExpressionInplace(expression.GetChild(0));
+            ExtractFromUnderNegationEquivalent(m_children.front(), expression.GetChild(0));
             m_children.erase(m_children.begin() + 1);
             expression.RemoveChild(1);
             InPlaceNormalization(expression);
