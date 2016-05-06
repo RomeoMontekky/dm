@@ -6,6 +6,8 @@ plus3(x) := (x + x)
 plus3(x) := 0
 plus4(x, y) := (!x + !y)
 plus4(x, y) := (x + y)
+plus4a(x, y) := ((x = 0) + (y -> 0))
+plus4a(x, y) := (x + y)
 plus5(x, y, z) := (z + !(x -> y) + (x -> y) + 1)
 plus5(x, y, z) := z
 plus6(x, y) := ((x = y) + !(x = y))

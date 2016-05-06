@@ -491,7 +491,7 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
    }
    
    // According to rule 4 and 2, reduce even amount of negations
-   // and reduce the only remaining negation (if exists) with leteral 0.
+   // and reduce the only remaining negation (if exists) with literal 0.
    AbsorbNegations(expression, LiteralType::False);
 }
 
@@ -524,7 +524,7 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    }
    
    // According to rule 4 and 2, reduce even amount of negations
-   // and reduce the only remaining negation (if exists) with leteral 1.
+   // and reduce the only remaining negation (if exists) with literal 1.
    AbsorbNegations(expression, LiteralType::True);
 }
 
@@ -631,7 +631,7 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
    long prev_negation = -1;
    for (long index = 0; index < child_count; ++index)
    {
-      if (OperationType::Negation == m_children[index].m_operation)
+      if (IsNegationEquivalent(m_children[index]))
       {
          if (-1 == prev_negation)
          {
@@ -639,10 +639,10 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
          }
          else
          {
-            m_children[prev_negation] = std::move(m_children[prev_negation].m_children[0]);
-            m_children[index] = std::move(m_children[index].m_children[0]);
-            MoveChildExpressionInplace(expression.GetChild(prev_negation));
-            MoveChildExpressionInplace(expression.GetChild(index));
+            ExtractFromUnderNegationEquivalent(
+               m_children[prev_negation], expression.GetChild(prev_negation));
+            ExtractFromUnderNegationEquivalent(
+               m_children[index], expression.GetChild(index));
 
             if (m_children[prev_negation].m_operation == expression.GetOperation() ||
                 m_children[index].m_operation == expression.GetOperation())
@@ -657,8 +657,9 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
 
    if (prev_negation != -1 && eq_to_neg_literal == m_children.back().m_literal)
    {
-      m_children[prev_negation] = std::move(m_children[prev_negation].m_children[0]);
-      MoveChildExpressionInplace(expression.GetChild(prev_negation));
+      ExtractFromUnderNegationEquivalent(
+         m_children[prev_negation], expression.GetChild(prev_negation));
+      
       m_children.pop_back();
       expression.RemoveChild(m_children.size());
 

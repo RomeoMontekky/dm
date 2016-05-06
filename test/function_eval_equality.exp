@@ -6,6 +6,8 @@ eq3(x) := (x = x)
 eq3(x) := 1
 eq4(x, y) := (!x = !y)
 eq4(x, y) := (x = y)
+eq4a(x, y) := ((x + 1) = (y -> 0))
+eq4a(x, y) := (x = y)
 eq5(x, y, z) := (z = !(x -> y) = (x -> y) = 0)
 eq5(x, y, z) := z
 eq6(x, y) := ((x + y) = !(x + y))
