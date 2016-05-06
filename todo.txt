@@ -3,8 +3,8 @@
    - implement gluing rules.
    - implement complex negation absorption rule for commutative operations
      (e.g. !(x + y) + x + z + y )
-   - check for OperationType::Negation occurrences in evaluator and analization
-     whether it should be replaced by call of CheckNegNotNeg.
+   - implement recurring rules applying for equality/plus.
+     (e.g. doesn't work now following: (x = 0) + (x -> 0)
 - function to open brackets
 - function for DNF/SDNF/MinDNF building
 - function for CNF/SCNF/MinCNF building
