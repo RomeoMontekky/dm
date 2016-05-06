@@ -55,10 +55,6 @@ private:
    void EvaluatePlus(OperationExpression& expression);
 
 private:
-   // Used by negation evaluation.
-   void ReduceNegWithNestedNegEquivalent(
-      OperationExpression& expression, LiteralType eq_to_neg_literal);
-
    // Following set of methods is intended to re-use common rules of
    // evaluation for associative/commutative operations.
    // If a method returns true it means it set m_evaluated_expression
@@ -82,11 +78,13 @@ private:
    static bool IsNegationEquivalent(const ExpressionEvaluator& value);
    static bool CheckNegNotNeg(const ExpressionEvaluator& negated_value,
                               const ExpressionEvaluator& value);
-   
+   static void ExtractFromUnderNegationEquivalent(
+      ExpressionEvaluator& value, TExpressionPtr& expression);
+
    // Checks that first size elements of vectors vec1 and vec2 have
    // one-to-one accordance each with another.
    static bool AreEvaluatorSetsEqual(const TExpressionEvaluatorVector& vec1,
-                                     const TExpressionEvaluatorVector& vec2, long size2);
+                                     const TExpressionEvaluatorVector& vec2, long size);
 
 private:
    // Following three fields hold values for three possible variants
@@ -259,18 +257,10 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
    //    3. !(x =  0) => x
    //    4. !(x +  1) => x
 
-   switch (m_children[0].m_operation)
+   if (IsNegationEquivalent(m_children.front()))
    {
-      case OperationType::Negation:
-         MoveChildExpression(m_evaluated_expression, expression.GetChild(0));
-      break;
-      case OperationType::Implication:
-      case OperationType::Equality:
-         ReduceNegWithNestedNegEquivalent(expression, LiteralType::False);
-      break;
-      case OperationType::Plus:
-         ReduceNegWithNestedNegEquivalent(expression, LiteralType::True);
-      break;
+      ExtractFromUnderNegationEquivalent(m_children.front(), expression.GetChild(0));
+      m_evaluated_expression = std::move(expression.GetChild(0));
    }
 }
 
@@ -537,28 +527,6 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    // According to rule 4 and 2, reduce even amount of negations
    // and reduce the only remaining negation (if exists) with leteral 1.
    AbsorbNegations(expression, LiteralType::True);
-}
-
-void ExpressionEvaluator::ReduceNegWithNestedNegEquivalent(
-   OperationExpression &expression, LiteralType eq_to_neg_literal)
-{
-   auto& negation_children = m_children[0].m_children;
-   if (eq_to_neg_literal == negation_children.back().m_literal)
-   {
-      m_evaluated_expression = std::move(expression.GetChild(0));
-
-      // If there is more than 2 operands...
-      if (negation_children.size() > 2)
-      {
-         // Just remove the last literal expression.
-         RemoveChildExpression(m_evaluated_expression, -1);
-      }
-      else
-      {
-         // Otherwise move the only actual operand (0-th) up.
-         MoveChildExpressionInplace(m_evaluated_expression);
-      }
-   }
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
@@ -899,6 +867,31 @@ bool ExpressionEvaluator::CheckNegNotNeg(
    }
 
    return false;
+}
+
+void ExpressionEvaluator::ExtractFromUnderNegationEquivalent(
+   ExpressionEvaluator& value, TExpressionPtr& expression)
+{
+   assert(IsNegationEquivalent(value));
+   
+   // It will be performed for following operations:
+   //    - OperationType::Implication
+   //    - OperationType::Equality
+   //    - OperationType::Plus
+   if (value.m_children.size() > 1)
+   {
+      value.m_children.pop_back();
+      RemoveChildExpression(expression, -1);
+   }
+   
+   // If will be performed for previous operations if the only child is remained
+   // after literal removing.
+   // Also the condition will be triggered for OperationType::Negation.
+   if (value.m_children.size() == 1)
+   {
+      value = std::move(value.m_children.front());
+      MoveChildExpressionInplace(expression);
+   }
 }
 
 bool ExpressionEvaluator::AreEvaluatorSetsEqual(
