@@ -20,19 +20,19 @@ imp6a(x, y) := (x = y) -> (y = 0 = x)
 call eval(imp6a)
 imp7(x) := (x + 1) -> 0 -> 0 -> x
 call eval(imp7)
-# in-place normalization
-imp8(x) := !(x->0) -> 0 -> 0
-call eval(imp8)
 # grouping, reduction (x -> x -> y) => y, in-place normalization
-imp9(x, y) := x -> y -> 0 -> (x -> y -> 0) -> (x -> 0) -> 0
-call eval(imp9)
+imp8(x, y) := x -> y -> 0 -> (x -> y -> 0) -> (x -> 0) -> 0
+call eval(imp8)
 # grouping, reduction (x -> !x) => !x
-imp10(x) := (x + 1) -> x -> !((x + 1) -> x)
+imp9(x, y) := (x + y) -> x -> !((x + y) -> x)
+call eval(imp9)
+# grouping, reduction (x -> (x -> 0)) => (x -> 0)
+imp10(x, y) := (x + y) -> x -> ((x + y) -> x -> 0)
 call eval(imp10)
-# (x -> y -> x) => (x). Without grouping.
+# rule (x -> y -> x) => (x) without grouping.
 imp11(x) := (x + 1) -> x -> (x + 1)
 call eval(imp11)
-# (x -> y -> x) => (x). With grouping.
+# rule (x -> y -> x) => (x) with grouping.
 imp12(x, y, z) := x -> y -> z -> (x + y + z) -> (x -> y -> z)
 call eval(imp12)
 # multilevel evaluation/normalization/simplification

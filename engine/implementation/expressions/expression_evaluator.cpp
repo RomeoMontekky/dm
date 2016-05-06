@@ -78,8 +78,8 @@ private:
    static bool IsNegationEquivalent(const ExpressionEvaluator& value);
    static bool CheckNegNotNeg(const ExpressionEvaluator& negated_value,
                               const ExpressionEvaluator& value);
-   static void ExtractFromUnderNegationEquivalent(
-      ExpressionEvaluator& value, TExpressionPtr& expression);
+   static void ExtractFromUnderNegationEquivalent(ExpressionEvaluator& value,
+                                                  TExpressionPtr& expression);
 
    // Checks that first size elements of vectors vec1 and vec2 have
    // one-to-one accordance each with another.
@@ -759,15 +759,21 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
    {
       const auto& curr_child = m_children[i];
       const long amount_to_check = i - operands_between;
+      long implication_correction = 0;
       
       const decltype(m_children)* children_to_check = nullptr;
       if (negated_child)
       {
-         // TODO: Implement negation by implication.
          if (OperationType::Negation == curr_child.m_operation &&
              OperationType::Implication == curr_child.m_children[0].m_operation)
          {
             children_to_check = &curr_child.m_children[0].m_children;
+         }
+         else if (OperationType::Implication == curr_child.m_operation &&
+                  LiteralType::False == curr_child.m_children.back().m_literal)
+         {
+            children_to_check = &curr_child.m_children;
+            implication_correction = 1;
          }
       }
       else
@@ -779,7 +785,7 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
       }
       
       if (children_to_check != nullptr && 
-          children_to_check->size() == amount_to_check &&
+          children_to_check->size() - implication_correction == amount_to_check &&
           std::equal(m_children.begin(), m_children.begin() + amount_to_check,
                      children_to_check->begin(), children_to_check->begin() + amount_to_check))
       {
