@@ -23,3 +23,6 @@ call eval(eq8)
 # double re-normalization
 eq9(x) := !!(x = 0) = 0
 call eval(eq9)
+# double negation reduction with literal adding
+eq10(x, y) := !(!(x = y) = y) = x
+call eval(eq10)

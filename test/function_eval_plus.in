@@ -23,4 +23,7 @@ call eval(plus8)
 # double re-normalization
 plus9(x) := !!(x + 1) + 1
 call eval(plus9)
+# double negation reduction with literal adding
+plus10(x, y) := !(!(x + y) + y) + x
+call eval(plus10)
 

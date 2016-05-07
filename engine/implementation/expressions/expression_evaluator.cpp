@@ -251,12 +251,10 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
 {
    assert(m_children.size() == 1);
 
-   // We have following rules:
+   // We have the only rules:
    //    1. !!x       => x
-   //    2. !(x -> 0) => x
-   //    3. !(x =  0) => x
-   //    4. !(x +  1) => x
 
+   // The nested negation can be treated as negation equivalent.
    if (IsNegationEquivalent(m_children.front()))
    {
       ExtractFromUnderNegationEquivalent(m_children.front(), expression.GetChild(0));
@@ -483,8 +481,8 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
       return;
    }
 
-   // According to rule 5 absorb operands that equal up to negation operation,
-   // count resulting 0 literals and reduce/add to the end.
+   // According to rule 5 absorb operands that equal each another up to
+   // negation, count resulting 0 literals and reduce/add to the end.
    if (AbsorbNegNotNegs(expression, LiteralType::False, LiteralType::True))
    {
       return;
@@ -655,13 +653,22 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
       }
    }
 
-   if (prev_negation != -1 && eq_to_neg_literal == m_children.back().m_literal)
+   if (prev_negation != -1)
    {
       ExtractFromUnderNegationEquivalent(
          m_children[prev_negation], expression.GetChild(prev_negation));
-      
-      m_children.pop_back();
-      expression.RemoveChild(m_children.size());
+
+      if (eq_to_neg_literal == m_children.back().m_literal)
+      {
+         m_children.pop_back();
+         expression.RemoveChild(m_children.size());
+      }
+      else
+      {
+         m_children.resize(m_children.size() + 1);
+         m_children.back().m_literal = eq_to_neg_literal;
+         expression.AddChild(std::make_unique<LiteralExpression>(eq_to_neg_literal));
+      }
 
       if (m_children[prev_negation].m_operation == expression.GetOperation())
       {
