@@ -98,12 +98,13 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    output->AddLine(horizontal_line);
 
    CombinationGenerator generator(variable->GetParameterCount());
-   const LiteralType* param_values = generator.GenerateFirst();
-   while (param_values != nullptr)
+
+   for (const LiteralType* param_values = generator.GenerateFirst();
+        param_values != nullptr;
+        param_values = generator.GenerateNext())
    {
       const LiteralType result = CalculateExpression(variable->GetExpression().get(), param_values);
       output->AddLine(ConstructRow(variable, param_values, result));
-      param_values = generator.GenerateNext();
    }
 
    output->AddLine(horizontal_line);
