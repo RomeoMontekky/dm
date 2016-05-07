@@ -24,7 +24,6 @@ public:
    StringPtrLen Left(const char* boundary) const;
    StringPtrLen Right(const char* boundary) const;
 
-   void Assign(const char* ptr, long len);
    void Reset();
    void RemoveLeft(long count);
    void RemoveRight(long count);

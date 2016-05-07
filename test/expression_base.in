@@ -1,21 +1,30 @@
-   # check of space-expression ignoring
+   # check of space-expression ignoring.
 
-true  # is the same as '1'
-false # is the same as '0'
+true  # is the same as '1'.
+false # is the same as '0'.
 
-true     := 1         # should be error as 'true' is reserved
-false    := 0         # should be error as 'false' is reserved
-f1(true) := true + 1  # should be error as 'true' is reserved
-f2(true) := false + 1 # should be error as 'false' is reserved
-f3(call) := call + 1  # should be error as 'call' is reserved
+true     := 1         # error: 'true' is reserved.
+false    := 0         # error: 'false' is reserved.
+f1(true) := true + 1  # error: 'true' is reserved.
+f2(true) := false + 1 # error: 'false' is reserved.
+f3(call) := call + 1  # error: 'call' is reserved.
 
-g1(x) := (x + 1
-g2(x) :=  x + 1)
-g3(x) := ) x + 1(
-g4(x) := (x + 1)
-g5(x) := ((((((x))) + (((1))))))
-g6(x) := ((((((x))) + (((1))) & (x -> 1))))
+g1(x) := (x + 1       # error: no closing bracket.
+g2(x) :=  x + 1)      # error: no opening bracket.
+g3(x) := ) x + 1(     # error: closing before opening.
+g4(x) := (x + 1)      # ok.
+g5(x) := ((((((x))) + (((1))))))            # balance test 1.
+g6(x) := ((((((x))) + (((1))) & (x -> 1)))) # balance test 2.
 
 var(x) := x
 var(x) := x + 1    # error that such variable is already declared
 call display(var)  # check that variable was not overwritten
+
+test(x) := unknown      # error: unknown var or parameter 'unknown'.
+test(x) := unknown(x)   # error: unknown var.
+test(x) := var(x, 1)    # error: incorrect number of parameters.
+test(x) x := x          # error: extra token after closing bracket
+test(x) := x + var(x) x # error: extra token after closing bracket.
+call eval(var) token    # error: extra token after closing bracket.
+
+

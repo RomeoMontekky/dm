@@ -59,6 +59,8 @@ TVariablePtr ExpressionParser::Parse(StringPtrLen str)
 
 TVariablePtr ExpressionParser::ParseVariableDeclaration(StringPtrLen str) const
 {
+   str.TrimRight();
+
    BracketsContent content;
    str = content.Parse(str);
 

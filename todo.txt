@@ -2,8 +2,7 @@
    - implement gluing rules.
    - implement complex negation absorption rule for commutative operations
      (e.g. !(x + y) + x + z + y )
-   - implement applying of recurring rules for equality/plus.
-     (e.g. now doesn't work following: (x = 0) + (x -> 0))
+   - show position of erred character in the error message.
 - function to open brackets
 - function for DNF/SDNF/MinDNF building
 - function for CNF/SCNF/MinCNF building

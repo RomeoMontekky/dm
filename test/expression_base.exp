@@ -14,3 +14,9 @@ g6(x) := (x + ((x -> 1) & 1))
 var(x) := x
 Error: Variable 'var' is already declared.
 var(x) := x
+Error: Usage of undefined parameter or not parameterized variable name 'unknown'.
+Error: Usage of undefined variable 'unknown'.
+Error: Incorrect amount of parameters during usage of variable 'var'. Expected amount - 1, actual amount - 2.
+Error: Extra characters are detected after closing bracket.
+Error: Extra characters are detected after closing bracket.
+Error: Extra characters are detected after closing bracket.

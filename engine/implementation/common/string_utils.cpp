@@ -89,15 +89,6 @@ StringPtrLen StringPtrLen::Right(const char* boundary) const
    return StringPtrLen(boundary, m_len + m_ptr - boundary);
 }
 
-void StringPtrLen::Assign(const char* ptr, long len)
-{
-   m_ptr = ptr;
-   m_len = len;
-
-   assert(m_ptr != nullptr);
-   assert(m_len != -1);
-}
-
 void StringPtrLen::Reset()
 {
    m_ptr = nullptr;

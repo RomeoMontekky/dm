@@ -91,18 +91,20 @@ StringPtrLen BracketsContent::Parse(const StringPtrLen& str)
    m_content.Reset();
 
    const char* bracket_opened = str.Find(g_char_br_opened);
+   // If opened bracket is abset, imply this fact as if
+   // the whole obtained string is the name.
    if (nullptr == bracket_opened)
    {
       return str;
    }
 
-   const char* bracket_closed = str.FindBackward(g_char_br_closed);
-   if (nullptr == bracket_closed)
+   if (str.At(str.Len() - 1) != g_char_br_closed)
    {
-      return str;
+      Error("Extra characters are detected after closing bracket.");
    }
 
-   m_content.Assign(bracket_opened + 1, bracket_closed - bracket_opened - 1);
+   m_content = str.Right(bracket_opened + 1);
+   m_content.RemoveRight(1);
 
    return str.Left(bracket_opened);
 }

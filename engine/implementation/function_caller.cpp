@@ -21,6 +21,7 @@ FunctionCaller::FunctionCaller(VariableManager& variable_mgr) :
 TFunctionOutputPtr FunctionCaller::ParseAndCall(StringPtrLen str)
 {
    TrimFunctionCall(str);
+   str.TrimRight();
 
    CheckBracketBalance(str);
 
