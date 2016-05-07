@@ -8,6 +8,8 @@ eq4(x, y) := !x = !y
 call eval(eq4)
 eq4a(x, y) := (x + 1) = (y -> 0)
 call eval(eq4a)
+eq4b(x) := (x + 1) = (x -> 0)
+call eval(eq4b)
 eq5(x, y, z) := z = !(x->y) = (x->y) = 0
 call eval(eq5)
 eq6(x, y) := (x + y) = !(x + y)
@@ -26,3 +28,4 @@ call eval(eq9)
 # double negation reduction with literal adding
 eq10(x, y) := !(!(x = y) = y) = x
 call eval(eq10)
+

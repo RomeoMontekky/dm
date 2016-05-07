@@ -474,13 +474,6 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
    // According to rule 1, remove literal 1.
    RemoveLiteralIfExists(expression, LiteralType::True);
 
-   // According to rule 3 and 1, remove duplicates
-   // and assign leteral 1 if all operands were removed.
-   if (AbsorbDuplicates(expression, LiteralType::True))
-   {
-      return;
-   }
-
    // According to rule 5 absorb operands that equal each another up to
    // negation, count resulting 0 literals and reduce/add to the end.
    if (AbsorbNegNotNegs(expression, LiteralType::False, LiteralType::True))
@@ -491,6 +484,10 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
    // According to rule 4 and 2, reduce even amount of negations
    // and reduce the only remaining negation (if exists) with literal 0.
    AbsorbNegations(expression, LiteralType::False);
+
+   // According to rule 3 and 1, remove duplicates
+   // and assign leteral 1 if all operands were removed.
+   AbsorbDuplicates(expression, LiteralType::True);
 }
 
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
@@ -507,13 +504,6 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    // According to rule 1, remove literal 0.
    RemoveLiteralIfExists(expression, LiteralType::False);
 
-   // According to rule 3 and 1, remove duplicates
-   // and assign leteral 0 if all operands were removed.
-   if (AbsorbDuplicates(expression, LiteralType::False))
-   {
-      return;
-   }
-   
    // According to rule 5 absorb operands that equal up to negation operation,
    // count resulting 1 literals and reduce/add to the end.
    if (AbsorbNegNotNegs(expression, LiteralType::True, LiteralType::False))
@@ -524,6 +514,10 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    // According to rule 4 and 2, reduce even amount of negations
    // and reduce the only remaining negation (if exists) with literal 1.
    AbsorbNegations(expression, LiteralType::True);
+
+   // According to rule 3 and 1, remove duplicates
+   // and assign leteral 0 if all operands were removed.
+   AbsorbDuplicates(expression, LiteralType::False);
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(

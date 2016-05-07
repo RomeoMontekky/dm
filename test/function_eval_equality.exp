@@ -8,6 +8,8 @@ eq4(x, y) := (!x = !y)
 eq4(x, y) := (x = y)
 eq4a(x, y) := ((x + 1) = (y -> 0))
 eq4a(x, y) := (x = y)
+eq4b(x) := ((x + 1) = (x -> 0))
+eq4b(x) := 1
 eq5(x, y, z) := (z = !(x -> y) = (x -> y) = 0)
 eq5(x, y, z) := z
 eq6(x, y) := ((x + y) = !(x + y))
