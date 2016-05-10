@@ -441,7 +441,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
       }
 
       // Now try to evaluate the expression, using grouping of some amount
-      // of first operands and using basic rules.
+      // of first operands and applying basic rules.
 
       // Expression (x1 -> ... -> xn -> (x1 -> ... -> xn) -> z)
       // can be grouped and the whole expression can be evaluated to (z),

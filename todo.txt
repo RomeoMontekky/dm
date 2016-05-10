@@ -1,12 +1,12 @@
-- function for evaluation of expressions
+- function for evaluation of expressions.
    - implement gluing rules.
    - implement complex negation absorption rule for commutative operations
-     (e.g. !(x + y) + x + z + y )
+     (e.g. !(x + y) + x + z + y ).
    - show position of erred character in the error message.
-- function to open brackets
-- function for DNF/SDNF/MinDNF building
-- function for CNF/SCNF/MinCNF building
-- function for Zhegalkin polinom building
+- function to open brackets.
+- function for DNF/SDNF/MinDNF building.
+- function for CNF/SCNF/MinCNF building.
+- function for Zhegalkin polinom building.
 
 - estimate props and cons of refusing the use of "call" qualifier and
   introduce support of returning value for functions.
