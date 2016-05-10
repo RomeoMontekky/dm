@@ -10,3 +10,6 @@ disj5(x) := x | (x = 0)
 call eval(disj5)
 disj6(x, y) := (x + y) | x | (y + x + 1)
 call eval(disj6)
+# rule x & !x with grouping
+disj7(x, y, z) := ((x | y) -> 0) | y | z | x
+call eval(disj7)

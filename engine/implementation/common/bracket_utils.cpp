@@ -91,7 +91,7 @@ StringPtrLen BracketsContent::Parse(const StringPtrLen& str)
    m_content.Reset();
 
    const char* bracket_opened = str.Find(g_char_br_opened);
-   // If opened bracket is abset, imply this fact as if
+   // If opened bracket is absent, imply this fact as if
    // the whole obtained string is the name.
    if (nullptr == bracket_opened)
    {

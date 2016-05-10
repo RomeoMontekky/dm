@@ -67,6 +67,7 @@ private:
    void AbsorbNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
    bool AbsorbNegNotNegs(OperationExpression& expression,
                          LiteralType eq_to_neg_literal, LiteralType remaining_literal);
+   bool CanBeGroupedAsNegNotNeg(OperationExpression& expression);
 
    // These methods are used by implication evaluation.
    void InPlaceNormalization(OperationExpression& expression);
@@ -251,7 +252,7 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
 {
    assert(m_children.size() == 1);
 
-   // We have the only rules:
+   // We have the only rule:
    //    1. !!x       => x
 
    // The nested negation can be treated as negation equivalent.
@@ -279,7 +280,7 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    }
 
    // According to rule 4, evaluate expression to literal 0
-   // if there exist pair x and !x.
+   // if there exists x and !x.
    if (RemoveAllIfNegNotNegExists(expression, LiteralType::False))
    {
       return;
@@ -290,6 +291,13 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
 
    // According to rule 3, remove all duplicates.
    RemoveDuplicates(expression);
+   
+   // According to rule 4, evaluate expression to literal 0
+   // if there exists !x and grouped subset that equals to x.
+   if (CanBeGroupedAsNegNotNeg(expression))
+   {
+      m_evaluated_expression = std::make_unique<LiteralExpression>(LiteralType::False);
+   }
 }
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
@@ -309,7 +317,7 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    }
 
    // According to rule 4, evaluate expression to literal 1
-   // if there exist pair x and !x.
+   // if there exists x and !x.
    if (RemoveAllIfNegNotNegExists(expression, LiteralType::True))
    {
       return;
@@ -320,6 +328,13 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
 
    // According to rule 3, remove all duplicates.
    RemoveDuplicates(expression);
+   
+   // According to rule 4, evaluate expression to literal 1
+   // if there exists !x and grouped subset that equals to x.
+   if (CanBeGroupedAsNegNotNeg(expression))
+   {
+      m_evaluated_expression = std::make_unique<LiteralExpression>(LiteralType::True);
+   }
 }
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
@@ -726,6 +741,76 @@ bool ExpressionEvaluator::AbsorbNegNotNegs(
       return true;
    }
 
+   return false;
+}
+
+bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expression)
+{
+   // Checks whether there exists some negated child, that (under negation)
+   // contains child operands, that all have equivalents between
+   // children of the current operation.
+   
+   // Examples:
+   //    !(x & y) & x & y & z
+   //    ((x + y)->0) + x + y + z
+   
+   const long child_count = m_children.size();
+   
+   if (child_count < 3)
+   {
+      // Two operarands cannot be grouped, because it means that operation under
+      // negation must have a single child, that is possible for negation only,
+      // but nested negations must be reduced during recursive evalution call.
+      return false;
+   }
+   
+   for (long index = 0, i = 0, j = 0; index < child_count; ++index)
+   {
+      const auto& child = m_children[index];
+      
+      // If current child is negation equivalent and there it contains the same
+      // operation as current operation, then check whether other children are
+      // the same as children of the negated child.
+      
+      // Checking of the fact, that child operands amount of the 'child' is less
+      // than 3, needs additional clarification. Removing of negation from the
+      // operation that has got more then 2 child operands will give this operation,
+      // but this operations will not be same as the current operation (otherwise
+      // it would be normalized).
+      
+      if (IsNegationEquivalent(child) && 
+          child.m_children.size() < 3 &&
+          child.m_children.front().m_operation == expression.GetOperation())
+      {
+         const auto& children_to_check = child.m_children.front().m_children;
+         const long children_to_check_count = children_to_check.size();
+         
+         for (i = 0; i < children_to_check_count; ++i)
+         {
+            for (j = 0; j < child_count; ++j)
+            {
+               if (j != index && m_children[j] == children_to_check[i])
+               {
+                  // Break if equal child is found.
+                  break;
+               }
+            }
+            
+            // Equal child is not found.
+            if (child_count == j)
+            {
+               break;
+            }
+         }
+         
+         // There are exist equivalent for each child under negation.
+         if (children_to_check_count == i)
+         {
+            return true;
+         }
+      }
+   }
+   
    return false;
 }
 
