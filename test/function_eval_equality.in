@@ -28,4 +28,6 @@ call eval(eq9)
 # double negation reduction with literal adding
 eq10(x, y) := !(!(x = y) = y) = x
 call eval(eq10)
+eq11(x, y, z) := ((x + y) = 0) + y + z + x
+call eval(eq11)
 

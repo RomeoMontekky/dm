@@ -28,4 +28,6 @@ call eval(plus9)
 # double negation reduction with literal adding
 plus10(x, y) := !(!(x + y) + y) + x
 call eval(plus10)
+plus11(x, y, z) := ((x + y)->0) + y + !z + x
+call eval(plus11)
 

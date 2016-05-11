@@ -24,3 +24,5 @@ plus9(x) := (!!(x + 1) + 1)
 plus9(x) := x
 plus10(x, y) := (!(!(x + y) + y) + x)
 plus10(x, y) := 0
+plus11(x, y, z) := (((x + y) -> 0) + y + !z + x)
+plus11(x, y, z) := z

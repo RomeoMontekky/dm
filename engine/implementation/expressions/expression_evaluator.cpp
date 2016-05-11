@@ -67,7 +67,11 @@ private:
    void AbsorbNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
    bool AbsorbNegNotNegs(OperationExpression& expression,
                          LiteralType eq_to_neg_literal, LiteralType remaining_literal);
-   bool CanBeGroupedAsNegNotNeg(OperationExpression& expression);
+   bool AbsorbNegNotNegsGrouped(OperationExpression& expression,
+                                LiteralType eq_to_neg_literal, LiteralType remaining_literal);
+   bool CorrectLiteralByAbsorptionCount(OperationExpression& expression, long absorption_count,
+                                        LiteralType eq_to_neg_literal, LiteralType remaining_literal);
+   bool CanBeGroupedAsNegNotNeg(OperationExpression& expression, std::vector<long>* indexes = nullptr);
 
    // These methods are used by implication evaluation.
    void InPlaceNormalization(OperationExpression& expression);
@@ -503,6 +507,9 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
    // According to rule 3 and 1, remove duplicates
    // and assign leteral 1 if all operands were removed.
    AbsorbDuplicates(expression, LiteralType::True);
+   
+   // The same as AbsorbNegNotNegs, but with grouping.
+   AbsorbNegNotNegsGrouped(expression, LiteralType::False, LiteralType::True);
 }
 
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
@@ -533,6 +540,9 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    // According to rule 3 and 1, remove duplicates
    // and assign leteral 0 if all operands were removed.
    AbsorbDuplicates(expression, LiteralType::False);
+   
+   // The same as AbsorbNegNotNegs, but with grouping.
+   AbsorbNegNotNegsGrouped(expression, LiteralType::True, LiteralType::False);
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
@@ -716,35 +726,70 @@ bool ExpressionEvaluator::AbsorbNegNotNegs(
       ++i;
    }
 
+   return CorrectLiteralByAbsorptionCount(expression, absorption_count, eq_to_neg_literal, remaining_literal);
+}
+
+bool ExpressionEvaluator::AbsorbNegNotNegsGrouped(
+   OperationExpression& expression, LiteralType eq_to_neg_literal, LiteralType remaining_literal)
+{
+   int absorption_count = 0;
+   
+   std::vector<long> indexes;
+   while (!m_children.empty() && CanBeGroupedAsNegNotNeg(expression, &indexes))
+   {
+      ++absorption_count;
+      
+      if (m_children.size() == indexes.size())
+      {
+         // Small optimization for case of the whole removing
+         m_children.clear();
+         expression.RemoveChildren(0, expression.GetChildCount());
+      }
+      else
+      {
+         // Removing is done in reverse order to avoid shifting elements in affected vectors.
+         for (auto it = indexes.crbegin(); it != indexes.crend(); ++it)
+         {
+            m_children.erase(m_children.begin() + *it);
+            expression.RemoveChild(*it);
+         }
+      }
+   }
+   
+   return CorrectLiteralByAbsorptionCount(expression, absorption_count, eq_to_neg_literal, remaining_literal);
+}
+
+bool ExpressionEvaluator::CorrectLiteralByAbsorptionCount(
+   OperationExpression& expression, long absorption_count, LiteralType eq_to_neg_literal, LiteralType remaining_literal)
+{
    // If absorption count is odd
    if ((absorption_count & 1) == 1)
    {
-      if (child_count > 0 &&
-          m_children.back().m_literal == eq_to_neg_literal)
+      if (!m_children.empty() &&
+           m_children.back().m_literal == eq_to_neg_literal)
       {
          m_children.pop_back();
-         expression.RemoveChild(child_count - 1);
-         --child_count;
+         expression.RemoveChild(expression.GetChildCount() - 1);
       }
       else
       {
          m_children.resize(m_children.size() + 1);
          m_children.back().m_literal = eq_to_neg_literal;
          expression.AddChild(std::make_unique<LiteralExpression>(eq_to_neg_literal));
-         ++child_count;
       }
    }
 
-   if (0 == child_count)
+   if (m_children.empty())
    {
       m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
       return true;
    }
-
+   
    return false;
 }
 
-bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expression)
+bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(
+   OperationExpression& expression, std::vector<long>* indexes)
 {
    // Checks whether there exists some negated child, that (under negation)
    // contains child operands, that all have equivalents between
@@ -764,9 +809,20 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expressio
       return false;
    }
    
+   if (indexes != nullptr)
+   {
+      indexes->reserve(child_count - 1);
+   }
+   
    for (long index = 0, i = 0, j = 0; index < child_count; ++index)
    {
       const auto& child = m_children[index];
+      
+      if (indexes != nullptr)
+      {
+         indexes->clear();
+         indexes->push_back(index);
+      }
       
       // If current child is negation equivalent and there it contains the same
       // operation as current operation, then check whether other children are
@@ -801,15 +857,28 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expressio
             {
                break;
             }
+            else if (indexes != nullptr)
+            {
+               indexes->push_back(j);
+            }
          }
          
          // There are exist equivalent for each child under negation.
          if (children_to_check_count == i)
          {
+            if (indexes != nullptr)
+            {
+               std::sort(indexes->begin(), indexes->end());
+            }
             return true;
          }
       }
    }
+   
+   if (indexes != nullptr)
+   {
+      indexes->clear();
+   }   
    
    return false;
 }
