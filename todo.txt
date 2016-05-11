@@ -11,6 +11,8 @@
 - estimate props and cons of refusing the use of "call" qualifier and
   introduce support of returning value for functions.
 
+- De Morgan's laws.
+
 ------
 
 For MinCNF/MinDNF: https://ru.wikipedia.org/wiki/Метод_Куайна
