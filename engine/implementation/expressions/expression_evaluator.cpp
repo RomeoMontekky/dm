@@ -821,7 +821,6 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(
       if (indexes != nullptr)
       {
          indexes->clear();
-         indexes->push_back(index);
       }
       
       // If current child is negation equivalent and there it contains the same
@@ -868,6 +867,7 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(
          {
             if (indexes != nullptr)
             {
+               indexes->push_back(index);
                std::sort(indexes->begin(), indexes->end());
             }
             return true;
