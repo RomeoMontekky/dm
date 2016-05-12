@@ -1014,14 +1014,11 @@ bool ExpressionEvaluator::AreEvaluatorSetsEqual(
    for (long i = 0, j; i < size; ++i)
    {
       for (j = 0; j < size; ++j)
-      {
-         if ((false == child_linked_flags[j]) && 
-             (vec1[i] == vec2[j]))
+         if (!child_linked_flags[j] && (vec1[i] == vec2[j]))
          {
             child_linked_flags[j] = true;
             break;
          }
-      }
       
       if (size == j)
       {
