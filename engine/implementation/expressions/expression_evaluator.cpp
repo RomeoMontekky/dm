@@ -67,11 +67,7 @@ private:
    void AbsorbNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
    bool AbsorbNegNotNegs(OperationExpression& expression,
                          LiteralType eq_to_neg_literal, LiteralType remaining_literal);
-   bool AbsorbNegNotNegsGrouped(OperationExpression& expression,
-                                LiteralType eq_to_neg_literal, LiteralType remaining_literal);
-   bool CorrectLiteralByAbsorptionCount(OperationExpression& expression, long absorption_count,
-                                        LiteralType eq_to_neg_literal, LiteralType remaining_literal);
-   bool CanBeGroupedAsNegNotNeg(OperationExpression& expression, std::vector<long>* indexes = nullptr);
+   bool CanBeGroupedAsNegNotNeg(OperationExpression& expression);
 
    // These methods are used by implication evaluation.
    void InPlaceNormalization(OperationExpression& expression);
@@ -508,8 +504,10 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
    // and assign leteral 1 if all operands were removed.
    AbsorbDuplicates(expression, LiteralType::True);
    
-   // The same as AbsorbNegNotNegs, but with grouping.
-   AbsorbNegNotNegsGrouped(expression, LiteralType::False, LiteralType::True);
+   // Grouped version of AbsorbNegNotNegs isn't needed, because of the fact
+   // that all negations were absorbed by AbsorbNegations method call and
+   // (if there is equality under the negation) expression was normalized and
+   // evaluated, so additional evaluation isn't possible.
 }
 
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
@@ -541,8 +539,10 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    // and assign leteral 0 if all operands were removed.
    AbsorbDuplicates(expression, LiteralType::False);
    
-   // The same as AbsorbNegNotNegs, but with grouping.
-   AbsorbNegNotNegsGrouped(expression, LiteralType::True, LiteralType::False);
+   // Grouped version of AbsorbNegNotNegs isn't needed, because of the fact
+   // that all negations were absorbed by AbsorbNegations method call and
+   // (if there is plus under the negation) expression was normalized and
+   // evaluated, so additional evaluation isn't possible.
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
@@ -726,42 +726,6 @@ bool ExpressionEvaluator::AbsorbNegNotNegs(
       ++i;
    }
 
-   return CorrectLiteralByAbsorptionCount(expression, absorption_count, eq_to_neg_literal, remaining_literal);
-}
-
-bool ExpressionEvaluator::AbsorbNegNotNegsGrouped(
-   OperationExpression& expression, LiteralType eq_to_neg_literal, LiteralType remaining_literal)
-{
-   int absorption_count = 0;
-   
-   std::vector<long> indexes;
-   while (!m_children.empty() && CanBeGroupedAsNegNotNeg(expression, &indexes))
-   {
-      ++absorption_count;
-      
-      if (m_children.size() == indexes.size())
-      {
-         // Small optimization for case of the whole removing
-         m_children.clear();
-         expression.RemoveChildren(0, expression.GetChildCount());
-      }
-      else
-      {
-         // Removing is done in reverse order to avoid shifting elements in affected vectors.
-         for (auto it = indexes.crbegin(); it != indexes.crend(); ++it)
-         {
-            m_children.erase(m_children.begin() + *it);
-            expression.RemoveChild(*it);
-         }
-      }
-   }
-   
-   return CorrectLiteralByAbsorptionCount(expression, absorption_count, eq_to_neg_literal, remaining_literal);
-}
-
-bool ExpressionEvaluator::CorrectLiteralByAbsorptionCount(
-   OperationExpression& expression, long absorption_count, LiteralType eq_to_neg_literal, LiteralType remaining_literal)
-{
    // If absorption count is odd
    if ((absorption_count & 1) == 1)
    {
@@ -788,8 +752,7 @@ bool ExpressionEvaluator::CorrectLiteralByAbsorptionCount(
    return false;
 }
 
-bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(
-   OperationExpression& expression, std::vector<long>* indexes)
+bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expression)
 {
    // Checks whether there exists some negated child, that (under negation)
    // contains child operands, that all have equivalents between
@@ -804,34 +767,27 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(
    if (child_count < 3)
    {
       // Two operarands cannot be grouped, because it means that operation under
-      // negation must have a single child, that is possible for negation only,
-      // but nested negations must be reduced during recursive evalution call.
+      // negation must have a single child. The last fact is possible for the only
+      // expression (!x * x), but this expression were to be already reduced before.
       return false;
-   }
-   
-   if (indexes != nullptr)
-   {
-      indexes->reserve(child_count - 1);
    }
    
    for (long index = 0, i = 0, j = 0; index < child_count; ++index)
    {
       const auto& child = m_children[index];
       
-      if (indexes != nullptr)
-      {
-         indexes->clear();
-      }
+      // If current child is a negation equivalent and it encapsulate the same operation
+      // as current one, then we need to check whether other children are the same as
+      // children of the negated child.
       
-      // If current child is negation equivalent and there it contains the same
-      // operation as current operation, then check whether other children are
-      // the same as children of the negated child.
-      
-      // Checking of the fact, that child operands amount of the 'child' is less
-      // than 3, needs additional clarification. Removing of negation from the
-      // operation that has got more then 2 child operands will give this operation,
+      // Checking of the fact, that amount of child operands of the 'child' is less
+      // than 3, needs additional clarification. Removing of negation equivalent from
+      // the operation that has got more then 2 child operands will give this operation,
       // but this operations will not be same as the current operation (otherwise
-      // it would be normalized).
+      // it would be normalized before).
+      
+      // Example:
+      // (x = y = 0) = x = y
       
       if (IsNegationEquivalent(child) && 
           child.m_children.size() < 3 &&
@@ -856,29 +812,15 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(
             {
                break;
             }
-            else if (indexes != nullptr)
-            {
-               indexes->push_back(j);
-            }
          }
          
          // There are exist equivalent for each child under negation.
          if (children_to_check_count == i)
          {
-            if (indexes != nullptr)
-            {
-               indexes->push_back(index);
-               std::sort(indexes->begin(), indexes->end());
-            }
             return true;
          }
       }
    }
-   
-   if (indexes != nullptr)
-   {
-      indexes->clear();
-   }   
    
    return false;
 }
