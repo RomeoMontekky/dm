@@ -776,18 +776,34 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expressio
    {
       const auto& child = m_children[index];
       
-      // If current child is a negation equivalent and it encapsulate the same operation
+      // If current child is a negation equivalent and it encapsulates the same operation
       // as current one, then we need to check whether other children are the same as
       // children of the negated child.
       
       // Checking of the fact, that amount of child operands of the 'child' is less
-      // than 3, needs additional clarification. Removing of negation equivalent from
-      // the operation that has got more then 2 child operands will give this operation,
-      // but this operations will not be same as the current operation (otherwise
-      // it would be normalized before).
+      // than 3, needs additional clarification. Let's explain this on examples.
       
-      // Example:
-      // (x = y = 0) = x = y
+      // Example 1:
+      //    (x = y = 0) = x = y
+      // Before evaluation start it had to be normalized to:
+      //     x = y = 0 = x = y
+      // So it's impossible situation.
+
+      // Example 2:
+      //    (x -> y -> 0) = x = y
+      // This expression could not be normalized before evaluation, so it's possible. But it
+      // can't be grouped because removing of negation from bracket's content gives (x -> y),
+      // and this operation isn't equality.
+
+      // Example 3:
+      //   ((x = y) -> 0) = x = y
+      // This expression could not be normalized, so is possible like to the previous one.
+      // But after negation removing it will give (x = y), so remained operarands of the
+      // female operation are really can be grouped to have the same set.
+
+      // Let's make a line. The grouping is possible only if operands' amount of the
+      // negation equivalent is less, then 3. This condition is OK for binary operations,
+      // and also fits raw negation operation, that is ought to have a single child operand.
       
       if (IsNegationEquivalent(child) && 
           child.m_children.size() < 3 &&
