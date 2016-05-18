@@ -98,7 +98,7 @@ private:
    bool m_is_normalization_needed;
 
    // Will be filled by new evaluated expression if the whole
-   // operation expression was evaluated to a some simple form.
+   // operation expression was evaluated to some simple form.
    TExpressionPtr m_evaluated_expression;
    
    // Contains visitors for child expressions if current visited is operation expression.
