@@ -1,8 +1,7 @@
+- show position of erred character in the error message.
 - function for evaluation of expressions.
    - implement gluing rules.
-   - implement complex negation absorption rule for commutative operations
-     (e.g. !(x + y) + x + z + y ).
-   - show position of erred character in the error message.
+   - De Morgan's laws.
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.
 - function for CNF/SCNF/MinCNF building.
@@ -11,7 +10,7 @@
 - estimate props and cons of refusing the use of "call" qualifier and
   introduce support of returning value for functions.
 
-- De Morgan's laws.
+
 
 ------
 
