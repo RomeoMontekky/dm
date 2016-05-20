@@ -597,7 +597,7 @@ bool ExpressionEvaluator::AbsorbDuplicates(
 
 void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, LiteralType eq_to_neg_literal)
 {
-   bool is_pair_negation = true;
+   bool is_negation_lonely = false;
 
    for (long index = m_children.size() - 1; index >= 0; --index)
    {
@@ -605,11 +605,11 @@ void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, Liter
       {
          ExtractFromUnderNegationEquivalent(m_children[index], expression.GetChild(index));
          InPlaceNormalization(expression, index);
-        is_pair_negation = !is_pair_negation;
+         is_negation_lonely = !is_negation_lonely;
       }
    }
 
-   if (!is_pair_negation)
+   if (is_negation_lonely)
    {
       if (eq_to_neg_literal == m_children.back().m_literal)
       {
