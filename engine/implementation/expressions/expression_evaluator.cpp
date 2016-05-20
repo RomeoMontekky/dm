@@ -29,7 +29,7 @@ public:
    
    // Returns information about whether current expression
    // has been fully evaluated to a certain other expression.
-   bool Evaluate(TExpressionPtr& expression);
+   void Evaluate(TExpressionPtr& expression);
    
    bool operator ==(const ExpressionEvaluator& rhs) const;
    bool operator !=(const ExpressionEvaluator& rhs) const;
@@ -46,7 +46,7 @@ private:
    bool EvaluateNestedNegationEquivalents(OperationExpression& expression);
    void EvaluateOperation(OperationExpression& expression);
 
-   // Following set of methods are called from EvaluateOperation, using pointer.
+   // Following methods are called from EvaluateOperation, using pointer.
    void EvaluateNegation(OperationExpression& expression);
    void EvaluateConjunction(OperationExpression& expression);
    void EvaluateDisjunction(OperationExpression& expression);
@@ -64,13 +64,15 @@ private:
    void RemoveLiteralIfExists(OperationExpression& expression, LiteralType literal);
    void RemoveDuplicates(OperationExpression& expression);
    bool AbsorbDuplicates(OperationExpression& expression, LiteralType remaining_literal);
-   void AbsorbNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
-   bool AbsorbNegNotNegs(OperationExpression& expression,
-                         LiteralType eq_to_neg_literal, LiteralType remaining_literal);
+   void RemoveNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
    bool CanBeGroupedAsNegNotNeg(OperationExpression& expression);
 
-   // These methods are used by implication evaluation.
+   // In-place normatlization for equality/plus
+   void InPlaceNormalization(OperationExpression& expression, long child_index);
+   // In-place normatlization for implication
    void InPlaceNormalization(OperationExpression& expression);
+
+   // This method is used by implication evaluation.
    bool RemoveBeginningIfEqualToChild(OperationExpression& expression,
                                       long operands_between, bool include_child, 
                                       bool negated_child = false);
@@ -94,9 +96,6 @@ private:
    long m_param_index;
    OperationType m_operation;
    
-   // Is normalization/simplification needed on high level.
-   bool m_is_normalization_needed;
-
    // Will be filled by new evaluated expression if the whole
    // operation expression was evaluated to some simple form.
    TExpressionPtr m_evaluated_expression;
@@ -110,10 +109,8 @@ ExpressionEvaluator::ExpressionEvaluator()
    Reset();
 }
 
-bool ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
+void ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
 {
-   bool was_evaluated_to_expression = false;
-
    while (true)
    {
       Reset();
@@ -123,27 +120,17 @@ bool ExpressionEvaluator::Evaluate(TExpressionPtr& expression)
       if (m_evaluated_expression.get() != nullptr)
       {
          expression = std::move(m_evaluated_expression);
-         was_evaluated_to_expression = true;
       } 
-      else if (m_is_normalization_needed)
-      {
-         NormalizeExpression(expression);
-         SimplifyExpression(expression);
-      }
       else
       {
          break;
       }
    }
-
-   return was_evaluated_to_expression;
 }
 
 bool ExpressionEvaluator::operator ==(const ExpressionEvaluator& rhs) const
 {
-   // Following values isn't checked intentionally:
-   //    1. m_is_normalization_needed
-   //    2. m_evaluated_expression
+   // Value of field m_evaluated_expression isn't checked intentionally.
    
    if ((m_literal != rhs.m_literal) ||
        (m_param_index != rhs.m_param_index) ||
@@ -185,7 +172,6 @@ void ExpressionEvaluator::Reset()
    m_literal = LiteralType::None;
    m_param_index = -1;
    m_operation = OperationType::None;
-   m_is_normalization_needed = false;
    m_children.clear();
    m_evaluated_expression.reset();
 }
@@ -208,13 +194,7 @@ void ExpressionEvaluator::Visit(OperationExpression& expression)
    m_children.resize(child_count);
    for (long index = 0; index < child_count; ++index)
    {
-      auto& child = m_children[index];
-
-      if (child.Evaluate(expression.GetChild(index)) &&
-          child.m_operation == expression.GetOperation())
-      {
-         m_is_normalization_needed = true;
-      }
+      m_children[index].Evaluate(expression.GetChild(index));
    }
 
    EvaluateOperation(expression);
@@ -484,30 +464,17 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
    //    2. (!x =  0 ) => x
    //    3. ( x =  x ) => 1
    //    4. (!x = !y ) => (x = y)
-   //    5. ( x = !x ) => 0
 
    // According to rule 1, remove literal 1.
    RemoveLiteralIfExists(expression, LiteralType::True);
 
-   // According to rule 5 absorb operands that equal each another up to
-   // negation, count resulting 0 literals and reduce/add to the end.
-   if (AbsorbNegNotNegs(expression, LiteralType::False, LiteralType::True))
-   {
-      return;
-   }
-   
    // According to rule 4 and 2, reduce even amount of negations
    // and reduce the only remaining negation (if exists) with literal 0.
-   AbsorbNegations(expression, LiteralType::False);
+   RemoveNegations(expression, LiteralType::False);
 
    // According to rule 3 and 1, remove duplicates
    // and assign leteral 1 if all operands were removed.
    AbsorbDuplicates(expression, LiteralType::True);
-   
-   // Grouped version of AbsorbNegNotNegs isn't needed, because of the fact
-   // that all negations were absorbed by AbsorbNegations method call and
-   // (if there is equality under the negation) expression was normalized and
-   // evaluated, so additional evaluation isn't possible.
 }
 
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
@@ -519,30 +486,17 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    //    2. (!x +  1 ) => x
    //    3. ( x +  x ) => 0
    //    4. (!x + !y ) => (x + y)
-   //    5. ( x + !x ) => 1
 
    // According to rule 1, remove literal 0.
    RemoveLiteralIfExists(expression, LiteralType::False);
 
-   // According to rule 5 absorb operands that equal up to negation operation,
-   // count resulting 1 literals and reduce/add to the end.
-   if (AbsorbNegNotNegs(expression, LiteralType::True, LiteralType::False))
-   {
-      return;
-   }
-   
    // According to rule 4 and 2, reduce even amount of negations
    // and reduce the only remaining negation (if exists) with literal 1.
-   AbsorbNegations(expression, LiteralType::True);
+   RemoveNegations(expression, LiteralType::True);
 
    // According to rule 3 and 1, remove duplicates
    // and assign leteral 0 if all operands were removed.
    AbsorbDuplicates(expression, LiteralType::False);
-   
-   // Grouped version of AbsorbNegNotNegs isn't needed, because of the fact
-   // that all negations were absorbed by AbsorbNegations method call and
-   // (if there is plus under the negation) expression was normalized and
-   // evaluated, so additional evaluation isn't possible.
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
@@ -641,42 +595,22 @@ bool ExpressionEvaluator::AbsorbDuplicates(
    return false;
 }
 
-void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, LiteralType eq_to_neg_literal)
+void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, LiteralType eq_to_neg_literal)
 {
-   const long child_count = m_children.size();
+   bool is_pair_negation = true;
 
-   long prev_negation = -1;
-   for (long index = 0; index < child_count; ++index)
+   for (long index = m_children.size() - 1; index >= 0; --index)
    {
       if (IsNegationEquivalent(m_children[index]))
       {
-         if (-1 == prev_negation)
-         {
-            prev_negation = index;
-         }
-         else
-         {
-            ExtractFromUnderNegationEquivalent(
-               m_children[prev_negation], expression.GetChild(prev_negation));
-            ExtractFromUnderNegationEquivalent(
-               m_children[index], expression.GetChild(index));
-
-            if (m_children[prev_negation].m_operation == expression.GetOperation() ||
-                m_children[index].m_operation == expression.GetOperation())
-            {
-               m_is_normalization_needed = true;
-            }
-
-            prev_negation = -1;
-         }
+         ExtractFromUnderNegationEquivalent(m_children[index], expression.GetChild(index));
+         InPlaceNormalization(expression, index);
+        is_pair_negation = !is_pair_negation;
       }
    }
 
-   if (prev_negation != -1)
+   if (!is_pair_negation)
    {
-      ExtractFromUnderNegationEquivalent(
-         m_children[prev_negation], expression.GetChild(prev_negation));
-
       if (eq_to_neg_literal == m_children.back().m_literal)
       {
          m_children.pop_back();
@@ -688,68 +622,7 @@ void ExpressionEvaluator::AbsorbNegations(OperationExpression& expression, Liter
          m_children.back().m_literal = eq_to_neg_literal;
          expression.AddChild(std::make_unique<LiteralExpression>(eq_to_neg_literal));
       }
-
-      if (m_children[prev_negation].m_operation == expression.GetOperation())
-      {
-         m_is_normalization_needed = true;
-      }
    }
-}
-
-bool ExpressionEvaluator::AbsorbNegNotNegs(
-   OperationExpression& expression, LiteralType eq_to_neg_literal, LiteralType remaining_literal)
-{
-   int child_count = m_children.size();
-
-   int absorption_count = 0;
-
-   long i = 0;
-   while (i < child_count - 1)
-   {
-      long j = i + 1;
-      while (j < child_count)
-      {
-         if (CheckNegNotNeg(m_children[i], m_children[j]) ||
-             CheckNegNotNeg(m_children[j], m_children[i]))
-         {
-            ++absorption_count;
-            m_children.erase(m_children.begin() + j);
-            m_children.erase(m_children.begin() + i);
-            expression.RemoveChild(j);
-            expression.RemoveChild(i);
-            j = i + 1;
-            child_count -= 2;
-            continue;
-         }
-         ++j;
-      }
-      ++i;
-   }
-
-   // If absorption count is odd
-   if ((absorption_count & 1) == 1)
-   {
-      if (!m_children.empty() &&
-           m_children.back().m_literal == eq_to_neg_literal)
-      {
-         m_children.pop_back();
-         expression.RemoveChild(expression.GetChildCount() - 1);
-      }
-      else
-      {
-         m_children.resize(m_children.size() + 1);
-         m_children.back().m_literal = eq_to_neg_literal;
-         expression.AddChild(std::make_unique<LiteralExpression>(eq_to_neg_literal));
-      }
-   }
-
-   if (m_children.empty())
-   {
-      m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
-      return true;
-   }
-   
-   return false;
 }
 
 bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expression)
@@ -841,27 +714,34 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expressio
    return false;
 }
 
-void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
+void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression, long child_index)
 {
-   // InPlaceNormalization can be done for implication only.
-   // For other operations full normalization/simplification must be performed.
-   assert(expression.GetOperation() == OperationType::Implication);
-
-   if (!m_children.empty() && OperationType::Implication == m_children[0].m_operation)
+   if (expression.GetOperation() == m_children[child_index].m_operation)
    {
       TExpressionPtrVector moved_children;
-      MoveChildExpressions(moved_children, expression.GetChild(0));
-      expression.RemoveChild(0);
-      expression.InsertChildren(0, std::move(moved_children));
+      MoveChildExpressions(moved_children, expression.GetChild(child_index));
+      expression.RemoveChild(child_index);
+      expression.InsertChildren(child_index, std::move(moved_children));
 
-      auto moved_children_evaluators = std::move(m_children[0].m_children);
-      m_children.erase(m_children.begin());
+      auto moved_children_evaluators = std::move(m_children[child_index].m_children);
+      m_children.erase(m_children.begin() + child_index);
       m_children.reserve(m_children.size() + moved_children_evaluators.size());
       for (long index = moved_children_evaluators.size() - 1; index >= 0; --index)
       {
-         m_children.emplace(m_children.begin(),
+         m_children.emplace(m_children.begin() + child_index,
             std::move(moved_children_evaluators[index]));
       }
+   }
+}
+
+void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
+{
+   // The method is able to be called by implication evaluation even
+   // in case of empty children vector (it is done for logic simplification),
+   // so we must check emptiness manually.
+   if (!m_children.empty())
+   {
+      InPlaceNormalization(expression, 0);
    }
 }
 
