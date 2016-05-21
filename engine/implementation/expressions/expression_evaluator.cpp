@@ -541,7 +541,7 @@ void ExpressionEvaluator::RemoveLiteralIfExists(
 
 void ExpressionEvaluator::RemoveDuplicates(OperationExpression& expression)
 {
-   int child_count = m_children.size();
+   long child_count = m_children.size();
 
    for (long i = 0; i < child_count - 1; ++i)
    {
@@ -563,7 +563,7 @@ void ExpressionEvaluator::RemoveDuplicates(OperationExpression& expression)
 bool ExpressionEvaluator::AbsorbDuplicates(
    OperationExpression& expression, LiteralType remaining_literal)
 {
-   int child_count = m_children.size();
+   long child_count = m_children.size();
 
    long i = 0;
    while (i < child_count - 1)
