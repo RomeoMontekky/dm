@@ -1,8 +1,5 @@
 #include "expression_evaluator.h"
 #include "expression_visitor.h"
-
-#include "expression_simplifier.h"
-#include "expression_normalizer.h"
 #include "expression_mover.h"
 #include "expressions.h"
 
