@@ -30,9 +30,9 @@ OperationExpression::OperationExpression(
 }
 
 OperationExpression::OperationExpression(const OperationExpression& rhs):
-  Expression(),
-  m_operation(rhs.m_operation),
-  m_children()
+   Expression(),
+   m_operation(rhs.m_operation),
+   m_children()
 {
    m_children.reserve(rhs.m_children.size());
    for (const auto& child : rhs.m_children)
@@ -118,7 +118,7 @@ std::string OperationExpression::ToString() const
       
    if (OperationType::Negation == m_operation)
    {
-      result += "!";
+      result += OperationTypeToString(m_operation);
       result += m_children.at(0)->ToString();
    }
    else
