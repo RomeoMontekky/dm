@@ -62,6 +62,7 @@ private:
    void RemoveDuplicates(OperationExpression& expression);
    bool AbsorbDuplicates(OperationExpression& expression, LiteralType remaining_literal);
    void RemoveNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
+   void DeMorganTransfromation(OperationExpression& expression);
    bool CanBeGroupedAsNegNotNeg(OperationExpression& expression);
 
    // In-place normatlization for equality/plus
@@ -211,13 +212,12 @@ void ExpressionEvaluator::EvaluateOperation(OperationExpression& expression)
       EvaluatePlus
    };
 
-   auto method = methods[static_cast<int>(expression.GetOperation())];
+   auto method = methods[static_cast<int>(m_operation)];
    (this->*method)(expression);
 
    // If after evaluation the only operand is remained, then
    // current expression can be evaluated to this operand.
-   if (expression.GetOperation() != OperationType::Negation &&
-       expression.GetChildCount() == 1)
+   if (m_operation != OperationType::Negation && expression.GetChildCount() == 1)
    {
       // Evaluated expression shouln't be set already.
       assert(m_evaluated_expression.get() == nullptr);
@@ -230,7 +230,7 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
    assert(m_children.size() == 1);
 
    // We have the only rule:
-   //    1. !!x       => x
+   //    1. !!x  => x
 
    // The nested negation can be treated as negation equivalent.
    if (IsNegationEquivalent(m_children.front()))
@@ -622,6 +622,49 @@ void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, Liter
    }
 }
 
+void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression)
+{
+   assert(OperationType::Conjunction == m_operation ||
+          OperationType::Disjunction == m_operation);
+
+   long negation_count = std::count_if(m_children.begin(), m_children.end(), IsNegationEquivalent);
+
+   if (OperationType::Conjunction == m_operation)
+   {
+      // It is done to avoid the endless call of De Morgan's transormations.
+      // In case of equal amount of negated/non-negated operands, increment
+      // of negation_count will allow to call transofmation from conjunction
+      // to disjunction, but reverse transormation will not be forced.
+      ++negation_count;
+   }
+
+   if (negation_count < (m_children.size() >> 1))
+   {
+      // Don't do De Morgan's transformation if amount of negated operands
+      // less then non-negated ones.
+      return;
+   }
+
+   m_operation = (OperationType::Conjunction == m_operation) ?
+      OperationType::Disjunction : OperationType::Conjunction;
+   expression.SetOperation(m_operation);
+
+   for (long index = m_children.size() - 1; index >= 0; --index)
+   {
+      if (IsNegationEquivalent(m_children[index]))
+      {
+         ExtractFromUnderNegationEquivalent(m_children[index], expression.GetChild(index));
+         InPlaceNormalization(expression, index);
+      }
+      else
+      {
+         // TODO: Add negation
+      }
+   }
+
+   // TODO: Add negation to the whole operation
+}
+
 bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expression)
 {
    // Checks whether there exists some negated child, that (under negation)
@@ -713,7 +756,7 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(OperationExpression& expressio
 
 void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression, long child_index)
 {
-   if (expression.GetOperation() == m_children[child_index].m_operation)
+   if (m_operation == m_children[child_index].m_operation)
    {
       TExpressionPtrVector moved_children;
       MoveChildExpressions(moved_children, expression.GetChild(child_index));
