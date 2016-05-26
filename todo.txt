@@ -10,6 +10,9 @@
 - estimate props and cons of refusing the use of "call" qualifier and
   introduce support of returning value for functions.
 
+- estimate props and cons of adding expression type to ExpressionBase to
+  remove visitors and simplify expression processing algorithms.
+
 ------
 
 For MinCNF/MinDNF: https://ru.wikipedia.org/wiki/Метод_Куайна
