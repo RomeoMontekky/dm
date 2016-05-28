@@ -50,20 +50,20 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
       }
    }
 
-   LiteralType ret = LiteralType::None;
+   LiteralType value = LiteralType::None;
 
    const long actual_values_count = child_count - non_actual_values_count;
    if (0 == actual_values_count)
    {
       // Nothing to simplify
-      return ret;
+      return value;
    }
 
    if (0 == non_actual_values_count)
    {
       // If all child expressions have actual values, then we can
       // simplify the whole operation expression to a calculated value.
-      ret = PerformOperation(operation, child_values, child_count);
+      value = PerformOperation(operation, child_values, child_count);
    }
    else if (!are_operands_movable || first_actual_values_count == actual_values_count)
    {
@@ -73,20 +73,20 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
          // Another case is when operands with actual values are all already at the biginning.
          expression->RemoveChildren(0, first_actual_values_count);
 
-         const LiteralType value = PerformOperation(operation, child_values, first_actual_values_count);
-         auto value_expression = std::make_unique<LiteralExpression>(value);
+         const LiteralType part_value = PerformOperation(operation, child_values, first_actual_values_count);
+         auto part_value_expression = std::make_unique<LiteralExpression>(part_value);
 
          if (are_operands_movable)
          {
-            expression->AddChild(std::move(value_expression));
-            return ret;
+            expression->AddChild(std::move(part_value_expression));
+            return value;
          }
          else
          {
-            expression->InsertChild(0, std::move(value_expression));
+            expression->InsertChild(0, std::move(part_value_expression));
          }
 
-         child_values[0] = value;
+         child_values[0] = part_value;
          std::copy(child_values + first_actual_values_count, child_values + child_count, child_values + 1);
 
          child_count -= first_actual_values_count - 1;
@@ -101,7 +101,7 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
          expression->RemoveChild(0);
          expression->AddChild(std::move(actual_expression));
 
-         return ret;
+         return value;
       }
 
       // If we are here, then it is possible that there exist expressions
@@ -171,7 +171,7 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
       }
    }
 
-   return ret;
+   return value;
 }
 
 } // namespace

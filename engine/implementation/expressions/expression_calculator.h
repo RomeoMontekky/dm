@@ -6,6 +6,6 @@
 namespace dm
 {
 
-LiteralType CalculateExpression(const Expression* expression, const LiteralType param_values[]);
+LiteralType CalculateExpression(const TExpressionPtr& expr, const LiteralType param_values[]);
 
 } // namespace dm

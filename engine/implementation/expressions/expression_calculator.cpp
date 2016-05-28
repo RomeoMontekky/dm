@@ -1,5 +1,4 @@
 #include "expression_calculator.h"
-#include "expression_visitor.h"
 #include "expressions.h"
 
 #include "../common/local_array.h"
@@ -9,68 +8,48 @@
 namespace dm
 {
 
-namespace
+LiteralType CalculateExpression(const TExpressionPtr& expr, const LiteralType param_values[])
 {
+   assert(expr.get() != nullptr);
 
-class ExpressionCalculator : public ConstExpressionVisitor
-{
-public:
-   ExpressionCalculator(const LiteralType param_values[]);
-
-   LiteralType GetValue() const;
-
-   // ExpressionVisitor
-   virtual void Visit(const LiteralExpression& expression) override;
-   virtual void Visit(const ParamRefExpression& expression) override;
-   virtual void Visit(const OperationExpression& expression) override;
-
-private:
-   const LiteralType* const m_param_values;
-   LiteralType m_value;
-};
-
-ExpressionCalculator::ExpressionCalculator(const LiteralType param_values[]) :
-   m_param_values(param_values), m_value(LiteralType::None)
-{
-}
-
-LiteralType ExpressionCalculator::GetValue() const
-{
-   return m_value;
-}
-
-void ExpressionCalculator::Visit(const LiteralExpression& expression)
-{
-   m_value = expression.GetLiteral();
-}
-
-void ExpressionCalculator::Visit(const ParamRefExpression& expression)
-{
-   m_value = m_param_values[expression.GetParamIndex()];
-}
-
-void ExpressionCalculator::Visit(const OperationExpression& expression)
-{
-   const long child_count = expression.GetChildCount();
-
-   LOCAL_ARRAY(LiteralType, child_values, child_count);
-   for (long index = 0; index < child_count; ++index)
+   LiteralType value = LiteralType::None;
+   switch (expr->GetType())
    {
-      ExpressionCalculator child_visitor(m_param_values);
-      expression.GetChild(index)->Accept(child_visitor);
-      child_values[index] = child_visitor.GetValue();
+      case ExpressionType::Literal:
+      {
+         value = static_cast<const LiteralExpression*>(expr.get())->GetLiteral();
+         break;
+      }
+
+      case ExpressionType::ParamRef:
+      {
+         value = param_values[static_cast<const ParamRefExpression*>(expr.get())->GetParamIndex()];
+         break;
+      }
+
+      case ExpressionType::Operation:
+      {
+         auto expression = static_cast<const OperationExpression*>(expr.get());
+         const long child_count = expression->GetChildCount();
+
+         LOCAL_ARRAY(LiteralType, child_values, child_count);
+         for (long index = child_count - 1; index >= 0; --index)
+         {
+            child_values[index] = CalculateExpression(expression->GetChild(index), param_values);
+         }
+
+         value = PerformOperation(expression->GetOperation(), child_values, child_count);
+
+         break;
+      }
+
+      default:
+      {
+         assert(!"Unknown type of expression");
+      }
    }
 
-   m_value = PerformOperation(expression.GetOperation(), child_values, child_count);
-}
-
-} // namespace
-
-LiteralType CalculateExpression(const Expression* expression, const LiteralType param_values[])
-{
-   ExpressionCalculator calculator(param_values);
-   expression->Accept(calculator);
-   return calculator.GetValue();
+   return value;
 }
 
 } // namespace dm

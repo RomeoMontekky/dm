@@ -103,7 +103,7 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
         param_values != nullptr;
         param_values = generator.GenerateNext())
    {
-      const LiteralType result = CalculateExpression(variable->GetExpression().get(), param_values);
+      const LiteralType result = CalculateExpression(variable->GetExpression(), param_values);
       output->AddLine(ConstructRow(variable, param_values, result));
    }
 

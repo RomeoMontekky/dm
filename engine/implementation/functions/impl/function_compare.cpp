@@ -46,8 +46,8 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    const LiteralType* param_values = generator.GenerateFirst();
    while (param_values != nullptr)
    {
-      const LiteralType result1 = CalculateExpression(variable1->GetExpression().get(), param_values);
-      const LiteralType result2 = CalculateExpression(variable2->GetExpression().get(), param_values);
+      const LiteralType result1 = CalculateExpression(variable1->GetExpression(), param_values);
+      const LiteralType result2 = CalculateExpression(variable2->GetExpression(), param_values);
       
       if (result1 != result2)
       {
