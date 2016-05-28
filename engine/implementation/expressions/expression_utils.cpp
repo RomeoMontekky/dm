@@ -7,79 +7,76 @@
 namespace dm
 {
 
-LiteralType GetLiteral(const TExpressionPtr& expression)
+LiteralType GetLiteral(const TExpressionPtr& expr)
 {
-   assert(expression.get() != nullptr);
-
-   if (expression->GetType() == ExpressionType::Literal)
+   assert(expr.get() != nullptr);
+   if (expr->GetType() == ExpressionType::Literal)
    {
-      const LiteralExpression* literal_expression =
-         static_cast<const LiteralExpression*>(expression.get());
-      return literal_expression->GetLiteral();
+      return static_cast<const LiteralExpression*>(expr.get())->GetLiteral();
    }
-
    return LiteralType::None;
 }
 
-OperationType GetOperation(const TExpressionPtr& expression)
+OperationType GetOperation(const TExpressionPtr& expr)
 {
-   assert(expression.get() != nullptr);
-
-   if (expression->GetType() == ExpressionType::Operation)
+   assert(expr.get() != nullptr);
+   if (expr->GetType() == ExpressionType::Operation)
    {
-      const OperationExpression* operation_expression =
-         static_cast<const OperationExpression*>(expression.get());
-      return operation_expression->GetOperation();
+      return static_cast<const OperationExpression*>(expr.get())->GetOperation();
    }
-
    return OperationType::None;
 }
 
-void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expression)
+void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expr)
 {
-   assert(expression.get() != nullptr);
-   assert(expression->GetType() == ExpressionType::Operation);
+   assert(expr.get() != nullptr);
+   assert(expr->GetType() == ExpressionType::Operation);
 
-   OperationExpression* operation_expression =
-      static_cast<OperationExpression*>(expression.get());
+   OperationExpression* expression = static_cast<OperationExpression*>(expr.get());
 
    target.clear();
 
-   const long child_count = operation_expression->GetChildCount();
+   const long child_count = expression->GetChildCount();
    target.reserve(child_count);
    for (long index = 0; index < child_count; ++index)
    {
-      target.push_back(std::move(operation_expression->GetChild(index)));
+      target.push_back(std::move(expression->GetChild(index)));
    }
 }
 
-void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expression, long child_index)
+void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expr, long child_index)
 {
    TExpressionPtrVector moved_expressions;
-   MoveChildExpressions(moved_expressions, expression);
+   MoveChildExpressions(moved_expressions, expr);
    assert(child_index >= 0 && child_index < moved_expressions.size());
    target = std::move(moved_expressions[child_index]);
 }
 
-void MoveChildExpressionInplace(TExpressionPtr& expression, long child_index)
+void MoveChildExpressionInplace(TExpressionPtr& expr, long child_index)
 {
-   MoveChildExpression(expression, expression, child_index);
+   MoveChildExpression(expr, expr, child_index);
 }
 
-void RemoveChildExpression(TExpressionPtr& expression, long child_index)
+void RemoveChildExpression(TExpressionPtr& expr, long child_index)
 {
-   assert(expression.get() != nullptr);
-   assert(expression->GetType() == ExpressionType::Operation);
+   assert(expr.get() != nullptr);
+   assert(expr->GetType() == ExpressionType::Operation);
 
-   OperationExpression* operation_expression =
-      static_cast<OperationExpression*>(expression.get());
+   OperationExpression* expression = static_cast<OperationExpression*>(expr.get());
 
    if (child_index < 0)
    {
-      child_index = operation_expression->GetChildCount() + child_index;
+      child_index = expression->GetChildCount() + child_index;
    }
 
-   operation_expression->RemoveChild(child_index);
+   expression->RemoveChild(child_index);
+}
+
+void AddChildExpression(TExpressionPtr& expr, TExpressionPtr&& child)
+{
+   assert(expr.get() != nullptr);
+   assert(expr->GetType() == ExpressionType::Operation);
+   static_cast<OperationExpression*>(expr.get())->AddChild(std::move(child));
 }
 
 } // namespace dm
