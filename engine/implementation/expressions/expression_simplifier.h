@@ -5,6 +5,6 @@
 namespace dm
 {
 
-void SimplifyExpression(TExpressionPtr& expression);
+void SimplifyExpression(TExpressionPtr& expr);
 
 } // namespace dm

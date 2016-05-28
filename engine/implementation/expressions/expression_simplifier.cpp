@@ -1,5 +1,5 @@
 #include "expression_simplifier.h"
-#include "expression_visitor.h"
+#include "expression_utils.h"
 #include "expressions.h"
 
 #include "../common/local_array.h"
@@ -13,64 +13,32 @@ namespace dm
 namespace
 {
 
-class ExpressionSimplifier : public ExpressionVisitor
+LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
 {
-public:
-   ExpressionSimplifier();
+   const ExpressionType type = expr->GetType();
 
-   LiteralType GetValue() const;
-   bool GetIsRaw() const;
+   if (ExpressionType::Literal == type)
+   {
+      return static_cast<LiteralExpression*>(expr.get())->GetLiteral();
+   }
+   else if (ExpressionType::ParamRef == type)
+   {
+      return LiteralType::None;
+   }
 
-   // ExpressionVisitor
-   virtual void Visit(LiteralExpression& expression) override;
-   virtual void Visit(OperationExpression& expression) override;
-
-private:
-   // Literal value of the subtree (raw or calculated).
-   // If calculation isn't possible, then it has LiteralType::None value.
-   LiteralType m_value;
-   // Whether literal value is raw or it was calculated.
-   bool m_is_raw;   
-};
-
-ExpressionSimplifier::ExpressionSimplifier() :
-   m_value(LiteralType::None), m_is_raw(false)
-{
-}
-
-LiteralType ExpressionSimplifier::GetValue() const
-{
-   return m_value;
-}
-
-bool ExpressionSimplifier::GetIsRaw() const
-{
-   return m_is_raw;
-}
-
-void ExpressionSimplifier::Visit(LiteralExpression& expression)
-{
-   m_value = expression.GetLiteral();
-   m_is_raw = true;
-}
-
-void ExpressionSimplifier::Visit(OperationExpression& expression)
-{
-   long child_count = expression.GetChildCount();
-
+   // Case of (ExpressionType::Operation == type)
+   OperationExpression* const expression = static_cast<OperationExpression*>(expr.get());
+   const OperationType operation = expression->GetOperation();
+   const bool are_operands_movable = AreOperandsMovable(operation);
+   long child_count = expression->GetChildCount();
    LOCAL_ARRAY(LiteralType, child_values, child_count);
-   LOCAL_ARRAY(bool, child_is_raws, child_count);
 
    long non_actual_values_count = 0;
    long first_actual_values_count = 0;
 
    for (long index = 0; index < child_count; ++index)
    {
-      ExpressionSimplifier child_simplifier;
-      expression.GetChild(index)->Accept(child_simplifier);
-
-      child_values[index] = child_simplifier.GetValue();
-      child_is_raws[index] = child_simplifier.GetIsRaw();
+      child_values[index] = SimplifyExpressionImpl(expression->GetChild(index));
 
       if (LiteralType::None == child_values[index])
       {
@@ -82,21 +50,20 @@ void ExpressionSimplifier::Visit(OperationExpression& expression)
       }
    }
 
+   LiteralType ret = LiteralType::None;
+
    const long actual_values_count = child_count - non_actual_values_count;
    if (0 == actual_values_count)
    {
       // Nothing to simplify
-      return;
+      return ret;
    }
-
-   const bool are_operands_movable = AreOperandsMovable(expression.GetOperation());
 
    if (0 == non_actual_values_count)
    {
       // If all child expressions have actual values, then we can
       // simplify the whole operation expression to a calculated value.
-
-      m_value = PerformOperation(expression.GetOperation(), child_values, child_count);
+      ret = PerformOperation(operation, child_values, child_count);
    }
    else if (!are_operands_movable || first_actual_values_count == actual_values_count)
    {
@@ -104,51 +71,49 @@ void ExpressionSimplifier::Visit(OperationExpression& expression)
       {
          // In this case we can't move operands, so we can simplify only first actual values.
          // Another case is when operands with actual values are all already at the biginning.
+         expression->RemoveChildren(0, first_actual_values_count);
 
-         expression.RemoveChildren(0, first_actual_values_count);
-
-         const LiteralType value = PerformOperation(expression.GetOperation(), child_values, first_actual_values_count);
+         const LiteralType value = PerformOperation(operation, child_values, first_actual_values_count);
          auto value_expression = std::make_unique<LiteralExpression>(value);
 
          if (are_operands_movable)
          {
-            expression.AddChild(std::move(value_expression));
-            return;
+            expression->AddChild(std::move(value_expression));
+            return ret;
          }
          else
          {
-            expression.InsertChild(0, std::move(value_expression));
+            expression->InsertChild(0, std::move(value_expression));
          }
 
          child_values[0] = value;
-         child_is_raws[0] = true;
-   
          std::copy(child_values + first_actual_values_count, child_values + child_count, child_values + 1);
-         std::copy(child_is_raws + first_actual_values_count, child_is_raws + child_count, child_is_raws + 1);
 
          child_count -= first_actual_values_count - 1;
       }
       // first_actual_values_count == 1
       else if (are_operands_movable)
       {
-         // Just move the single literal to the end (simpifying if necessary)
-         TExpressionPtr actual_expression = child_is_raws[0] ? 
-            std::move(expression.GetChild(0)) : std::make_unique<LiteralExpression>(child_values[0]);
+         // Just move the single literal to the end (simpifying this, if necessary)
+         TExpressionPtr actual_expression = (LiteralType::None != GetLiteral(expression->GetChild(0))) ?
+            std::move(expression->GetChild(0)) : std::make_unique<LiteralExpression>(child_values[0]);
          
-         expression.RemoveChild(0);
-         expression.AddChild(std::move(actual_expression));
+         expression->RemoveChild(0);
+         expression->AddChild(std::move(actual_expression));
 
-         return;
+         return ret;
       }
 
       // If we are here, then it is possible that there exist expressions
       // with actual values, but not raw. Let's simplify them.
-   
       for (long index = 0; index < child_count; ++index)
       {
-         if (child_values[index] != LiteralType::None && !child_is_raws[index])
+         TExpressionPtr& child = expression->GetChild(index);
+
+         if (LiteralType::None != child_values[index] &&
+             LiteralType::None == GetLiteral(child))
          {
-            expression.GetChild(index) = std::make_unique<LiteralExpression>(child_values[index]);
+            child = std::make_unique<LiteralExpression>(child_values[index]);
          }
       }
    }
@@ -165,23 +130,16 @@ void ExpressionSimplifier::Visit(OperationExpression& expression)
          LOCAL_ARRAY(LiteralType, actual_values, actual_values_count);
          std::remove_copy(child_values, child_values + child_count, actual_values, LiteralType::None);
 
-         long index = 0;
-         while (index < child_count)
+         for (long index = child_count - 1; index >= 0; --index)
          {
             if (child_values[index] != LiteralType::None)
             {
-               expression.RemoveChild(index);
-               std::copy(child_values + index + 1, child_values + child_count, child_values + index);
-               --child_count;
-            }
-            else
-            {
-               ++index;
+               expression->RemoveChild(index);
             }
          }
 
-         const LiteralType value = PerformOperation(expression.GetOperation(), actual_values, actual_values_count);
-         expression.AddChild(std::make_unique<LiteralExpression>(value));
+         const LiteralType value = PerformOperation(operation, actual_values, actual_values_count);
+         expression->AddChild(std::make_unique<LiteralExpression>(value));
       }
       else // actual_values_count == 1
       {
@@ -193,41 +151,42 @@ void ExpressionSimplifier::Visit(OperationExpression& expression)
          for (; child_values[actual_index] == LiteralType::None; ++actual_index);
          assert(actual_index < child_count);
          
-         if (child_is_raws[actual_index])
+         TExpressionPtr& child = expression->GetChild(actual_index);
+         if (LiteralType::None == GetLiteral(child))
+         {
+            // Move with simplification.
+            expression->RemoveChild(actual_index);
+            expression->AddChild(std::make_unique<LiteralExpression>(child_values[actual_index]));
+         }
+         else
          {
             // If actual_index == child_count - 1, then actual expression is already on its place.
             if (actual_index < child_count - 1)
             {
-               TExpressionPtr actual_expression = std::move(expression.GetChild(actual_index));
-               expression.RemoveChild(actual_index);
-               expression.AddChild(std::move(actual_expression));
+               TExpressionPtr actual_expression = std::move(child);
+               expression->RemoveChild(actual_index);
+               expression->AddChild(std::move(actual_expression));
             }
-         }
-         else
-         {
-            expression.RemoveChild(actual_index);
-            expression.AddChild(std::make_unique<LiteralExpression>(child_values[actual_index]));
          }
       }
    }
 
-   // Leave default values of m_value and m_is_raw
+   return ret;
 }
 
 } // namespace
 
-void SimplifyExpression(TExpressionPtr& expression)
+void SimplifyExpression(TExpressionPtr& expr)
 {
-   assert(expression.get() != nullptr);
+   assert(expr.get() != nullptr);
 
-   ExpressionSimplifier simplifier;
-   expression->Accept(simplifier);
+   const LiteralType value = SimplifyExpressionImpl(expr);
 
-   // The visitor simplifies only child expressions of each operation expression, 
-   // so the root can be still not simplifed. Let's correct this if so.
-   if (LiteralType::None != simplifier.GetValue() && !simplifier.GetIsRaw())
+   // SimplifyExpressionImpl simplifies only child expressions of each operation
+   // expression, so the root can be still not simplifed. Let's correct this if so.
+   if (LiteralType::None != value && LiteralType::None == GetLiteral(expr))
    {
-      expression = std::make_unique<LiteralExpression>(simplifier.GetValue());
+      expr = std::make_unique<LiteralExpression>(value);
    }
 }
 

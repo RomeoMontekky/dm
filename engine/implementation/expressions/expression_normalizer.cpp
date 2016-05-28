@@ -1,5 +1,4 @@
 #include "expression_normalizer.h"
-#include "expression_visitor.h"
 #include "expressions.h"
 #include "expression_utils.h"
 
