@@ -8,8 +8,10 @@ namespace dm
 
 class VariableDeclaration;
 
-class ParamRefExpression : public Expression
+class ParamRefExpression : public TypedExpression<ExpressionType::ParamRef>
 {
+   using Base = TypedExpression<ExpressionType::ParamRef>;
+
 public:
    ParamRefExpression(const VariableDeclaration& variable, long index);
 

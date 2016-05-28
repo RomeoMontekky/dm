@@ -6,8 +6,10 @@
 namespace dm
 {
 
-class OperationExpression : public Expression
+class OperationExpression : public TypedExpression<ExpressionType::Operation>
 {
+   using Base = TypedExpression<ExpressionType::Operation>;
+
 public:
    OperationExpression(TExpressionPtr&& child);
    OperationExpression(OperationType operation, TExpressionPtrVector&& children);

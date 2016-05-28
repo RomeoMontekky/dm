@@ -2,8 +2,14 @@
 
 #include "expression_base.h"
 
+#include "../common/literals.h"
+#include "../common/operations.h"
+
 namespace dm
 {
+
+LiteralType GetLiteral(const TExpressionPtr& expression);
+OperationType GetOperation(const TExpressionPtr& expression);
 
 // Set of functions to move child expressions from the operation expression.
 // There is possibility to move them to:

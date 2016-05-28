@@ -19,4 +19,6 @@ Expression::Expression()
 {
 }
 
+Expression::Expression(const Expression& rhs) = default;
+
 } // namespace dm

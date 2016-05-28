@@ -6,8 +6,10 @@
 namespace dm
 {
 
-class LiteralExpression : public Expression
+class LiteralExpression : public TypedExpression<ExpressionType::Literal>
 {
+   using Base = TypedExpression<ExpressionType::Literal>;
+
 public:
    LiteralExpression(LiteralType literal);
 
