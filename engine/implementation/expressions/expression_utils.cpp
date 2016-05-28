@@ -7,77 +7,50 @@
 namespace dm
 {
 
-namespace
+LiteralType GetLiteral(const TExpressionPtr& expression)
 {
+   assert(expression.get() != nullptr);
 
-class ChildExpressionsMover : public ExpressionVisitor
-{
-public:
-   ChildExpressionsMover();
-
-   TExpressionPtrVector& GetExpressions();
-
-   // ExpressionVisitor
-   virtual void Visit(OperationExpression& expression) override;
-
-private:
-   TExpressionPtrVector m_expressions;
-};
-
-ChildExpressionsMover::ChildExpressionsMover() :
-   m_expressions()
-{
-}
-
-TExpressionPtrVector& ChildExpressionsMover::GetExpressions()
-{
-   return m_expressions;
-}
-
-void ChildExpressionsMover::Visit(OperationExpression& expression)
-{
-   const long child_count = expression.GetChildCount();
-   m_expressions.reserve(child_count);
-   for (long index = 0; index < child_count; ++index)
+   if (expression->GetType() == ExpressionType::Literal)
    {
-      m_expressions.push_back(std::move(expression.GetChild(index)));
+      const LiteralExpression* literal_expression =
+         static_cast<const LiteralExpression*>(expression.get());
+      return literal_expression->GetLiteral();
    }
+
+   return LiteralType::None;
 }
 
-class ChildExpressionRemover : public ExpressionVisitor
+OperationType GetOperation(const TExpressionPtr& expression)
 {
-public:
-   ChildExpressionRemover(long index);
+   assert(expression.get() != nullptr);
 
-   // ExpressionVisitor
-   virtual void Visit(OperationExpression& expression) override;
-
-private:
-   long m_child_index;
-};
-
-ChildExpressionRemover::ChildExpressionRemover(long child_index) :
-   m_child_index(child_index)
-{
-}
-
-void ChildExpressionRemover::Visit(OperationExpression& expression)
-{
-   if (m_child_index < 0)
+   if (expression->GetType() == ExpressionType::Operation)
    {
-      m_child_index = expression.GetChildCount() + m_child_index;
+      const OperationExpression* operation_expression =
+         static_cast<const OperationExpression*>(expression.get());
+      return operation_expression->GetOperation();
    }
-   expression.RemoveChild(m_child_index);
-}
 
-} // namespace
+   return OperationType::None;
+}
 
 void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expression)
 {
    assert(expression.get() != nullptr);
-   ChildExpressionsMover mover;
-   expression->Accept(mover);
-   target = std::move(mover.GetExpressions());
+   assert(expression->GetType() == ExpressionType::Operation);
+
+   OperationExpression* operation_expression =
+      static_cast<OperationExpression*>(expression.get());
+
+   target.clear();
+
+   const long child_count = operation_expression->GetChildCount();
+   target.reserve(child_count);
+   for (long index = 0; index < child_count; ++index)
+   {
+      target.push_back(std::move(operation_expression->GetChild(index)));
+   }
 }
 
 void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expression, long child_index)
@@ -96,8 +69,17 @@ void MoveChildExpressionInplace(TExpressionPtr& expression, long child_index)
 void RemoveChildExpression(TExpressionPtr& expression, long child_index)
 {
    assert(expression.get() != nullptr);
-   ChildExpressionRemover remover(child_index);
-   expression->Accept(remover);
+   assert(expression->GetType() == ExpressionType::Operation);
+
+   OperationExpression* operation_expression =
+      static_cast<OperationExpression*>(expression.get());
+
+   if (child_index < 0)
+   {
+      child_index = operation_expression->GetChildCount() + child_index;
+   }
+
+   operation_expression->RemoveChild(child_index);
 }
 
 } // namespace dm
