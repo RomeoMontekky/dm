@@ -16,7 +16,7 @@ void NormalizeExpression(TExpressionPtr& expr)
       return;
    }
 
-   OperationExpression* expression = static_cast<OperationExpression*>(expr.get());
+   OperationExpression* const expression = static_cast<OperationExpression*>(expr.get());
    const OperationType operation = expression->GetOperation();
 
    if (OperationType::Negation == operation)

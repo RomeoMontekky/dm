@@ -32,7 +32,7 @@ void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expr)
    assert(expr.get() != nullptr);
    assert(expr->GetType() == ExpressionType::Operation);
 
-   OperationExpression* expression = static_cast<OperationExpression*>(expr.get());
+   OperationExpression* const expression = static_cast<OperationExpression*>(expr.get());
 
    target.clear();
 
@@ -62,7 +62,7 @@ void RemoveChildExpression(TExpressionPtr& expr, long child_index)
    assert(expr.get() != nullptr);
    assert(expr->GetType() == ExpressionType::Operation);
 
-   OperationExpression* expression = static_cast<OperationExpression*>(expr.get());
+   OperationExpression* const expression = static_cast<OperationExpression*>(expr.get());
 
    if (child_index < 0)
    {
