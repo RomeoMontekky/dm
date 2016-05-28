@@ -9,7 +9,7 @@ namespace dm
 
 OperationExpression::OperationExpression(
    TExpressionPtr&& child) :
-      Expression(),
+      Base(),
       m_operation(OperationType::Negation),
       m_children()
 {
@@ -18,7 +18,7 @@ OperationExpression::OperationExpression(
 
 OperationExpression::OperationExpression(
    OperationType operation, TExpressionPtrVector&& children) :
-      Expression(), 
+      Base(),
       m_operation(operation), 
       m_children(std::move(children))
 {
@@ -30,7 +30,7 @@ OperationExpression::OperationExpression(
 }
 
 OperationExpression::OperationExpression(const OperationExpression& rhs):
-   Expression(),
+   Base(),
    m_operation(rhs.m_operation),
    m_children()
 {
@@ -43,7 +43,7 @@ OperationExpression::OperationExpression(const OperationExpression& rhs):
 
 OperationExpression::OperationExpression(
    const OperationExpression& rhs, const TExpressionPtrVector& actual_params) :
-      Expression(),
+      Base(),
       m_operation(rhs.m_operation),
       m_children()
 {

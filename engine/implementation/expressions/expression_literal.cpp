@@ -5,7 +5,7 @@ namespace dm
 {
 
 LiteralExpression::LiteralExpression(LiteralType literal) :
-   Expression(), m_literal(literal)
+   Base(), m_literal(literal)
 {
 }
 

@@ -6,7 +6,7 @@ namespace dm
 {
 
 ParamRefExpression::ParamRefExpression(const VariableDeclaration& variable, long index) :
-    Expression(), m_variable(variable), m_index(index)
+    Base(), m_variable(variable), m_index(index)
 {
 }
 
