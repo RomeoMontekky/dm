@@ -19,4 +19,7 @@ void MoveChildExpressionInplace(TExpressionPtr& expression, long child_index = 0
 //    If child_index = -n. removes n-th child from the end.
 void RemoveChildExpression(TExpressionPtr& expression, long child_index);
 
+// Adds child expression to the end of the operation expression.
+void AddChildExpression(TExpressionPtr& expression, TExpression&& child);
+
 } // namespace dm
