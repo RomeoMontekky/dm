@@ -174,5 +174,23 @@ void OperationExpression::Accept(ConstExpressionVisitor& visitor) const
    visitor.Visit(*this);
 }
 
+bool OperationExpression::IsEqualToTheSameType(const Expression& rhs) const
+{
+   const auto& typed_rhs = static_cast<const OperationExpression&>(rhs);
+
+   if (m_operation != typed_rhs.m_operation ||
+       m_children.size() != typed_rhs.m_children.size())
+   {
+      return false;
+   }
+
+   // TODO: Check 2 cases: movable/not movable operands
+   //if (AreOperandsMovable(m_operation))
+   //{
+   //
+   //}
+
+   return true;
+}
 
 } // namespace dm

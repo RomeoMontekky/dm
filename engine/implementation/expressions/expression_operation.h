@@ -35,6 +35,10 @@ public:
    virtual void Accept(ExpressionVisitor& visitor) override;
    virtual void Accept(ConstExpressionVisitor& visitor) const override;
 
+protected:
+   // Expression
+   virtual bool IsEqualToTheSameType(const Expression& rhs) const override;
+
 private:
    OperationExpression(const OperationExpression& rhs);
    OperationExpression(const OperationExpression& rhs, const TExpressionPtrVector& actual_params);

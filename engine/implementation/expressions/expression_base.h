@@ -38,6 +38,13 @@ public:
    // Visitors support
    virtual void Accept(ExpressionVisitor& visitor) = 0;
    virtual void Accept(ConstExpressionVisitor& visitor) const = 0;
+
+   // Check whether the expression equals to another one.
+   bool IsEqualTo(const Expression& rhs);
+
+protected:
+   // Check whether the expression equals to another one with the same type.
+   virtual bool IsEqualToTheSameType(const Expression& rhs) const = 0;
 };
 
 template <ExpressionType type>

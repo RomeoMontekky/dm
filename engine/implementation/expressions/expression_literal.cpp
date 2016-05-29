@@ -39,4 +39,10 @@ void LiteralExpression::Accept(ConstExpressionVisitor& visitor) const
    visitor.Visit(*this);
 }
 
+// Expression
+bool LiteralExpression::IsEqualToTheSameType(const Expression& rhs) const
+{
+   return (m_literal == static_cast<const LiteralExpression&>(rhs).m_literal);
+}
+
 } // namespace dm

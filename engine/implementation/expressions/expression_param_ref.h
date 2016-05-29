@@ -27,6 +27,10 @@ public:
    virtual void Accept(ExpressionVisitor& visitor) override;
    virtual void Accept(ConstExpressionVisitor& visitor) const override;
 
+protected:
+   // Expression
+   virtual bool IsEqualToTheSameType(const Expression& rhs) const override;
+
 private:
    ParamRefExpression(const ParamRefExpression& rhs) = default;
    ParamRefExpression& operator=(const ParamRefExpression& rhs) = delete;
