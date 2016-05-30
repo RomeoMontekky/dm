@@ -32,4 +32,9 @@ bool Expression::IsEqualTo(const Expression& rhs)
    return IsEqualToTheSameType(rhs);
 }
 
+bool operator ==(const TExpressionPtr& left, const TExpressionPtr& right)
+{
+   return left->IsEqualTo(*right.get());
+}
+
 } // namespace dm

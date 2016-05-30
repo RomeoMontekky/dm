@@ -28,7 +28,10 @@ public:
    Expression();
    Expression(const Expression& rhs);
    Expression& operator=(const Expression& rhs) = delete;
-
+   
+   // Check whether the expression equals to another one.
+   bool IsEqualTo(const Expression& rhs);
+   
    // Returns expression type.
    virtual ExpressionType GetType() const = 0;
    // Clones expression tree as is.
@@ -39,13 +42,12 @@ public:
    virtual void Accept(ExpressionVisitor& visitor) = 0;
    virtual void Accept(ConstExpressionVisitor& visitor) const = 0;
 
-   // Check whether the expression equals to another one.
-   bool IsEqualTo(const Expression& rhs);
-
 protected:
    // Check whether the expression equals to another one with the same type.
    virtual bool IsEqualToTheSameType(const Expression& rhs) const = 0;
 };
+
+bool operator ==(const TExpressionPtr& left, const TExpressionPtr& right);
 
 template <ExpressionType type>
 class TypedExpression : public Expression

@@ -129,40 +129,34 @@ bool OperationExpression::AreFirstChildrenEqual(const OperationExpression& rhs, 
    if (!AreOperandsMovable(m_operation))
    {
       return std::equal(m_children.begin(), m_children.begin() + size,
-                        rhs.m_children.begin(), rhs.m_children.begin() + size,
-                        [](const TExpressionPtr& left, const TExpressionPtr& right)
-      {
-         return left->IsEqualTo(*right.get());
-      });
+                        rhs.m_children.begin(), rhs.m_children.begin() + size);
    }
    
-   // If operands are movable, it's not enough just to use comparison of vectors.
-   // We need to check whether two vectors contain the same set of operands
-   // up to a permutation.
+   // If operands are movable, it's not enough just to use comparison of vectors. We need to
+   // check whether two vectors contain the same set of operands up to a permutation.
    
-   // Contains information about whether i-th element of rhs.m_children was
-   // linked to some element of m_children, during conformity detection.
+   // Contains information about whether i-th element of rhs.m_children was linked to some
+   // element of m_children, during conformity detection.
    LOCAL_ARRAY(bool, child_linked_flags, size);
    std::fill_n(child_linked_flags, size, false);
 
-   // Let's establish one-to-one corresponce between elements of m_children and
-   // rhs.m_children, using child_linked_flags to mark element of rhs.m_children
-   // as linked.
+   // Let's establish one-to-one corresponce between elements of m_children and rhs.m_children,
+   // using child_linked_flags to mark element of rhs.m_children as linked.
 
-   for (long i = 0, j; i < size; ++i)
+   for (long index1 = 0, index2; index1 < size; ++index1)
    {
-      for (j = 0; j < size; ++j)
+      for (index2 = 0; index2 < size; ++index2)
       {
-         if (!child_linked_flags[j] && (m_children[i]->IsEqualTo(*rhs.m_children[j])))
+         if (!child_linked_flags[index1] && (m_children[index1] == rhs.m_children[index2]))
          {
-            child_linked_flags[j] = true;
+            child_linked_flags[index2] = true;
             break;
          }
       }
       
-      if (size == j)
+      if (size == index2)
       {
-         // No equal pair for m_children[i].
+         // No equal pair for m_children[index1].
          return false;
       }
    }
