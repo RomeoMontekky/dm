@@ -25,6 +25,10 @@ public:
    void InsertChildren(long index, TExpressionPtrVector&& expressions);
    void RemoveChild(long index);
    void RemoveChildren(long indexFrom, long indexTo);
+   
+   // Checks that first size children have one-to-one accordance with
+   // first size children of specified operation expression.
+   bool AreFirstChildrenEqual(const OperationExpression& rhs, long size) const;
 
    // IStringable
    virtual std::string ToString() const override;

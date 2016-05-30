@@ -2,6 +2,9 @@
 #include "expression_literal.h"
 #include "expression_visitor.h"
 
+#include "../common/local_array.h"
+
+#include <algorithm>
 #include <cassert>
 
 namespace dm
@@ -117,6 +120,57 @@ void OperationExpression::RemoveChildren(long indexFrom, long indexTo)
    m_children.erase(m_children.begin() + indexFrom, m_children.begin() + indexTo);
 }
 
+bool OperationExpression::AreFirstChildrenEqual(const OperationExpression& rhs, long size) const
+{
+   assert(m_operation == rhs.m_operation);
+   assert(size <= m_children.size());
+   assert(size <= rhs.m_children.size());
+   
+   if (!AreOperandsMovable(m_operation))
+   {
+      return std::equal(m_children.begin(), m_children.begin() + size,
+                        rhs.m_children.begin(), rhs.m_children.begin() + size,
+                        [](const TExpressionPtr& left, const TExpressionPtr& right)
+      {
+         return left->IsEqualTo(*right.get());
+      });
+   }
+   
+   // If operands are movable, it's not enough just to use comparison of vectors.
+   // We need to check whether two vectors contain the same set of operands
+   // up to a permutation.
+   
+   // Contains information about whether i-th element of rhs.m_children was
+   // linked to some element of m_children, during conformity detection.
+   LOCAL_ARRAY(bool, child_linked_flags, size);
+   std::fill_n(child_linked_flags, size, false);
+
+   // Let's establish one-to-one corresponce between elements of m_children and
+   // rhs.m_children, using child_linked_flags to mark element of rhs.m_children
+   // as linked.
+
+   for (long i = 0, j; i < size; ++i)
+   {
+      for (j = 0; j < size; ++j)
+      {
+         if (!child_linked_flags[j] && (m_children[i]->IsEqualTo(*rhs.m_children[j])))
+         {
+            child_linked_flags[j] = true;
+            break;
+         }
+      }
+      
+      if (size == j)
+      {
+         // No equal pair for m_children[i].
+         return false;
+      }
+   }
+   
+   // Full conformity is detected.
+   return true;
+}
+
 std::string OperationExpression::ToString() const
 {
    std::string result;
@@ -177,20 +231,11 @@ void OperationExpression::Accept(ConstExpressionVisitor& visitor) const
 bool OperationExpression::IsEqualToTheSameType(const Expression& rhs) const
 {
    const auto& typed_rhs = static_cast<const OperationExpression&>(rhs);
-
-   if (m_operation != typed_rhs.m_operation ||
-       m_children.size() != typed_rhs.m_children.size())
+   if (m_operation != typed_rhs.m_operation || m_children.size() != typed_rhs.m_children.size())
    {
       return false;
    }
-
-   // TODO: Check 2 cases: movable/not movable operands
-   //if (AreOperandsMovable(m_operation))
-   //{
-   //
-   //}
-
-   return true;
+   return AreFirstChildrenEqual(typed_rhs, m_children.size());
 }
 
 } // namespace dm
