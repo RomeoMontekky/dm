@@ -147,7 +147,7 @@ bool OperationExpression::AreFirstChildrenEqual(const OperationExpression& rhs, 
    {
       for (index2 = 0; index2 < size; ++index2)
       {
-         if (!child_linked_flags[index1] && IsEqual(m_children[index1], m_children[index1]))
+         if (!child_linked_flags[index1] && IsEqual(m_children[index1], m_children[index2]))
          {
             child_linked_flags[index2] = true;
             break;
