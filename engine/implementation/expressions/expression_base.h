@@ -47,7 +47,7 @@ protected:
    virtual bool IsEqualToTheSameType(const Expression& rhs) const = 0;
 };
 
-bool operator ==(const TExpressionPtr& left, const TExpressionPtr& right);
+bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
 
 template <ExpressionType type>
 class TypedExpression : public Expression

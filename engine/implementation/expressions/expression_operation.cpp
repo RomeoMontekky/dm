@@ -129,7 +129,7 @@ bool OperationExpression::AreFirstChildrenEqual(const OperationExpression& rhs, 
    if (!AreOperandsMovable(m_operation))
    {
       return std::equal(m_children.begin(), m_children.begin() + size,
-                        rhs.m_children.begin(), rhs.m_children.begin() + size);
+                        rhs.m_children.begin(), rhs.m_children.begin() + size, IsEqual);
    }
    
    // If operands are movable, it's not enough just to use comparison of vectors. We need to
@@ -147,7 +147,7 @@ bool OperationExpression::AreFirstChildrenEqual(const OperationExpression& rhs, 
    {
       for (index2 = 0; index2 < size; ++index2)
       {
-         if (!child_linked_flags[index1] && (m_children[index1] == rhs.m_children[index2]))
+         if (!child_linked_flags[index1] && IsEqual(m_children[index1], m_children[index1]))
          {
             child_linked_flags[index2] = true;
             break;
