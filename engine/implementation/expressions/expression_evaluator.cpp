@@ -508,6 +508,10 @@ void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, Liter
 
 void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression)
 {
+   // De Morgan laws are following:
+   //    1. (!x & !y) => !(x | y)
+   //    1. (!x | !y) => !(x & y)
+   
    auto operation = expression.GetOperation();
 
    assert(OperationType::Conjunction == operation ||
@@ -522,12 +526,12 @@ void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression
       }
    }
 
-   if (OperationType::Conjunction == expression.GetOperation())
+   if (OperationType::Disjunction == expression.GetOperation())
    {
       // It is done to avoid the endless call of De Morgan's transormations.
       // In case of equal amount of negated/non-negated operands, increment
-      // of negation_count will allow to call transofmation from conjunction
-      // to disjunction, but reverse transormation will not be forced.
+      // of negation_count will allow to call transofmation from disjunction
+      // to conjunction, but reverse transormation will not be called.
       ++negation_count;
    }
 
@@ -544,14 +548,35 @@ void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression
 
    for (long index = expression.GetChildCount() - 1; index >= 0; --index)
    {
-      if (IsNegationEquivalent(expression.GetChild(index)))
+      auto& child_expr = expression.GetChild(index);
+      const auto child_operation = GetOperation(child_expr);
+      
+      if (IsNegationEquivalent(child_expr))
       {
-         ExtractFromUnderNegationEquivalent(expression.GetChild(index));
+         ExtractFromUnderNegationEquivalent(child_expr);
          InPlaceNormalization(expression, index);
       }
       else
       {
-         // TODO: Add negation
+         // Add negation. Let's use following rules to make it presentable.
+         //    1. ( x -> 0), in case of implication
+         //    2. ( x  = 0), in case of equality
+         //    3. ( x  + 1), in case of plus
+         //    4. (!x),      otherwise
+         
+         if (OperationType::Implication == child_operation ||
+             OperationType::Equality == child_operation)
+         {
+            CastToOperation(child_expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::False));
+         }
+         else if (OperationType::Plus == child_operation)
+         {
+            CastToOperation(child_expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::True));
+         }
+         else
+         {
+            child_expr = std::make_unique<OperationExpression>(std::move(child_expr));
+         }
       }
    }
 
