@@ -1,5 +1,4 @@
 #include "expression_literal.h"
-#include "expression_visitor.h"
 
 namespace dm
 {
@@ -27,16 +26,6 @@ TExpressionPtr LiteralExpression::Clone() const
 TExpressionPtr LiteralExpression::CloneWithSubstitution(const TExpressionPtrVector&) const
 {
    return TExpressionPtr(new LiteralExpression(*this));
-}
-
-void LiteralExpression::Accept(ExpressionVisitor& visitor)
-{
-   visitor.Visit(*this);
-}
-
-void LiteralExpression::Accept(ConstExpressionVisitor& visitor) const
-{
-   visitor.Visit(*this);
 }
 
 // Expression

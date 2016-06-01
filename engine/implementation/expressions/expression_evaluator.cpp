@@ -1,5 +1,4 @@
 #include "expression_evaluator.h"
-#include "expression_visitor.h"
 #include "expression_utils.h"
 #include "expressions.h"
 
@@ -48,9 +47,9 @@ private:
    bool CanBeGroupedAsNegNotNeg(const OperationExpression& expression);
 
    // In-place normatlization for equality/plus
-   void InPlaceNormalization(OperationExpression& expression, long child_index);
+   static void InPlaceNormalization(OperationExpression& expression, long child_index);
    // In-place normatlization for implication
-   void InPlaceNormalization(OperationExpression& expression);
+   static void InPlaceNormalization(OperationExpression& expression);
 
    // This method is used by implication evaluation.
    bool RemoveBeginningIfEqualToChild(OperationExpression& expression,
@@ -79,7 +78,7 @@ void ExpressionEvaluator::Evaluate(TExpressionPtr& expr)
       return;
    }
    
-   auto& expression = static_cast<OperationExpression&>(*expr.get());
+   auto& expression = CastToOperation(expr);
    
    for (long index = expression.GetChildCount() - 1; index >= 0; --index)
    {
@@ -108,7 +107,7 @@ void ExpressionEvaluator::EvaluateOperation(OperationExpression& expression)
       EvaluatePlus
    };
 
-   auto method = methods[static_cast<int>(expression.GetOperation())];
+   auto method = methods[static_cast<long>(expression.GetOperation())];
    (this->*method)(expression);
 
    // If after evaluation the only operand is remained, then
@@ -616,13 +615,12 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
       {
          // We can do casting without checking return value of GetType becuase IsNegationEquivalent
          // will return false for a non-operation expression.
-         const auto& child_expression = static_cast<const OperationExpression&>(*child_expr.get());
+         const auto& child_expression = CastToOperation(child_expr);
 
          if (child_expression.GetChildCount() < 3 &&
              GetOperation(child_expression.GetChild(0)) == expression.GetOperation())
          {
-            const auto& child_to_check =
-               static_cast<const OperationExpression&>(*child_expression.GetChild(0).get());
+            const auto& child_to_check = CastToOperation(child_expression.GetChild(0));
             const long child_to_check_count = child_to_check.GetChildCount();
 
             for (i = 0; i < child_to_check_count; ++i)
@@ -682,8 +680,7 @@ void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
 bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
    OperationExpression& expression, long operands_between, bool include_child, bool negated_child)
 {
-   const long child_count = expression.GetChildCount();
-   for (long index = child_count - 1; index > 1 + operands_between; --index)
+   for (long index = expression.GetChildCount() - 1; index > 1 + operands_between; --index)
    {
       auto& child_expr = expression.GetChild(index);
       if (child_expr->GetType() != ExpressionType::Operation)
@@ -691,7 +688,7 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
          continue;
       }
 
-      auto& child_expression = static_cast<OperationExpression&>(*child_expr.get());
+      auto& child_expression = CastToOperation(child_expr);
       const auto child_operation = child_expression.GetOperation();
       const long amount_to_check = index - operands_between;
       long implication_correction = 0;
@@ -702,10 +699,11 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
          if (OperationType::Negation == child_operation &&
              OperationType::Implication == GetOperation(child_expression.GetChild(0)))
          {
-            child_to_check = static_cast<OperationExpression*>(child_expression.GetChild(0).get());
+            child_to_check = &CastToOperation(child_expression.GetChild(0));
          }
          else if (OperationType::Implication == child_operation &&
-                  LiteralType::False == GetLiteral(child_expression.GetChild(child_count - 1)))
+                  LiteralType::False == GetLiteral(
+                     child_expression.GetChild(child_expression.GetChildCount() - 1)))
          {
             child_to_check = &child_expression;
             implication_correction = 1;
@@ -743,7 +741,7 @@ bool ExpressionEvaluator::IsNegationEquivalent(const TExpressionPtr& expr)
       return false;
    }
 
-   const auto& expression = static_cast<const OperationExpression&>(*expr.get());
+   const auto& expression = CastToOperation(expr);
    const auto operation = expression.GetOperation();
    const long child_count = expression.GetChildCount();
 
@@ -766,7 +764,7 @@ bool ExpressionEvaluator::CheckNegNotNeg(
 
    // We can cast without checking GetType, because IsNegationEquivalent
    // will return false in case of non-operation expression.
-   const auto& neg_expression = static_cast<const OperationExpression&>(*neg_expr.get());
+   const auto& neg_expression = CastToOperation(neg_expr);
 
    switch (neg_expression.GetOperation())
    {
@@ -799,7 +797,7 @@ bool ExpressionEvaluator::CheckNegNotNeg(
       return false;
    }
 
-   const auto& expression = static_cast<const OperationExpression&>(*expr.get());
+   const auto& expression = CastToOperation(expr);
 
    // 2. Complex case.
    return (neg_expression.GetOperation() == expression.GetOperation() &&
@@ -813,7 +811,7 @@ void ExpressionEvaluator::ExtractFromUnderNegationEquivalent(TExpressionPtr& exp
 
    // We can cast without checking GetType, because IsNegationEquivalent
    // will return false in case of non-operation expression.
-   auto& expression = static_cast<OperationExpression&>(*expr.get());
+   auto& expression = CastToOperation(expr);
    
    // It will be performed for following operations:
    //    - OperationType::Implication

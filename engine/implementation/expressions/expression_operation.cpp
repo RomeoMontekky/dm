@@ -1,6 +1,5 @@
 #include "expression_operation.h"
 #include "expression_literal.h"
-#include "expression_visitor.h"
 
 #include "../common/local_array.h"
 
@@ -210,16 +209,6 @@ TExpressionPtr OperationExpression::CloneWithSubstitution(
    const TExpressionPtrVector& actual_params) const
 {
    return TExpressionPtr(new OperationExpression(*this, actual_params));
-}
-
-void OperationExpression::Accept(ExpressionVisitor& visitor)
-{
-   visitor.Visit(*this);
-}
-
-void OperationExpression::Accept(ConstExpressionVisitor& visitor) const
-{
-   visitor.Visit(*this);
 }
 
 bool OperationExpression::IsEqualToTheSameType(const Expression& rhs) const

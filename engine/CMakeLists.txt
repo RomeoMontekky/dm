@@ -24,7 +24,6 @@ set(CPP_FILES
    "implementation/expressions/expression_param_ref.cpp"
    "implementation/expressions/expression_simplifier.cpp"
    "implementation/expressions/expression_utils.cpp"
-   "implementation/expressions/expression_visitor.cpp"
 
    "implementation/functions/function_base.cpp"
    "implementation/functions/function_manager.cpp"
@@ -71,7 +70,6 @@ set(HEADER_FILES
    "implementation/expressions/expression_param_ref.h"
    "implementation/expressions/expression_simplifier.h"
    "implementation/expressions/expression_utils.h"
-   "implementation/expressions/expression_visitor.h"
    "implementation/expressions/expressions.h"
 
    "implementation/functions/function_base.h"

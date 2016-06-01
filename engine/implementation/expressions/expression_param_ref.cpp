@@ -1,5 +1,4 @@
 #include "expression_param_ref.h"
-#include "expression_visitor.h"
 #include "../variables/variable_declaration.h"
 
 #include <cassert>
@@ -37,16 +36,6 @@ TExpressionPtr ParamRefExpression::CloneWithSubstitution(
 {
    // Copy substituted subtree without subtitution
    return actual_params.at(m_index)->Clone();
-}
-
-void ParamRefExpression::Accept(ExpressionVisitor& visitor)
-{
-   visitor.Visit(*this);
-}
-
-void ParamRefExpression::Accept(ConstExpressionVisitor& visitor) const
-{
-   visitor.Visit(*this);
 }
 
 bool ParamRefExpression::IsEqualToTheSameType(const Expression& rhs) const
