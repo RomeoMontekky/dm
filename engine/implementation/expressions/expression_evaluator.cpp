@@ -11,7 +11,6 @@ namespace dm
 namespace
 {
    
-
 class ExpressionEvaluator
 {
 public:
@@ -170,7 +169,10 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    if (CanBeGroupedAsNegNotNeg(expression))
    {
       m_evaluated_expression = std::make_unique<LiteralExpression>(LiteralType::False);
+      return;
    }
+
+   DeMorganTransfromation(expression);
 }
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
@@ -207,7 +209,10 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    if (CanBeGroupedAsNegNotNeg(expression))
    {
       m_evaluated_expression = std::make_unique<LiteralExpression>(LiteralType::True);
+      return;
    }
+
+   DeMorganTransfromation(expression);
 }
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
@@ -511,6 +516,13 @@ void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression
    // De Morgan laws are following:
    //    1. (!x & !y) => !(x | y)
    //    1. (!x | !y) => !(x & y)
+
+   // It is possible to have the only child in case of removing other
+   // operarands on the previous phases of evaluation. Let's return if so.
+   if (expression.GetChildCount() < 2)
+   {
+      return;
+   }
    
    auto operation = expression.GetOperation();
 
@@ -526,25 +538,12 @@ void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression
       }
    }
 
-   if (OperationType::Disjunction == expression.GetOperation())
-   {
-      // It is done to avoid the endless call of De Morgan's transormations.
-      // In case of equal amount of negated/non-negated operands, increment
-      // of negation_count will allow to call transofmation from disjunction
-      // to conjunction, but reverse transormation will not be called.
-      ++negation_count;
-   }
-
-   if (negation_count < (expression.GetChildCount() >> 1))
+   if ((negation_count << 1) <= expression.GetChildCount())
    {
       // Don't do De Morgan's transformation if amount of negated operands
-      // less then non-negated ones.
+      // less or equal then non-negated ones.
       return;
    }
-
-   operation = (OperationType::Conjunction == operation) ?
-      OperationType::Disjunction : OperationType::Conjunction;
-   expression.SetOperation(operation);
 
    for (long index = expression.GetChildCount() - 1; index >= 0; --index)
    {
@@ -558,7 +557,7 @@ void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression
       }
       else
       {
-         // Add negation. Let's use following rules to make it presentable.
+         // Add negation. Let's use following rules to make it more presentable.
          //    1. ( x -> 0), in case of implication
          //    2. ( x  = 0), in case of equality
          //    3. ( x  + 1), in case of plus
@@ -580,7 +579,16 @@ void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression
       }
    }
 
-   // TODO: Add negation to the whole operation
+   // Change operation accorsing to the rule.
+   operation = (OperationType::Conjunction == operation) ?
+      OperationType::Disjunction : OperationType::Conjunction;
+
+   TExpressionPtrVector moved_expressions;
+   MoveChildExpressions(moved_expressions, expression);
+   auto new_expression = std::make_unique<OperationExpression>(operation, std::move(moved_expressions));
+
+   // Add negation to new expression according to the rule.
+   m_evaluated_expression = std::make_unique<OperationExpression>(std::move(new_expression));
 }
 
 bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& expression)

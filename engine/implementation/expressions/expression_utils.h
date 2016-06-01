@@ -23,6 +23,7 @@ const OperationExpression& CastToOperation(const TExpressionPtr& expr);
 //    - target expression (the only child is moved, other will be destroyed).
 //    - original expression with overwriting.
 void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expr);
+void MoveChildExpressions(TExpressionPtrVector& target, OperationExpression& expression);
 void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expr, long child_index = 0);
 void MoveChildExpressionInplace(TExpressionPtr& expr, long child_index = 0);
 

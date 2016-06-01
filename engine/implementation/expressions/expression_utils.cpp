@@ -42,8 +42,11 @@ const OperationExpression& CastToOperation(const TExpressionPtr& expr)
 
 void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expr)
 {
-   auto& expression = CastToOperation(expr);
+   MoveChildExpressions(target, CastToOperation(expr));
+}
 
+void MoveChildExpressions(TExpressionPtrVector& target, OperationExpression& expression)
+{
    target.clear();
 
    const long child_count = expression.GetChildCount();
