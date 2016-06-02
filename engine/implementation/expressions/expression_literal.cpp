@@ -28,10 +28,4 @@ TExpressionPtr LiteralExpression::CloneWithSubstitution(const TExpressionPtrVect
    return TExpressionPtr(new LiteralExpression(*this));
 }
 
-// Expression
-bool LiteralExpression::IsEqualToTheSameType(const Expression& rhs) const
-{
-   return (m_literal == static_cast<const LiteralExpression&>(rhs).m_literal);
-}
-
 } // namespace dm

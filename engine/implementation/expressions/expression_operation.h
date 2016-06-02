@@ -25,20 +25,12 @@ public:
    void RemoveChild(long index);
    void RemoveChildren(long indexFrom, long indexTo);
    
-   // Checks that first size children have one-to-one accordance with
-   // first size children of specified operation expression.
-   bool AreFirstChildrenEqual(const OperationExpression& rhs, long size) const;
-
    // IStringable
    virtual std::string ToString() const override;
 
    // Expression
    virtual TExpressionPtr Clone() const override;
    virtual TExpressionPtr CloneWithSubstitution(const TExpressionPtrVector& actual_params) const override;
-
-protected:
-   // Expression
-   virtual bool IsEqualToTheSameType(const Expression& rhs) const override;
 
 private:
    OperationExpression(const OperationExpression& rhs);

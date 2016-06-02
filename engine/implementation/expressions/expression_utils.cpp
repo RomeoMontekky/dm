@@ -26,11 +26,18 @@ OperationType GetOperation(const TExpressionPtr& expr)
    return OperationType::None;
 }
 
-OperationExpression& CastToOperation(TExpressionPtr& expr)
+const LiteralExpression& CastToLiteral(const TExpressionPtr& expr)
 {
    assert(expr.get() != nullptr);
-   assert(expr->GetType() == ExpressionType::Operation);
-   return static_cast<OperationExpression&>(*expr.get());
+   assert(expr->GetType() == ExpressionType::Literal);
+   return static_cast<const LiteralExpression&>(*expr.get());
+}
+
+const ParamRefExpression& CastToParamRef(const TExpressionPtr& expr)
+{
+   assert(expr.get() != nullptr);
+   assert(expr->GetType() == ExpressionType::ParamRef);
+   return static_cast<const ParamRefExpression&>(*expr.get());
 }
 
 const OperationExpression& CastToOperation(const TExpressionPtr& expr)
@@ -38,6 +45,13 @@ const OperationExpression& CastToOperation(const TExpressionPtr& expr)
    assert(expr.get() != nullptr);
    assert(expr->GetType() == ExpressionType::Operation);
    return static_cast<const OperationExpression&>(*expr.get());
+}
+
+OperationExpression& CastToOperation(TExpressionPtr& expr)
+{
+   assert(expr.get() != nullptr);
+   assert(expr->GetType() == ExpressionType::Operation);
+   return static_cast<OperationExpression&>(*expr.get());
 }
 
 void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expr)

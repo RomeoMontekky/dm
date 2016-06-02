@@ -6,3 +6,5 @@ base3(x, y) := ((x = y) + (x = y))
 base3(x, y) := 0
 base4(x, y) := ((x = y) + (y = x))
 base4(x, y) := 0
+base5(x, y, z) := ((x & y & (z = 0)) + (x & y & (z + 1)))
+base5(x, y, z) := 0

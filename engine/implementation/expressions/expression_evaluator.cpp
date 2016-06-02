@@ -2,6 +2,8 @@
 #include "expression_utils.h"
 #include "expressions.h"
 
+#include "../common/local_array.h"
+
 #include <algorithm>
 #include <cassert>
 
@@ -43,8 +45,8 @@ private:
    bool AbsorbDuplicates(OperationExpression& expression, LiteralType remaining_literal);
    void RemoveNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
    bool CanBeGroupedAsNegNotNeg(const OperationExpression& expression);
-   void DeMorganEvaluation(OperationExpression& expression);
-   void DeMorganTransfromation(OperationExpression& expression);
+   void DeMorganForChildren(OperationExpression& expression);
+   void DeMorganForOperation(OperationExpression& expression);
 
    // In-place normatlization for equality/plus
    static void InPlaceNormalization(OperationExpression& expression, long child_index);
@@ -61,6 +63,13 @@ private:
    static bool CheckNegNotNeg(const TExpressionPtr& neg_expr, const TExpressionPtr& expr);
    static void ExtractFromUnderNegationEquivalent(TExpressionPtr& expr);
    static void RevertNegations(TExpressionPtr& expr);
+   static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
+
+   // Checks that first size children have one-to-one accordance with
+   // first size children of specified operation expression.
+   static bool AreFirstChildrenEqual(const OperationExpression& left,
+                                     const OperationExpression& right, long size);
+
 
 private:
    // Will be filled by new evaluated expression if the whole
@@ -164,7 +173,7 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    RemoveLiteralIfExists(expression, LiteralType::True);
    
    // Evaluation of child negations, according to De Morgan's laws.
-   DeMorganEvaluation(expression);
+   DeMorganForChildren(expression);
    
    // According to rule 4, evaluate expression to literal 0
    // if there exists x and !x.
@@ -185,7 +194,7 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    }
 
    // Transformation of the whole operation, according to De Morgan's laws.
-   DeMorganTransfromation(expression);
+   DeMorganForOperation(expression);
 }
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
@@ -208,7 +217,7 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    RemoveLiteralIfExists(expression, LiteralType::False);
    
    // Evaluation of child negations, according to De Morgan's laws.
-   DeMorganEvaluation(expression);
+   DeMorganForChildren(expression);
    
    // According to rule 4, evaluate expression to literal 1
    // if there exists x and !x.
@@ -229,7 +238,7 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    }
 
    // Transformation of the whole operation, according to De Morgan's laws.
-   DeMorganTransfromation(expression);
+   DeMorganForOperation(expression);
 }
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
@@ -625,9 +634,9 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
    return false;
 }
 
-void ExpressionEvaluator::DeMorganEvaluation(OperationExpression& expression)
+void ExpressionEvaluator::DeMorganForChildren(OperationExpression& expression)
 {
-   // Evaluation uses De Morgan's laws for each child of the operation:
+   // Method uses De Morgan's laws for each child negation of the operation.
    //    1. !(x & y) => !x | !y
    //    2. !(x | y) => !x & !y
    
@@ -658,9 +667,9 @@ void ExpressionEvaluator::DeMorganEvaluation(OperationExpression& expression)
    }
 }
 
-void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression)
+void ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
 {
-   // Transormation uses De Morgan's laws for the whole operation:
+   // Method uses De Morgan's laws for the whole operation.
    //    1. (!x & !y) => !(x | y)
    //    2. (!x | !y) => !(x & y)
 
@@ -772,7 +781,7 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
       
       if (child_to_check != nullptr &&
           child_to_check->GetChildCount() - implication_correction == amount_to_check &&
-          child_to_check->AreFirstChildrenEqual(expression, amount_to_check))
+          AreFirstChildrenEqual(*child_to_check, expression, amount_to_check))
       {
          const long right_bound = include_child ? (index + 1) : index;
          expression.RemoveChildren(0, right_bound);
@@ -858,7 +867,7 @@ bool ExpressionEvaluator::CheckNegNotNeg(
    // 2. Complex case.
    return (neg_expression.GetOperation() == expression.GetOperation() &&
            neg_expression.GetChildCount() - 1 == expression.GetChildCount() &&
-           neg_expression.AreFirstChildrenEqual(expression, expression.GetChildCount()));
+           AreFirstChildrenEqual(neg_expression, expression, expression.GetChildCount()));
 }
 
 void ExpressionEvaluator::ExtractFromUnderNegationEquivalent(TExpressionPtr& expr)
@@ -926,6 +935,101 @@ void ExpressionEvaluator::RevertNegations(TExpressionPtr& expr)
       }
    }
 }
+
+bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionPtr& right)
+{
+   const auto type = left->GetType();
+
+   if (type != right->GetType())
+   {
+      return false;
+   }
+
+   switch (type)
+   {
+      case ExpressionType::Literal:
+         return (CastToLiteral(left).GetLiteral() == CastToLiteral(right).GetLiteral());
+
+      case ExpressionType::ParamRef:
+         return (CastToParamRef(left).GetParamIndex() == CastToParamRef(right).GetParamIndex());
+
+      case ExpressionType::Operation:
+      {
+         auto& left_operation = CastToOperation(left);
+         auto& right_operation = CastToOperation(right);
+
+         if (left_operation.GetOperation() == right_operation.GetOperation())
+         {
+            return (left_operation.GetChildCount() == right_operation.GetChildCount() &&
+                    AreFirstChildrenEqual(left_operation, right_operation,
+                                          left_operation.GetChildCount()));
+         }
+
+         // If operations aren't equal, equality is still possible if both operations
+         // are negation equivalents and its contain equal expressions under the negation.
+         return (IsNegationEquivalent(left) && IsNegationEquivalent(right) &&
+                 left_operation.GetChildCount() < 3 && right_operation.GetChildCount() < 3 &&
+                 IsEqual(left_operation.GetChild(0), right_operation.GetChild(0)));
+      }
+   }
+
+   assert(!"Unknown expression type.");
+   return false;
+}
+
+bool ExpressionEvaluator::AreFirstChildrenEqual(
+   const OperationExpression& left, const OperationExpression& right, long size)
+{
+   assert(left.GetOperation() == right.GetOperation());
+   assert(size <= left.GetChildCount());
+   assert(size <= right.GetChildCount());
+
+   if (!AreOperandsMovable(left.GetOperation()))
+   {
+      for (int index = size - 1; index >= 0; --index)
+      {
+         if (!IsEqual(left.GetChild(index), right.GetChild(index)))
+         {
+            return false;
+         }
+      }
+      return true;
+   }
+
+   // If operands are movable, it's not enough just to use comparison of vectors. We need to
+   // check whether two vectors contain the same set of operands up to a permutation.
+
+   // Contains information about whether i-th operand of "right" was linked to some
+   // element of "left", during conformity detection.
+   LOCAL_ARRAY(bool, child_linked_flags, size);
+   std::fill_n(child_linked_flags, size, false);
+
+   // Let's establish one-to-one corresponce between elements of "left" and "right",
+   // using child_linked_flags to mark element of "right" as linked.
+   for (long index1 = 0, index2; index1 < size; ++index1)
+   {
+      auto& left_child = left.GetChild(index1);
+
+      for (index2 = 0; index2 < size; ++index2)
+      {
+         if (!child_linked_flags[index2] && IsEqual(left_child, right.GetChild(index2)))
+         {
+            child_linked_flags[index2] = true;
+            break;
+         }
+      }
+
+      if (size == index2)
+      {
+         // No pair for "left_child".
+         return false;
+      }
+   }
+
+   // Full conformity is detected.
+   return true;
+}
+
 
 } // namespace
 

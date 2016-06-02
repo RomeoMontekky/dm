@@ -35,13 +35,7 @@ public:
    virtual TExpressionPtr Clone() const = 0;
    // Clones expression tree, substiting params with actual values
    virtual TExpressionPtr CloneWithSubstitution(const TExpressionPtrVector& actual_params) const = 0;
-
-protected:
-   // Check whether the expression equals to another one with the same type.
-   virtual bool IsEqualToTheSameType(const Expression& rhs) const = 0;
 };
-
-bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
 
 template <ExpressionType type>
 class TypedExpression : public Expression

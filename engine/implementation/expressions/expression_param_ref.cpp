@@ -38,11 +38,4 @@ TExpressionPtr ParamRefExpression::CloneWithSubstitution(
    return actual_params.at(m_index)->Clone();
 }
 
-bool ParamRefExpression::IsEqualToTheSameType(const Expression& rhs) const
-{
-   const auto& typed_rhs = static_cast<const ParamRefExpression&>(rhs);
-   assert(&m_variable == &typed_rhs.m_variable);
-   return (m_index == typed_rhs.m_index);
-}
-
 } // namespace dm

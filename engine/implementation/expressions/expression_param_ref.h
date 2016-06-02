@@ -25,10 +25,6 @@ public:
    virtual TExpressionPtr Clone() const override;
    virtual TExpressionPtr CloneWithSubstitution(const TExpressionPtrVector& actual_params) const override;
 
-protected:
-   // Expression
-   virtual bool IsEqualToTheSameType(const Expression& rhs) const override;
-
 private:
    ParamRefExpression(const ParamRefExpression& rhs) = default;
    ParamRefExpression& operator=(const ParamRefExpression& rhs) = delete;

@@ -1,9 +1,6 @@
 #include "expression_operation.h"
 #include "expression_literal.h"
 
-#include "../common/local_array.h"
-
-#include <algorithm>
 #include <cassert>
 
 namespace dm
@@ -114,51 +111,6 @@ void OperationExpression::RemoveChildren(long indexFrom, long indexTo)
    m_children.erase(m_children.begin() + indexFrom, m_children.begin() + indexTo);
 }
 
-bool OperationExpression::AreFirstChildrenEqual(const OperationExpression& rhs, long size) const
-{
-   assert(m_operation == rhs.m_operation);
-   assert(size <= m_children.size());
-   assert(size <= rhs.m_children.size());
-   
-   if (!AreOperandsMovable(m_operation))
-   {
-      return std::equal(m_children.begin(), m_children.begin() + size,
-                        rhs.m_children.begin(), rhs.m_children.begin() + size, IsEqual);
-   }
-   
-   // If operands are movable, it's not enough just to use comparison of vectors. We need to
-   // check whether two vectors contain the same set of operands up to a permutation.
-   
-   // Contains information about whether i-th element of rhs.m_children was linked to some
-   // element of m_children, during conformity detection.
-   LOCAL_ARRAY(bool, child_linked_flags, size);
-   std::fill_n(child_linked_flags, size, false);
-
-   // Let's establish one-to-one corresponce between elements of m_children and rhs.m_children,
-   // using child_linked_flags to mark element of rhs.m_children as linked.
-
-   for (long index1 = 0, index2; index1 < size; ++index1)
-   {
-      for (index2 = 0; index2 < size; ++index2)
-      {
-         if (!child_linked_flags[index1] && IsEqual(m_children[index1], m_children[index2]))
-         {
-            child_linked_flags[index2] = true;
-            break;
-         }
-      }
-      
-      if (size == index2)
-      {
-         // No equal pair for m_children[index1].
-         return false;
-      }
-   }
-   
-   // Full conformity is detected.
-   return true;
-}
-
 std::string OperationExpression::ToString() const
 {
    std::string result;
@@ -204,16 +156,6 @@ TExpressionPtr OperationExpression::CloneWithSubstitution(
    const TExpressionPtrVector& actual_params) const
 {
    return TExpressionPtr(new OperationExpression(*this, actual_params));
-}
-
-bool OperationExpression::IsEqualToTheSameType(const Expression& rhs) const
-{
-   const auto& typed_rhs = static_cast<const OperationExpression&>(rhs);
-   if (m_operation != typed_rhs.m_operation || m_children.size() != typed_rhs.m_children.size())
-   {
-      return false;
-   }
-   return AreFirstChildrenEqual(typed_rhs, m_children.size());
 }
 
 } // namespace dm

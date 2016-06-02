@@ -22,10 +22,6 @@ public:
    virtual TExpressionPtr Clone() const override;
    virtual TExpressionPtr CloneWithSubstitution(const TExpressionPtrVector& actual_params) const override;
 
-protected:
-   // Expression
-   virtual bool IsEqualToTheSameType(const Expression& rhs) const override;
-
 private:
    LiteralExpression(const LiteralExpression& rhs) = default;
    LiteralExpression& operator=(const LiteralExpression& rhs) = delete;

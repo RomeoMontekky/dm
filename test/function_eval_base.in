@@ -1,4 +1,4 @@
-# check of operands' movability.
+# test of operands' movability.
 base1(x, y) := (x -> y) + (x -> y)
 call eval(base1)
 base2(x, y) := (x -> y) + (y -> x)
@@ -7,3 +7,7 @@ base3(x, y) := (x = y) + (x = y)
 call eval(base3)
 base4(x, y) := (x = y) + (y = x)
 call eval(base4)
+
+# Test of negation equality
+base5(x, y, z) := (x & y & (z=0)) + (x & y & (z+1))
+call eval(base5)
