@@ -14,11 +14,15 @@ call eval(disj6)
 disj7(x, y, z) := ((x | y) -> 0) | y | z | x
 call eval(disj7)
 # De Morgan (all)
-conj8(x, y) := (x+1) | (y->0)
-call eval(conj8)
+disj8(x, y) := (x+1) | (y->0)
+call eval(disj8)
 # De Morgan (half)
-conj9(x, y) := !x | y
-call eval(conj9)
+disj9(x, y) := !x | y
+call eval(disj9)
 # De Morgan (re-evaluation)
-conj10(x, y) := ((x=0) | (y+1))->0
-call eval(conj10)
+disj10(x, y) := ((x=0) | (y+1))->0
+call eval(disj10)
+# De Morgan (child evaluation, in-place normalization
+#            back whole operation transformation)
+disj11(x, y, z) := !(x & y & z) | !x
+call eval(disj11)
