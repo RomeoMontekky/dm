@@ -1,7 +1,8 @@
 - show position of erred character in the error message.
 - function for evaluation of expressions.
-   - implement gluing rules.
+   - implement equality of negations.
    - implement De Morgan's laws.
+   - implement gluing rules.
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.
 - function for CNF/SCNF/MinCNF building.

@@ -15,7 +15,6 @@ public:
    OperationExpression(OperationType operation, TExpressionPtrVector&& children);
 
    OperationType GetOperation() const;
-   void SetOperation(OperationType operation);
    long GetChildCount() const;
    const TExpressionPtr& GetChild(long index) const;
    TExpressionPtr& GetChild(long index);

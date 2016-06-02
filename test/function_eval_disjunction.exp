@@ -12,3 +12,9 @@ disj6(x, y) := ((x + y) | x | (y + x + 1))
 disj6(x, y) := 1
 disj7(x, y, z) := (((x | y) -> 0) | y | z | x)
 disj7(x, y, z) := 1
+conj8(x, y) := ((x + 1) | (y -> 0))
+conj8(x, y) := !(x & y)
+conj9(x, y) := (!x | y)
+conj9(x, y) := !(x & !y)
+conj10(x, y) := (((x = 0) | (y + 1)) -> 0)
+conj10(x, y) := (x & y)

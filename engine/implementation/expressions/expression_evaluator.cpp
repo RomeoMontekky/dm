@@ -72,24 +72,31 @@ ExpressionEvaluator::ExpressionEvaluator() : m_evaluated_expression()
 
 void ExpressionEvaluator::Evaluate(TExpressionPtr& expr)
 {
-   if (expr->GetType() != ExpressionType::Operation)
+   while (true)
    {
-      return;
+      if (expr->GetType() != ExpressionType::Operation)
+      {
+         break;
+      }
+      
+      auto& expression = CastToOperation(expr);
+      
+      for (long index = expression.GetChildCount() - 1; index >= 0; --index)
+      {
+         Evaluate(expression.GetChild(index));
+      }
+      
+      EvaluateOperation(expression);
+      
+      if (m_evaluated_expression.get() != nullptr)
+      {
+         expr = std::move(m_evaluated_expression);
+      }
+      else
+      {
+         break;
+      }
    }
-   
-   auto& expression = CastToOperation(expr);
-   
-   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
-   {
-      Evaluate(expression.GetChild(index));
-   }
-   
-   EvaluateOperation(expression);
-   
-   if (m_evaluated_expression.get() != nullptr)
-   {
-      expr = std::move(m_evaluated_expression);
-   } 
 }
 
 void ExpressionEvaluator::EvaluateOperation(OperationExpression& expression)
@@ -150,16 +157,16 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    {
       return;
    }
-
+   
+   // According to rule 2, remove literal 1 if exist.
+   RemoveLiteralIfExists(expression, LiteralType::True);
+   
    // According to rule 4, evaluate expression to literal 0
    // if there exists x and !x.
    if (RemoveAllIfNegNotNegExists(expression, LiteralType::False))
    {
       return;
    }
-
-   // According to rule 2, remove literal 1 if exist.
-   RemoveLiteralIfExists(expression, LiteralType::True);
 
    // According to rule 3, remove all duplicates.
    RemoveDuplicates(expression);
@@ -191,15 +198,15 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
       return;
    }
 
+   // According to rule 2, remove literal 0 if exist.
+   RemoveLiteralIfExists(expression, LiteralType::False);
+   
    // According to rule 4, evaluate expression to literal 1
    // if there exists x and !x.
    if (RemoveAllIfNegNotNegExists(expression, LiteralType::True))
    {
       return;
    }
-
-   // According to rule 2, remove literal 0 if exist.
-   RemoveLiteralIfExists(expression, LiteralType::False);
 
    // According to rule 3, remove all duplicates.
    RemoveDuplicates(expression);
@@ -524,13 +531,14 @@ void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression
       return;
    }
    
+   const long child_count = expression.GetChildCount();
    auto operation = expression.GetOperation();
 
    assert(OperationType::Conjunction == operation ||
           OperationType::Disjunction == operation);
 
    long negation_count = 0;
-   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
+   for (long index = child_count - 1; index >= 0; --index)
    {
       if (IsNegationEquivalent(expression.GetChild(index)))
       {
@@ -538,14 +546,21 @@ void ExpressionEvaluator::DeMorganTransfromation(OperationExpression& expression
       }
    }
 
-   if ((negation_count << 1) <= expression.GetChildCount())
+   if ((OperationType::Conjunction == operation && (negation_count << 1) <= child_count) ||
+       (OperationType::Disjunction == operation && (negation_count << 1) <  child_count))
    {
-      // Don't do De Morgan's transformation if amount of negated operands
-      // less or equal then non-negated ones.
+      // Don't do transformation if amount of negated operands less (or equal) then non-negated ones.
+      
+      // As conjunction transforms to disjunction and vise versa, we need to decide what to do
+      // if amounts of negations and non-negations are equal to stabilize the algorithm. Evidently
+      // one of these operations should be picked out as "preferable". Let it be conjunction.
+      // So if amounts of negations and non-negations are equal, skip transormation if operation is
+      // conjunction and don't skip otherwise.
+      
       return;
    }
 
-   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
+   for (long index = child_count - 1; index >= 0; --index)
    {
       auto& child_expr = expression.GetChild(index);
       const auto child_operation = GetOperation(child_expr);
@@ -619,37 +634,37 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
       // as current one, then we need to check whether other children are the same as
       // children of the negated child.
       
-      // Checking of the fact, that amount of child operands of the 'child' is less
-      // than 3, needs additional clarification. Let's explain this on examples.
-      
-      // Example 1:
-      //    (x = y = 0) = x = y
-      // Before evaluation start it had to be normalized to:
-      //     x = y = 0 = x = y
-      // So it's impossible situation.
-
-      // Example 2:
-      //    (x -> y -> 0) = x = y
-      // This expression could not be normalized before evaluation, so it's possible. But it
-      // can't be grouped because removing of negation from bracket's content gives (x -> y),
-      // and this operation isn't equality.
-
-      // Example 3:
-      //   ((x = y) -> 0) = x = y
-      // This expression could not be normalized, so is possible like to the previous one.
-      // But after negation removing it will give (x = y), so remained operarands of the
-      // female operation are really can be grouped to have the same set.
-
-      // Let's make a line. The grouping is possible only if operands' amount of the
-      // negation equivalent is less, then 3. This condition is OK for binary operations,
-      // and also fits raw negation operation, that is ought to have a single child operand.
-      
       if (IsNegationEquivalent(child_expr))
       {
          // We can do casting without checking return value of GetType becuase IsNegationEquivalent
          // will return false for a non-operation expression.
          const auto& child_expression = CastToOperation(child_expr);
-
+         
+         // Checking of the fact, that amount of child operands of the 'child_expr' is less
+         // than 3, needs additional clarification. Let's explain this on examples.
+         
+         // Example 1:
+         //    (x = y = 0) = x = y
+         // Before evaluation start it had to be normalized to:
+         //     x = y = 0 = x = y
+         // So it's impossible situation.
+   
+         // Example 2:
+         //    (x -> y -> 0) = x = y
+         // This expression could not be normalized before evaluation, so it's possible. But it
+         // can't be grouped because removing of negation from bracket's content gives (x -> y),
+         // and this operation isn't equality.
+   
+         // Example 3:
+         //   ((x = y) -> 0) = x = y
+         // This expression could not be normalized, so is possible like to the previous one.
+         // But after negation removing it will give (x = y), so remained operarands of the
+         // female operation are really can be grouped to have the same set.
+   
+         // Let's make a line. The grouping is possible only if operands' amount of the
+         // negation equivalent is less, then 3. This condition is OK for binary operations,
+         // and also fits raw negation operation, that is ought to have a single child operand.
+         
          if (child_expression.GetChildCount() < 3 &&
              GetOperation(child_expression.GetChild(0)) == expression.GetOperation())
          {
