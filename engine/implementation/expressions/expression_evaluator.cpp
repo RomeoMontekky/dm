@@ -127,8 +127,8 @@ void ExpressionEvaluator::EvaluateOperation(OperationExpression& expression)
    auto method = methods[static_cast<long>(expression.GetOperation())];
    (this->*method)(expression);
 
-   // If after evaluation the only operand is remained, then
-   // current expression can be evaluated to this operand.
+   // If the only operand is remained after the evaluation, then the whole operation
+   // is to be evaluated to this operand.
    if (expression.GetOperation() != OperationType::Negation && expression.GetChildCount() == 1)
    {
       // Evaluated expression shouln't be set already.
