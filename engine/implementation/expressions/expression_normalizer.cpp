@@ -16,8 +16,8 @@ void NormalizeExpression(TExpressionPtr& expr)
       return;
    }
 
-   OperationExpression* const expression = static_cast<OperationExpression*>(expr.get());
-   const OperationType operation = expression->GetOperation();
+   auto& expression = CastToOperation(expr);
+   const auto operation = expression.GetOperation();
 
    if (OperationType::Negation == operation)
    {
@@ -28,9 +28,9 @@ void NormalizeExpression(TExpressionPtr& expr)
 
    const bool are_operands_movable = AreOperandsMovable(operation);
 
-   for (long index = expression->GetChildCount() - 1; index >= 0; --index)
+   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
    {
-      TExpressionPtr& child = expression->GetChild(index);
+      TExpressionPtr& child = expression.GetChild(index);
 
       // Recursive call must be done before actual normalization.
       NormalizeExpression(child);
@@ -40,11 +40,7 @@ void NormalizeExpression(TExpressionPtr& expr)
       //    - it is operation expression and operation is the same as in the current expression;
       if ((are_operands_movable || 0 == index) && (GetOperation(child) == operation))
       {
-         TExpressionPtrVector moved_children;
-         MoveChildExpressions(moved_children, child);
-         const long moved_children_count = moved_children.size();
-         expression->RemoveChild(index);
-         expression->InsertChildren(index, std::move(moved_children));
+         MoveChildExpressionsUp(expression, index);
       }
    }
 }

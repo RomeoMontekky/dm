@@ -33,11 +33,25 @@ const LiteralExpression& CastToLiteral(const TExpressionPtr& expr)
    return static_cast<const LiteralExpression&>(*expr.get());
 }
 
+LiteralExpression& CastToLiteral(TExpressionPtr& expr)
+{
+   assert(expr.get() != nullptr);
+   assert(expr->GetType() == ExpressionType::Literal);
+   return static_cast<LiteralExpression&>(*expr.get());
+}
+
 const ParamRefExpression& CastToParamRef(const TExpressionPtr& expr)
 {
    assert(expr.get() != nullptr);
    assert(expr->GetType() == ExpressionType::ParamRef);
    return static_cast<const ParamRefExpression&>(*expr.get());
+}
+
+ParamRefExpression& CastToParamRef(TExpressionPtr& expr)
+{
+   assert(expr.get() != nullptr);
+   assert(expr->GetType() == ExpressionType::ParamRef);
+   return static_cast<ParamRefExpression&>(*expr.get());
 }
 
 const OperationExpression& CastToOperation(const TExpressionPtr& expr)
@@ -69,6 +83,14 @@ void MoveChildExpressions(TExpressionPtrVector& target, OperationExpression& exp
    {
       target.push_back(std::move(expression.GetChild(index)));
    }
+}
+
+void MoveChildExpressionsUp(OperationExpression& expression, long child_index)
+{
+   TExpressionPtrVector moved_children;
+   MoveChildExpressions(moved_children, expression.GetChild(child_index));
+   expression.RemoveChild(child_index);
+   expression.InsertChildren(child_index, std::move(moved_children));
 }
 
 } // namespace dm

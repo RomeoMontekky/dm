@@ -657,11 +657,7 @@ void ExpressionEvaluator::DeMorganForChildren(OperationExpression& expression)
          {
              ExtractFromUnderNegationEquivalent(child_expr);
              RevertNegations(child_expr);
-             
-             TExpressionPtrVector moved_children;
-             MoveChildExpressions(moved_children, child_expr);
-             expression.RemoveChild(index);
-             expression.InsertChildren(index, std::move(moved_children));
+             MoveChildExpressionsUp(expression, index);
          }
       }
    }
@@ -725,10 +721,7 @@ void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression, 
 {
    if (expression.GetOperation() == GetOperation(expression.GetChild(child_index)))
    {
-      TExpressionPtrVector moved_children;
-      MoveChildExpressions(moved_children, expression.GetChild(child_index));
-      expression.RemoveChild(child_index);
-      expression.InsertChildren(child_index, std::move(moved_children));
+      MoveChildExpressionsUp(expression, child_index);
    }
 }
 

@@ -18,12 +18,17 @@ class OperationExpression;
 
 // Expression casts
 const LiteralExpression& CastToLiteral(const TExpressionPtr& expr);
+LiteralExpression& CastToLiteral(TExpressionPtr& expr);
 const ParamRefExpression& CastToParamRef(const TExpressionPtr& expr);
+ParamRefExpression& CastToParamRef(TExpressionPtr& expr);
 const OperationExpression& CastToOperation(const TExpressionPtr& expr);
 OperationExpression& CastToOperation(TExpressionPtr& expr);
 
-// Following functions allow to move child expressions from the operation expression.
+// Move child expressions from an operation expression to the target.
 void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expr);
 void MoveChildExpressions(TExpressionPtrVector& target, OperationExpression& expression);
+
+// Move child expressions from child_index-th child to its place in the parent expression.
+void MoveChildExpressionsUp(OperationExpression& expression, long child_index);
 
 } // namespace dm
