@@ -71,17 +71,4 @@ void MoveChildExpressions(TExpressionPtrVector& target, OperationExpression& exp
    }
 }
 
-void MoveChildExpression(TExpressionPtr& target, TExpressionPtr& expr, long child_index)
-{
-   TExpressionPtrVector moved_expressions;
-   MoveChildExpressions(moved_expressions, expr);
-   assert(child_index >= 0 && child_index < moved_expressions.size());
-   target = std::move(moved_expressions[child_index]);
-}
-
-void MoveChildExpressionInplace(TExpressionPtr& expr, long child_index)
-{
-   MoveChildExpression(expr, expr, child_index);
-}
-
 } // namespace dm
