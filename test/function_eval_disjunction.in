@@ -19,10 +19,6 @@ call eval(disj8)
 # De Morgan (half)
 disj9(x, y) := !x | y
 call eval(disj9)
-# De Morgan (re-evaluation)
-disj10(x, y) := ((x=0) | (y+1))->0
+# De Morgan (child evaluation, in-place normalization and backward transformation)
+disj10(x, y, z) := !(x & y & z) | !x
 call eval(disj10)
-# De Morgan (child evaluation, in-place normalization
-#            back whole operation transformation)
-disj11(x, y, z) := !(x & y & z) | !x
-call eval(disj11)

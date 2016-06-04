@@ -26,7 +26,7 @@ void NormalizeExpression(TExpressionPtr& expr)
       return;
    }
 
-   const bool are_operands_movable = AreOperandsMovable(operation);
+   const auto are_operands_movable = AreOperandsMovable(operation);
 
    for (long index = expression.GetChildCount() - 1; index >= 0; --index)
    {

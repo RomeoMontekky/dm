@@ -8,6 +8,6 @@ call eval(base3)
 base4(x, y) := (x = y) + (y = x)
 call eval(base4)
 
-# Test of negation equality
+# test of equality of negation equivalents
 base5(x, y, z) := (x & y & (z=0)) + (x & y & (z+1))
 call eval(base5)

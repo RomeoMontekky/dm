@@ -8,3 +8,5 @@ neg4(x) := !(x = 0)
 neg4(x) := x
 neg5(x) := !(x -> 0)
 neg5(x) := x
+neg6(x, y) := (!(x + y + 1) + x)
+neg6(x, y) := y

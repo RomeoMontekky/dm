@@ -20,7 +20,7 @@ public:
    
    // Returns information about whether current expression
    // has been fully evaluated to a certain other expression.
-   void Evaluate(TExpressionPtr& expr);
+   bool Evaluate(TExpressionPtr& expr);
    
 private:
    void EvaluateOperation(OperationExpression& expression);
@@ -65,8 +65,8 @@ private:
    static void RevertNegations(TExpressionPtr& expr);
    static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
 
-   // Checks that first size children have one-to-one accordance with
-   // first size children of specified operation expression.
+   // Checks that first size children of "left" have one-to-one accordance with
+   // first size children of "specified "right" operation expression.
    static bool AreFirstChildrenEqual(const OperationExpression& left,
                                      const OperationExpression& right, long size);
 
@@ -81,33 +81,40 @@ ExpressionEvaluator::ExpressionEvaluator() : m_evaluated_expression()
 {
 }
 
-void ExpressionEvaluator::Evaluate(TExpressionPtr& expr)
+bool ExpressionEvaluator::Evaluate(TExpressionPtr& expr)
 {
-   while (true)
+   if (expr->GetType() != ExpressionType::Operation)
    {
-      if (expr->GetType() != ExpressionType::Operation)
+      return false;
+   }
+
+   auto& expression = CastToOperation(expr);
+   const auto operation = expression.GetOperation();
+   const auto are_operands_movable = AreOperandsMovable(operation);
+
+   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
+   {
+      auto& child = expression.GetChild(index);
+
+     if (Evaluate(child) &&
+         (are_operands_movable || 0 == index) && (GetOperation(child) == operation))
       {
-         break;
-      }
-      
-      auto& expression = CastToOperation(expr);
-      
-      for (long index = expression.GetChildCount() - 1; index >= 0; --index)
-      {
-         Evaluate(expression.GetChild(index));
-      }
-      
-      EvaluateOperation(expression);
-      
-      if (m_evaluated_expression.get() != nullptr)
-      {
-         expr = std::move(m_evaluated_expression);
-      }
-      else
-      {
-         break;
+         // Full normalization/simplification is unnecessary, as currently the current
+         // condition can be true only after negation evaluation, so the child operation
+         // is guaranteed not to have literal operand.
+         MoveChildExpressionsUp(expression, index);
       }
    }
+
+   EvaluateOperation(expression);
+
+   if (m_evaluated_expression.get() != nullptr)
+   {
+      expr = std::move(m_evaluated_expression);
+      return true;
+   }
+
+   return false;
 }
 
 void ExpressionEvaluator::EvaluateOperation(OperationExpression& expression)

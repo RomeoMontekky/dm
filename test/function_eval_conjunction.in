@@ -19,10 +19,6 @@ call eval(conj8)
 # De Morgan (half)
 conj9(x, y) := !x & y
 call eval(conj9)
-# De Morgan (re-evaluation)
-conj10(x, y) := ((x=0) & (y+1))->0
+# De Morgan (child evaluation, in-place normalization and backward transformation)
+conj10(x, y, z) := !(x | y | z) & !x
 call eval(conj10)
-# De Morgan (child evaluation, in-place normalization
-#            back whole operation transformation)
-conj11(x, y, z) := !(x | y | z) & !x
-call eval(conj11)

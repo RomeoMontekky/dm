@@ -1,10 +1,18 @@
+# negation under negation
 neg1(x, y) := !!(x->y)
 call eval(neg1)
+# simplie plus negation equivalent under negation
 neg2(x) := !(x + 1)
 call eval(neg2)
+# complex plus negation equivalent under negation
 neg3(x, y) := !(x + y + 1)
 call eval(neg3)
+# equality negation equivalent under negation
 neg4(x) := !(x = 0)
 call eval(neg4)
+# implication negation equivalent under negation
 neg5(x) := !(x -> 0)
 call eval(neg5)
+# in-place normalization after evaluation
+neg6(x, y) := !(x + y + 1) + x
+call eval(neg6)
