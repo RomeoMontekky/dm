@@ -1,7 +1,6 @@
 - show position of erred character in the error message.
 - function for evaluation of expressions.
    - implement gluing rules.
-   - re-normalize parent expression after the negation evaluation.
    - evaluation basing on rule !(x = y) => (x + y).
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.

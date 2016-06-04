@@ -6,26 +6,6 @@
 namespace dm
 {
 
-LiteralType GetLiteral(const TExpressionPtr& expr)
-{
-   assert(expr.get() != nullptr);
-   if (expr->GetType() == ExpressionType::Literal)
-   {
-      return static_cast<const LiteralExpression*>(expr.get())->GetLiteral();
-   }
-   return LiteralType::None;
-}
-
-OperationType GetOperation(const TExpressionPtr& expr)
-{
-   assert(expr.get() != nullptr);
-   if (expr->GetType() == ExpressionType::Operation)
-   {
-      return static_cast<const OperationExpression*>(expr.get())->GetOperation();
-   }
-   return OperationType::None;
-}
-
 const LiteralExpression& CastToLiteral(const TExpressionPtr& expr)
 {
    assert(expr.get() != nullptr);
@@ -66,6 +46,27 @@ OperationExpression& CastToOperation(TExpressionPtr& expr)
    assert(expr.get() != nullptr);
    assert(expr->GetType() == ExpressionType::Operation);
    return static_cast<OperationExpression&>(*expr.get());
+}
+
+LiteralType GetLiteral(const TExpressionPtr& expr)
+{
+   assert(expr.get() != nullptr);
+   return (expr->GetType() == ExpressionType::Literal) ?
+      CastToLiteral(expr).GetLiteral() : LiteralType::None;
+}
+
+long GetParamIndex(const TExpressionPtr& expr)
+{
+   assert(expr.get() != nullptr);
+   return (expr->GetType() == ExpressionType::ParamRef) ?
+      CastToParamRef(expr).GetParamIndex() : -1;
+}
+
+OperationType GetOperation(const TExpressionPtr& expr)
+{
+   assert(expr.get() != nullptr);
+   return (expr->GetType() == ExpressionType::Operation) ?
+      CastToOperation(expr).GetOperation() : OperationType::None;
 }
 
 void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expr)

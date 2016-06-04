@@ -96,11 +96,11 @@ bool ExpressionEvaluator::Evaluate(TExpressionPtr& expr)
    {
       auto& child = expression.GetChild(index);
 
-     if (Evaluate(child) &&
+      if (Evaluate(child) &&
          (are_operands_movable || 0 == index) && (GetOperation(child) == operation))
       {
-         // Full normalization/simplification is unnecessary, as currently the current
-         // condition can be true only after negation evaluation, so the child operation
+         // Full normalization/simplification is unnecessary, as currently the condition
+         // can be true only after negation evaluation, so the child operation
          // is guaranteed not to have literal operand.
          MoveChildExpressionsUp(expression, index);
       }

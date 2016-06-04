@@ -8,10 +8,6 @@
 namespace dm
 {
 
-LiteralType GetLiteral(const TExpressionPtr& expr);
-OperationType GetOperation(const TExpressionPtr& expr);
-
-// Forward declarations of expressions.
 class LiteralExpression;
 class ParamRefExpression;
 class OperationExpression;
@@ -23,6 +19,11 @@ const ParamRefExpression& CastToParamRef(const TExpressionPtr& expr);
 ParamRefExpression& CastToParamRef(TExpressionPtr& expr);
 const OperationExpression& CastToOperation(const TExpressionPtr& expr);
 OperationExpression& CastToOperation(TExpressionPtr& expr);
+
+// Helpers
+LiteralType GetLiteral(const TExpressionPtr& expr);
+long GetParamIndex(const TExpressionPtr& expr);
+OperationType GetOperation(const TExpressionPtr& expr);
 
 // Move child expressions from an operation expression to the target.
 void MoveChildExpressions(TExpressionPtrVector& target, TExpressionPtr& expr);
