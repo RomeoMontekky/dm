@@ -8,3 +8,11 @@ base4(x, y) := ((x = y) + (y = x))
 base4(x, y) := 0
 base5(x, y, z) := ((x & y & (z = 0)) + (x & y & (z + 1)))
 base5(x, y, z) := 0
+base6(x, y) := ((x + y) & (x = y = 0))
+base6(x, y) := (x + y)
+base7(x, y) := ((x + y) & ((x = y) -> 0))
+base7(x, y) := (x + y)
+base8(x, y) := ((x + y + 1) & (y = x))
+base8(x, y) := (x + y + 1)
+base9(x, y) := (!(x + y) & (y = x))
+base9(x, y) := !(x + y)

@@ -60,10 +60,15 @@ private:
 
    // Utility
    static bool IsNegationEquivalent(const TExpressionPtr& expr);
+   static bool IsNegationEquivalent(const OperationExpression& expression);
    static bool CheckNegNotNeg(const TExpressionPtr& neg_expr, const TExpressionPtr& expr);
    static void ExtractFromUnderNegationEquivalent(TExpressionPtr& expr);
    static void RevertNegations(TExpressionPtr& expr);
+
    static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
+   static bool IsEqualUpToMutuallyReverseOperations(
+      const OperationExpression& left, const OperationExpression& right,
+      OperationType operation1, OperationType operation2);
 
    // Checks that first size children of "left" have one-to-one accordance with
    // first size children of "specified "right" operation expression.
@@ -795,18 +800,22 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
 
 bool ExpressionEvaluator::IsNegationEquivalent(const TExpressionPtr& expr)
 {
+   if (expr->GetType() != ExpressionType::Operation)
+   {
+      return false;
+   }
+
+   return IsNegationEquivalent(CastToOperation(expr));
+}
+
+bool ExpressionEvaluator::IsNegationEquivalent(const OperationExpression& expression)
+{
    // We have following rules of negation equivalents:
    //    1. !x
    //    2.  x -> 0
    //    3.  x = 0
    //    4.  x + 1
 
-   if (expr->GetType() != ExpressionType::Operation)
-   {
-      return false;
-   }
-
-   const auto& expression = CastToOperation(expr);
    const auto operation = expression.GetOperation();
    const long child_count = expression.GetChildCount();
 
@@ -967,20 +976,81 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
 
          // If operations aren't equal, equality is still possible if both operations
          // are negation equivalents and its contain equal expressions under the negation.
-         return (IsNegationEquivalent(left) && IsNegationEquivalent(right) &&
-                 left_operation.GetChildCount() < 3 && right_operation.GetChildCount() < 3 &&
-                 IsEqual(left_operation.GetChild(0), right_operation.GetChild(0)));
+         if (IsNegationEquivalent(left_operation) && IsNegationEquivalent(right_operation) &&
+             left_operation.GetChildCount() < 3 && right_operation.GetChildCount() < 3 &&
+             IsEqual(left_operation.GetChild(0), right_operation.GetChild(0)))
+         {
+            return true;
+         }
+
+         // Equality is still possible, if we compares mutually reverse operations,
+         // for example:
+         //    (x + y) equals (x = y = 0)
+         return IsEqualUpToMutuallyReverseOperations(
+            left_operation, right_operation, OperationType::Plus, OperationType::Equality);
       }
    }
 
    assert(!"Unknown expression type.");
+
    return false;
+}
+
+bool ExpressionEvaluator::IsEqualUpToMutuallyReverseOperations(
+   const OperationExpression& left, const OperationExpression& right,
+   OperationType operation1, OperationType operation2)
+{
+   struct MutuallyReverseData
+   {
+      MutuallyReverseData(const OperationExpression& expression) :
+         m_items(0), m_expression_to_check(&expression)
+      {
+         if (IsNegationEquivalent(expression) && expression.GetChildCount() < 3)
+         {
+            const auto& first_child = expression.GetChild(0);
+            if (first_child->GetType() == ExpressionType::Operation)
+            {
+               m_expression_to_check = &CastToOperation(first_child);
+               ++m_items;
+            }
+         }
+         m_items += m_expression_to_check->GetChildCount();
+      }
+
+      // Operation expression which child operands are to be checked.
+      const OperationExpression* m_expression_to_check;
+      // Amount of simple operands and negations.
+      long m_items;
+   };
+
+   MutuallyReverseData data_left(left);
+   MutuallyReverseData data_right(right);
+
+   if ((data_left.m_expression_to_check->GetOperation() != operation1 ||
+        data_right.m_expression_to_check->GetOperation() != operation2) &&
+       (data_left.m_expression_to_check->GetOperation() != operation2 ||
+        data_right.m_expression_to_check->GetOperation() != operation1))
+   {
+       return false;
+   }
+
+   const auto diff = data_left.m_items - data_right.m_items;
+   if ((diff != 1) && (diff != -1))
+   {
+      return false;
+   }
+
+   return AreFirstChildrenEqual(*data_left.m_expression_to_check,
+                                *data_right.m_expression_to_check,
+                                (-1 == diff) ?
+                                   data_left.m_expression_to_check->GetChildCount() :
+                                   data_right.m_expression_to_check->GetChildCount());
+
 }
 
 bool ExpressionEvaluator::AreFirstChildrenEqual(
    const OperationExpression& left, const OperationExpression& right, long size)
 {
-   assert(left.GetOperation() == right.GetOperation());
    assert(size <= left.GetChildCount());
    assert(size <= right.GetChildCount());
 

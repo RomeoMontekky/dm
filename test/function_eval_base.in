@@ -11,3 +11,13 @@ call eval(base4)
 # test of equality of negation equivalents
 base5(x, y, z) := (x & y & (z=0)) + (x & y & (z+1))
 call eval(base5)
+
+# test of equality/inequality of mutually reverse operations
+base6(x, y) :=  (x + y) & (x = y = 0)
+call eval(base6)
+base7(x, y) :=  (x + y) & ((x = y)->0)
+call eval(base7)
+base8(x, y) :=  (x + y + 1) & (y = x)
+call eval(base8)
+base9(x, y) :=  !(x + y) & (y = x)
+call eval(base9)
