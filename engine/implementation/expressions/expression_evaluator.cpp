@@ -1034,17 +1034,20 @@ bool ExpressionEvaluator::IsEqualUpToMutuallyReverseOperations(
        return false;
    }
 
-   const auto diff = data_left.m_items - data_right.m_items;
+   const auto diff = (data_left.m_items - data_right.m_items);
+
+   // Amounts of items are to be distinguished from each other by 1
    if ((diff != 1) && (diff != -1))
    {
       return false;
    }
 
+   const auto amount_to_check = (-1 == diff) ?
+      data_left.m_expression_to_check->GetChildCount() :
+      data_right.m_expression_to_check->GetChildCount();
+
    return AreFirstChildrenEqual(*data_left.m_expression_to_check,
-                                *data_right.m_expression_to_check,
-                                (-1 == diff) ?
-                                   data_left.m_expression_to_check->GetChildCount() :
-                                   data_right.m_expression_to_check->GetChildCount());
+                                *data_right.m_expression_to_check, amount_to_check);
 
 }
 
