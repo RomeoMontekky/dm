@@ -1036,7 +1036,7 @@ bool ExpressionEvaluator::IsEqualUpToMutuallyReverseOperations(
 
    const auto diff = (data_left.m_items - data_right.m_items);
 
-   // Amounts of items are to be distinguished from each other by 1
+   // Amounts of items are to be distinguished from each other by 1.
    if ((diff != 1) && (diff != -1))
    {
       return false;
@@ -1059,6 +1059,7 @@ bool ExpressionEvaluator::AreFirstChildrenEqual(
 
    if (!AreOperandsMovable(left.GetOperation()))
    {
+      // If operands are movable, just use sequential pairwise comparison.
       for (int index = size - 1; index >= 0; --index)
       {
          if (!IsEqual(left.GetChild(index), right.GetChild(index)))
@@ -1069,11 +1070,12 @@ bool ExpressionEvaluator::AreFirstChildrenEqual(
       return true;
    }
 
-   // If operands are movable, it's not enough just to use comparison of vectors. We need to
-   // check whether two vectors contain the same set of operands up to a permutation.
+   // If operands are movable, it's not enough just to use sequential pairwise
+   // comparison. We need to check whether two sets of child operands contain
+   // the same operands up to a permutation.
 
-   // Contains information about whether i-th operand of "right" was linked to some
-   // element of "left", during conformity detection.
+   // The array contains information about whether i-th operand of "right" was
+   // linked to some operand of "left", during conformity detection.
    LOCAL_ARRAY(bool, child_linked_flags, size);
    std::fill_n(child_linked_flags, size, false);
 
