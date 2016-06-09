@@ -983,8 +983,7 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
             return true;
          }
 
-         // Equality is still possible, if we compares mutually reverse operations,
-         // for example:
+         // Equality is still possible, if operations are mutually reverse, for example:
          //    (x + y) equals (x = y = 0)
          return IsEqualUpToMutuallyReverseOperations(
             left_operation, right_operation, OperationType::Plus, OperationType::Equality);
