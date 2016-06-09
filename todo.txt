@@ -1,7 +1,6 @@
 - show position of erred character in the error message.
 - function for evaluation of expressions.
    - make comparision of negations more wise:
-      f(x, y, u1, u2, u3) := !(x + y) & (x + y + 1) & u1 & u2 & u3
    - implement gluing rules.
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.

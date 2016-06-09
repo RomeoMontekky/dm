@@ -9,15 +9,19 @@ base4(x, y) := (x = y) + (y = x)
 call eval(base4)
 
 # test of equality of negation equivalents
-base5(x, y, z) := (x & y & (z=0)) + (x & y & (z+1))
-call eval(base5)
+base5a(x, y, z) := (x & y & (z=0)) + (x & y & (z+1))
+call eval(base5a)
+base5b(x, y, u1, u2, u3) := !(x + y) & (x + y + 1) & u1 & u2 & u3
+call eval(base5b)
+base5c(x, y, u1, u2, u3) := (x + y + 1) & ((x + y)->0) & u1 & u2 & u3
+call eval(base5c)
 
 # test of equality/inequality of mutually reverse operations
-base6(x, y) :=  (x + y) & (x = y = 0)
-call eval(base6)
-base7(x, y) :=  (x + y) & ((x = y)->0)
-call eval(base7)
-base8(x, y) :=  (x + y + 1) & (y = x)
-call eval(base8)
-base9(x, y) :=  !(x + y) & (y = x)
-call eval(base9)
+base6a(x, y) :=  (x + y) & (x = y = 0)
+call eval(base6a)
+base6b(x, y) :=  (x + y) & ((x = y)->0)
+call eval(base6b)
+base6c(x, y) :=  (x + y + 1) & (y = x)
+call eval(base6c)
+base6d(x, y) :=  !(x + y) & (y = x)
+call eval(base6d)

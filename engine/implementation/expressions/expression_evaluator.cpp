@@ -66,6 +66,8 @@ private:
    static void RevertNegations(TExpressionPtr& expr);
 
    static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
+   static bool IsEqualNegations(
+      const OperationExpression& left, const OperationExpression& right);
    static bool IsEqualUpToMutuallyReverseOperations(
       const OperationExpression& left, const OperationExpression& right,
       OperationType operation1, OperationType operation2);
@@ -976,9 +978,7 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
 
          // If operations aren't equal, equality is still possible if both operations
          // are negation equivalents and its contain equal expressions under the negation.
-         if (IsNegationEquivalent(left_operation) && IsNegationEquivalent(right_operation) &&
-             left_operation.GetChildCount() < 3 && right_operation.GetChildCount() < 3 &&
-             IsEqual(left_operation.GetChild(0), right_operation.GetChild(0)))
+         if (IsEqualNegations(left_operation, right_operation))
          {
             return true;
          }
@@ -993,6 +993,64 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
 
    assert(!"Unknown expression type.");
 
+   return false;
+}
+
+bool ExpressionEvaluator::IsEqualNegations(
+   const OperationExpression& left, const OperationExpression& right)
+{
+   if (!IsNegationEquivalent(left) || !IsNegationEquivalent(right))
+   {
+      return false;
+   }
+   
+   const auto left_is_short = (left.GetChildCount() < 3);
+   const auto right_is_short = (right.GetChildCount() < 3);
+   
+   if (left_is_short)
+   {
+      const auto& left_first_child = left.GetChild(0);
+      if (right_is_short)
+      {
+         return IsEqual(left_first_child, right.GetChild(0));
+      }
+      else if (left_first_child->GetType() == ExpressionType::Operation)
+      {
+         const auto& left_first_child_operation = CastToOperation(left_first_child);
+         return (left_first_child_operation.GetOperation() == right.GetOperation() &&
+                 left_first_child_operation.GetChildCount() == right.GetChildCount() - 1 &&
+                 AreFirstChildrenEqual(left_first_child_operation, right, 
+                                       left_first_child_operation.GetChildCount()));
+      }
+      // else => case 1 (see below)
+   }
+   else // !left_is_short
+   {
+      if (right_is_short)
+      {
+         const auto& right_first_child = right.GetChild(0);
+         if (right_first_child->GetType() == ExpressionType::Operation)
+         {
+            const auto& right_first_child_operation = CastToOperation(right_first_child);
+            return (right_first_child_operation.GetOperation() == left.GetOperation() &&
+                    right_first_child_operation.GetChildCount() == left.GetChildCount() - 1 &&
+                    AreFirstChildrenEqual(right_first_child_operation, left, 
+                                          right_first_child_operation.GetChildCount()));
+         }
+      }
+      // else => case 2 (see below)
+   }
+   
+   // We return false in two cases:
+   //    1. left_is_short && !right_is_short && (left_first_child->GetType() != ExpressionType::Operation))
+   //    2. !left_is_short && !right_is_short
+   
+   // Second case must be clarified.
+   // If both left and right expressions are not short, than equality is possible only if they
+   // are the same operations, but checking of the operation types is already done at the beginning
+   // of IsEqual method, and if we are here, then the check returned false. Thus we don't need
+   // to check equality of operation types one more time and can return false at once.
+             
    return false;
 }
 
