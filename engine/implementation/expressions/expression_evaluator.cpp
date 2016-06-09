@@ -838,31 +838,16 @@ bool ExpressionEvaluator::CheckNegNotNeg(
       return false;
    }
 
-   // We can cast without checking GetType, because IsNegationEquivalent
-   // will return false in case of non-operation expression.
-   const auto& neg_expression = CastToOperation(neg_expr);
-
-   switch (neg_expression.GetOperation())
-   {
-      case OperationType::Negation:
-         return (IsEqual(neg_expression.GetChild(0), expr));
-         
-      case OperationType::Implication:
-      case OperationType::Equality:
-      case OperationType::Plus:
-         break;
-         
-      default:
-         // Other operations can't form negation equivalent.
-         return false;
-   }
-   
    // We have 2 cases that must be checked:
    //    1. Simple case, e.g. (x + 1) and x.
    //    2. Complex case, e.g. (x + y + 1) and (x + y)
 
+   // We can cast without checking GetType, because IsNegationEquivalent
+   // will return false in case of non-operation expression.
+   const auto& neg_expression = CastToOperation(neg_expr);
+
    // 1. Simple case.
-   if (neg_expression.GetChildCount() == 2 &&
+   if (neg_expression.GetChildCount() < 3 &&
        IsEqual(neg_expression.GetChild(0), expr))
    {
       return true;
