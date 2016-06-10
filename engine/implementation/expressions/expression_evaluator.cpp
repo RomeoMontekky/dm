@@ -46,7 +46,8 @@ private:
    void RemoveNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
    bool CanBeGroupedAsNegNotNeg(const OperationExpression& expression);
    void DeMorganForChildren(OperationExpression& expression);
-   void DeMorganForOperation(OperationExpression& expression);
+   bool DeMorganForOperation(OperationExpression& expression);
+   bool MakeNegationRepresentative(OperationExpression& expression);
 
    // In-place normatlization for equality/plus
    static void InPlaceNormalization(OperationExpression& expression, long child_index);
@@ -63,6 +64,7 @@ private:
    static bool IsNegationEquivalent(const OperationExpression& expression);
    static bool CheckNegNotNeg(const TExpressionPtr& neg_expr, const TExpressionPtr& expr);
    static void ExtractFromUnderNegationEquivalent(TExpressionPtr& expr);
+   static void CoverWithNegationEquivalent(TExpressionPtr& expr);
    static void RevertNegations(TExpressionPtr& expr);
 
    static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
@@ -164,7 +166,10 @@ void ExpressionEvaluator::EvaluateNegation(OperationExpression& expression)
    {
       ExtractFromUnderNegationEquivalent(child);
       m_evaluated_expression = std::move(child);
+      return;
    }
+   
+   MakeNegationRepresentative(expression);
 }
 
 void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
@@ -385,6 +390,8 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    {
       m_evaluated_expression = std::make_unique<LiteralExpression>(LiteralType::True);
    }
+   
+   MakeNegationRepresentative(expression);
 }
 
 void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
@@ -406,7 +413,12 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
 
    // According to rule 3 and 1, remove duplicates
    // and assign leteral 1 if all operands were removed.
-   AbsorbDuplicates(expression, LiteralType::True);
+   if (AbsorbDuplicates(expression, LiteralType::True))
+   {
+      return;
+   }
+   
+   MakeNegationRepresentative(expression);
 }
 
 void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
@@ -428,7 +440,12 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
 
    // According to rule 3 and 1, remove duplicates
    // and assign leteral 0 if all operands were removed.
-   AbsorbDuplicates(expression, LiteralType::False);
+   if (AbsorbDuplicates(expression, LiteralType::False))
+   {
+      return;
+   }
+   
+   MakeNegationRepresentative(expression);
 }
 
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
@@ -677,7 +694,7 @@ void ExpressionEvaluator::DeMorganForChildren(OperationExpression& expression)
    }
 }
 
-void ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
+bool ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
 {
    // Method uses De Morgan's laws for the whole operation.
    //    1. (!x & !y) => !(x | y)
@@ -687,7 +704,7 @@ void ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
    // operarands on the previous phases of evaluation. Let's return if so.
    if (expression.GetChildCount() < 2)
    {
-      return;
+      return false;
    }
    
    const long child_count = expression.GetChildCount();
@@ -717,7 +734,7 @@ void ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
       // So if amounts of negations and non-negations are equal, skip transormation if operation is
       // conjunction and don't skip otherwise.
       
-      return;
+      return false;
    }
    
    // Re-create expression in order to set another operation and obtain TExpressionPtr type as result.
@@ -729,6 +746,31 @@ void ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
 
    // Add negation to new expression according to the rule.
    m_evaluated_expression = std::make_unique<OperationExpression>(std::move(new_expr));
+   
+   return true;
+}
+
+bool ExpressionEvaluator::MakeNegationRepresentative(OperationExpression& expression)
+{
+   if (IsNegationEquivalent(expression) && expression.GetChildCount() < 3)
+   {
+      auto& child = expression.GetChild(0);
+      
+      // It can't be negation equivalent, since otherwise it would have been evaluated before.
+      assert(!IsNegationEquivalent(child));
+      
+      const auto operation = GetOperation(child);
+      if (OperationType::Implication == operation ||
+          OperationType::Equality == operation ||
+          OperationType::Plus == operation)
+      {
+         CoverWithNegationEquivalent(child);
+         m_evaluated_expression = std::move(child);
+         return true;
+      }
+   }
+   
+   return false;
 }
 
 void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression, long child_index)
@@ -821,8 +863,17 @@ bool ExpressionEvaluator::IsNegationEquivalent(const OperationExpression& expres
    const auto operation = expression.GetOperation();
    const long child_count = expression.GetChildCount();
 
-   return (OperationType::Negation == operation) ||
-          (OperationType::Implication == operation &&
+   if (OperationType::Negation == operation)
+   {
+      return true;
+   }
+   
+   if (child_count < 2)
+   {
+      return false;
+   }
+   
+   return (OperationType::Implication == operation &&
              (LiteralType::False == GetLiteral(expression.GetChild(child_count - 1)))) ||
           (OperationType::Equality == operation &&
              (LiteralType::False == GetLiteral(expression.GetChild(child_count - 1)))) ||
@@ -892,6 +943,33 @@ void ExpressionEvaluator::ExtractFromUnderNegationEquivalent(TExpressionPtr& exp
    }
 }
 
+void ExpressionEvaluator::CoverWithNegationEquivalent(TExpressionPtr& expr)
+{
+   assert(!IsNegationEquivalent(expr));
+   
+   // Let's use following rules to make negation more presentable.
+   //    1. ( x -> 0), in case of implication
+   //    2. ( x  = 0), in case of equality
+   //    3. ( x  + 1), in case of plus
+   //    4. (!x),      otherwise
+  
+   const auto child_operation = GetOperation(expr);
+   
+   if (OperationType::Implication == child_operation ||
+       OperationType::Equality == child_operation)
+   {
+      CastToOperation(expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::False));
+   }
+   else if (OperationType::Plus == child_operation)
+   {
+      CastToOperation(expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::True));
+   }
+   else
+   {
+      expr = std::make_unique<OperationExpression>(std::move(expr));
+   }
+}
+
 void ExpressionEvaluator::RevertNegations(TExpressionPtr& expr)
 {
    auto& expression = CastToOperation(expr);
@@ -907,27 +985,7 @@ void ExpressionEvaluator::RevertNegations(TExpressionPtr& expr)
       }
       else
       {
-         // Add negation. Let's use following rules to make it more presentable.
-         //    1. ( x -> 0), in case of implication
-         //    2. ( x  = 0), in case of equality
-         //    3. ( x  + 1), in case of plus
-         //    4. (!x),      otherwise
-         
-         const auto child_operation = GetOperation(child_expr);
-         
-         if (OperationType::Implication == child_operation ||
-             OperationType::Equality == child_operation)
-         {
-            CastToOperation(child_expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::False));
-         }
-         else if (OperationType::Plus == child_operation)
-         {
-            CastToOperation(child_expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::True));
-         }
-         else
-         {
-            child_expr = std::make_unique<OperationExpression>(std::move(child_expr));
-         }
+         CoverWithNegationEquivalent(child_expr);
       }
    }
 }

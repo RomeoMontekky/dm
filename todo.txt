@@ -1,6 +1,7 @@
 - show position of erred character in the error message.
 - function for evaluation of expressions.
-   - make comparision of negations more wise:
+   - fix of absense of normalization after making negation more representative:
+        f(x, y, z) := (((x + y) -> 0) + z) -> 0
    - implement gluing rules.
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.
