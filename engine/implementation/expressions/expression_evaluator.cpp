@@ -79,8 +79,7 @@ private:
 
    static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
    static bool IsEqualUpToMutuallyReverseOperations(
-      const OperationExpression& left, const OperationExpression& right,
-      OperationType operation1, OperationType operation2);
+      const OperationExpression& left, const OperationExpression& right);
 
    // Checks that first size children of "left" have one-to-one accordance with
    // first size children of "specified "right" operation expression.
@@ -521,28 +520,21 @@ void ExpressionEvaluator::RemoveDuplicates(OperationExpression& expression)
 bool ExpressionEvaluator::AbsorbDuplicates(
    OperationExpression& expression, LiteralType remaining_literal)
 {
-   auto child_count = expression.GetChildCount();
-
-   long i = 0;
-   while (i < child_count - 1)
+   for (auto i = expression.GetChildCount() - 1; i > 0; --i)
    {
-      long j = i + 1;
-      while (j < child_count)
+      for (auto j = i - 1; j >= 0; --j)
       {
          if (IsEqual(expression.GetChild(i), expression.GetChild(j)))
          {
-            expression.RemoveChild(j);
             expression.RemoveChild(i);
-            j = i + 1;
-            child_count -= 2;
-            continue;
+            expression.RemoveChild(j);
+            --i;
+            break;
          }
-         ++j;
       }
-      ++i;
    }
 
-   if (0 == child_count)
+   if (0 == expression.GetChildCount())
    {
       m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
       return true;
@@ -555,7 +547,7 @@ void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, Liter
 {
    bool is_negation_lonely = false;
 
-   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
+   for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
    {
       if (IsNegationEquivalent(expression.GetChild(index)))
       {
@@ -599,7 +591,7 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
       return false;
    }
    
-   for (long index = 0, i = 0, j = 0; index < child_count; ++index)
+   for (auto index = 0L, i = 0L, j = 0L; index < child_count; ++index)
    {
       const auto& child = expression.GetChild(index);
       
@@ -610,7 +602,7 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
       if (IsShortNegationEquivalentWithChildOperation(child, expression.GetOperation()))
       {
          const auto& child_to_check = CastToOperation(CastToOperation(child).GetChild(0));
-         const long child_to_check_count = child_to_check.GetChildCount();
+         const auto child_to_check_count = child_to_check.GetChildCount();
 
          for (i = 0; i < child_to_check_count; ++i)
          {
@@ -649,13 +641,12 @@ void ExpressionEvaluator::DeMorganForChildren(OperationExpression& expression)
    //    1. !(x & y) => !x | !y
    //    2. !(x | y) => !x & !y
    
-   const auto opposite_operation = (expression.GetOperation() == OperationType::Conjunction) ?
-      OperationType::Disjunction : OperationType::Conjunction; 
+   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
 
    assert(OperationType::Conjunction == opposite_operation ||
           OperationType::Disjunction == opposite_operation);
    
-   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
+   for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
    {
       auto& child = expression.GetChild(index);
       if (IsShortNegationEquivalentWithChildOperation(child, opposite_operation))
@@ -681,13 +672,12 @@ bool ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
    }
    
    const auto child_count = expression.GetChildCount();
-   const auto opposite_operation = (expression.GetOperation() == OperationType::Conjunction) ?
-      OperationType::Disjunction : OperationType::Conjunction; 
+   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
 
    assert(OperationType::Conjunction == opposite_operation ||
           OperationType::Disjunction == opposite_operation);
              
-   long negation_count = 0;
+   auto negation_count = 0L;
    for (auto index = child_count - 1; index >= 0; --index)
    {
       if (IsNegationEquivalent(expression.GetChild(index)))
@@ -696,8 +686,10 @@ bool ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
       }
    }
 
-   if ((OperationType::Conjunction == opposite_operation && (negation_count << 1) <  child_count) ||
-       (OperationType::Disjunction == opposite_operation && (negation_count << 1) <= child_count))
+   negation_count <<= 1;
+
+   if ((OperationType::Conjunction == opposite_operation && negation_count <  child_count) ||
+       (OperationType::Disjunction == opposite_operation && negation_count <= child_count))
    {
       // Don't do transformation if amount of negated operands less (or equal) then non-negated ones.
       
@@ -799,7 +791,7 @@ void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression)
 bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
    OperationExpression& expression, long operands_between, bool include_child, bool negated_child)
 {
-   for (long index = expression.GetChildCount() - 1; index > 1 + operands_between; --index)
+   for (auto index = expression.GetChildCount() - 1; index > 1 + operands_between; --index)
    {
       auto& child_expr = expression.GetChild(index);
       if (child_expr->GetType() != ExpressionType::Operation)
@@ -809,8 +801,8 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
 
       auto& child_expression = CastToOperation(child_expr);
       const auto child_operation = child_expression.GetOperation();
-      const long amount_to_check = index - operands_between;
-      long implication_correction = 0;
+      const auto amount_to_check = index - operands_between;
+      auto implication_correction = 0L;
       
       OperationExpression* child_to_check = nullptr;
       if (negated_child)
@@ -837,7 +829,7 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
           child_to_check->GetChildCount() - implication_correction == amount_to_check &&
           AreFirstChildrenEqual(*child_to_check, expression, amount_to_check))
       {
-         const long right_bound = include_child ? (index + 1) : index;
+         const auto right_bound = include_child ? (index + 1) : index;
          expression.RemoveChildren(0, right_bound);
          InPlaceNormalization(expression);
          return true;
@@ -1062,8 +1054,7 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
 
          // Equality is still possible, if operations are mutually reverse, for example:
          //    (x + y) equals (x = y = 0)
-         return IsEqualUpToMutuallyReverseOperations(
-            left_operation, right_operation, OperationType::Plus, OperationType::Equality);
+         return IsEqualUpToMutuallyReverseOperations(left_operation, right_operation);
       }
    }
 
@@ -1073,10 +1064,9 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
 }
 
 bool ExpressionEvaluator::IsEqualUpToMutuallyReverseOperations(
-   const OperationExpression& left, const OperationExpression& right,
-   OperationType operation1, OperationType operation2)
+   const OperationExpression& left, const OperationExpression& right)
 {
-   if (!AreOperationsMutuallyReverse(operation1, operation2))
+   if (!AreOperationsMutuallyReverse(left.GetOperation(), right.GetOperation()))
    {
       return false;
    }
@@ -1130,7 +1120,7 @@ bool ExpressionEvaluator::AreFirstChildrenEqual(
 
    // Let's establish one-to-one corresponce between elements of "left" and "right",
    // using child_linked_flags to mark element of "right" as linked.
-   for (long index1 = 0, index2; index1 < size; ++index1)
+   for (auto index1 = 0L, index2 = 0L; index1 < size; ++index1)
    {
       const auto& left_child = left.GetChild(index1);
 

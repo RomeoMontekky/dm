@@ -70,45 +70,12 @@ LiteralType Plus(LiteralType value1, LiteralType value2)
 
 } // namespace
 
-bool AreOperandsMovable(OperationType operation)
-{
-   // Each time you add new operation to OperationType enum,
-   // check the condition in AreOperandsMovable.
-   //
-   // After that you can add new operation to assert
-   // condition manully. 
-   //
-   // Such an approach will guarantee that new operation
-   // will not be forgotten to be checked for movability.
-
-   assert
-   (
-      OperationType::Negation == operation ||
-      OperationType::Conjunction == operation ||
-      OperationType::Disjunction == operation ||
-      OperationType::Implication == operation ||
-      OperationType::Equality == operation ||
-      OperationType::Plus == operation
-   );
-
-   return (// OperationType::Negation operand isn't movable
-              OperationType::Conjunction == operation ||
-              OperationType::Disjunction == operation ||
-           // OperationType::Implication operands aren't movable
-              OperationType::Equality  == operation ||
-              OperationType::Plus  == operation);
-}
-
-bool AreOperationsMutuallyReverse(OperationType operation1, OperationType operation2)
-{
-   return (OperationType::Equality == operation1 && OperationType::Plus == operation2) ||
-          (OperationType::Equality == operation2 && OperationType::Plus == operation1);
-}
-
 LiteralType PerformOperation(OperationType operation, const LiteralType values[], long amount)
 {
-   LiteralType result = LiteralType::None;
-   
+   assert(OperationType::None != operation);
+
+   auto result = LiteralType::None;
+
    if (OperationType::Negation == operation)
    {
       assert(1 == amount);
@@ -122,12 +89,12 @@ LiteralType PerformOperation(OperationType operation, const LiteralType values[]
 
       static TOperationFunctionPtr functions[] =
       {
-         nullptr,
-         Conjunction,
-         Disjunction,
-         Implication,
-         Equality,
-         Plus
+         nullptr,     // OperationType::Negation   
+         Conjunction, // OperationType::Conjunction
+         Disjunction, // OperationType::Disjunction
+         Implication, // OperationType::Implication
+         Equality,    // OperationType::Equality   
+         Plus         // OperationType::Plus       
       };
 
       auto func = functions[static_cast<int>(operation)];
@@ -141,16 +108,61 @@ LiteralType PerformOperation(OperationType operation, const LiteralType values[]
    return result;
 }
 
+bool AreOperandsMovable(OperationType operation)
+{
+   assert(OperationType::None != operation);
+
+   static bool movability_flags[]
+   {
+      false, // OperationType::Negation
+      true,  // OperationType::Conjunction
+      true,  // OperationType::Disjunction
+      false, // OperationType::Implication
+      true,  // OperationType::Equality
+      true   // OperationType::Plus
+   };
+
+   return movability_flags[static_cast<int>(operation)];
+}
+
+bool AreOperationsMutuallyReverse(OperationType operation1, OperationType operation2)
+{
+   assert(OperationType::None != operation1);
+   assert(OperationType::None != operation2);
+
+   return (OperationType::Equality == operation1 && OperationType::Plus == operation2) ||
+          (OperationType::Equality == operation2 && OperationType::Plus == operation1);
+}
+
+OperationType GetOppositeOperation(OperationType operation)
+{
+   assert(OperationType::None != operation);
+
+   static OperationType opposite_operations[] =
+   {
+      OperationType::None,        // OperationType::Negation   
+      OperationType::Disjunction, // OperationType::Conjunction
+      OperationType::Conjunction, // OperationType::Disjunction
+      OperationType::None,        // OperationType::Implication
+      OperationType::None,        // OperationType::Equality   
+      OperationType::None,        // OperationType::Plus       
+   };
+
+   return opposite_operations[static_cast<int>(operation)];
+}
+
 const char* OperationTypeToString(OperationType operation)
 {
+   assert(OperationType::None != operation);
+
    static const char* operation_tokens[] =
    {
-      g_token_negation,
-      g_token_conjunction,
-      g_token_disjunction,
-      g_token_implication,
-      g_token_equality,
-      g_token_plus
+      g_token_negation,    // OperationType::Negation   
+      g_token_conjunction, // OperationType::Conjunction
+      g_token_disjunction, // OperationType::Disjunction
+      g_token_implication, // OperationType::Implication
+      g_token_equality,    // OperationType::Equality   
+      g_token_plus         // OperationType::Plus       
    };
 
    return operation_tokens[static_cast<int>(operation)];
