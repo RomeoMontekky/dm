@@ -749,33 +749,31 @@ void ExpressionEvaluator::InPlaceSimplification(OperationExpression& expression,
 {
    // Simplification is necessary only if child operation has a literal at the end.
    // Because the literal can be only the last operand (since all operations are
-   // already simplified), the task is not so difficult.
+   // already simplified), the algorithm is not so difficult as the full simplification.
 
    auto& child_expression = CastToOperation(expression.GetChild(child_index));
 
-   const auto last_child_literal = GetLiteral(
-      child_expression.GetChild(child_expression.GetChildCount() - 1));
-   const auto last_literal = GetLiteral(
-      expression.GetChild(expression.GetChildCount() - 1));
+   const auto last_index = expression.GetChildCount() - 1;
+   const auto last_child_index = child_expression.GetChildCount();
+   const auto last_literal = GetLiteral(expression.GetChild(last_index));
+   const auto last_child_literal = GetLiteral(child_expression.GetChild(last_child_index));
 
    if (LiteralType::None != last_child_literal &&
        LiteralType::None != last_literal)
    {
-      // If both literals exist, calculate result of operation and replace
-      // literal operand of parent expression with appropriate operand.
+      // If both literals exist, calculate result of operation and replace literal operand
+      // of the parent expression with new operand with calculated result inside.
       const LiteralType literals[] = { last_child_literal, last_literal };
       auto result = PerformOperation(expression.GetOperation(), literals, 2);
-      child_expression.RemoveChild(child_expression.GetChildCount() - 1);
-      expression.GetChild(expression.GetChildCount() - 1) =
-         std::make_unique<LiteralExpression>(result);
+      child_expression.RemoveChild(last_child_index);
+      expression.GetChild(last_index) = std::make_unique<LiteralExpression>(result);
    }
    else if (LiteralType::None != last_child_literal)
    {
-      // If literal exists only in child operation, just move it to the
-      // end of parent operation.
-      auto last_child_expr = std::move(child_expression.GetChild(
-         child_expression.GetChildCount() - 1));
-      child_expression.RemoveChild(child_expression.GetChildCount() - 1);
+      // If literal exists only in child operation, just move it to the end
+      // of the parent operation.
+      auto last_child_expr = std::move(child_expression.GetChild(last_child_index));
+      child_expression.RemoveChild(last_child_index);
       expression.AddChild(std::move(last_child_expr));
    }
 }
@@ -912,6 +910,7 @@ bool ExpressionEvaluator::IsShortNegationEquivalentWithChildOperation(
    {
       return false;
    }
+
    return IsShortNegationEquivalentWithChildOperation(CastToOperation(expr), operation);
 }
 
@@ -1154,7 +1153,6 @@ bool ExpressionEvaluator::AreFirstChildrenEqual(
    // Full conformity is detected.
    return true;
 }
-
 
 } // namespace
 
