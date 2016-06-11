@@ -99,6 +99,12 @@ bool AreOperandsMovable(OperationType operation)
               OperationType::Plus  == operation);
 }
 
+bool AreOperationsMutuallyReverse(OperationType operation1, OperationType operation2)
+{
+   return (OperationType::Equality == operation1 && OperationType::Plus == operation2) ||
+          (OperationType::Equality == operation2 && OperationType::Plus == operation1);
+}
+
 LiteralType PerformOperation(OperationType operation, const LiteralType values[], long amount)
 {
    LiteralType result = LiteralType::None;

@@ -1082,55 +1082,28 @@ bool ExpressionEvaluator::IsEqualUpToMutuallyReverseOperations(
    const OperationExpression& left, const OperationExpression& right,
    OperationType operation1, OperationType operation2)
 {
-   struct MutuallyReverseData
+   if (!AreOperationsMutuallyReverse(operation1, operation2))
    {
-      MutuallyReverseData(const OperationExpression& expression) :
-         m_items(0), m_expression_to_check(&expression)
-      {
-         if (IsShortNegationEquivalent(expression))
-         {
-            const auto& first_child = expression.GetChild(0);
-            if (first_child->GetType() == ExpressionType::Operation)
-            {
-               m_expression_to_check = &CastToOperation(first_child);
-               ++m_items;
-            }
-         }
-         m_items += m_expression_to_check->GetChildCount();
-      }
-
-      // Operation expression which child operands are to be checked.
-      const OperationExpression* m_expression_to_check;
-      // Amount of simple operands and negations.
-      long m_items;
-   };
-
-   MutuallyReverseData data_left(left);
-   MutuallyReverseData data_right(right);
-
-   if ((data_left.m_expression_to_check->GetOperation() != operation1 ||
-        data_right.m_expression_to_check->GetOperation() != operation2) &&
-       (data_left.m_expression_to_check->GetOperation() != operation2 ||
-        data_right.m_expression_to_check->GetOperation() != operation1))
-   {
-       return false;
+      return false;
    }
 
-   const auto diff = (data_left.m_items - data_right.m_items);
+   const auto left_count = left.GetChildCount();
+   const auto right_count = right.GetChildCount();
 
-   // Amounts of items are to be distinguished from each other by 1.
+   const auto diff = (left_count - right_count);
+   // Amounts of child operands are to be distinguished from each other by 1.
    if ((diff != 1) && (diff != -1))
    {
       return false;
    }
 
-   const auto amount_to_check = (-1 == diff) ?
-      data_left.m_expression_to_check->GetChildCount() :
-      data_right.m_expression_to_check->GetChildCount();
+   if ((1 == diff && LiteralType::None == GetLiteral(left.GetChild(left_count - 1))) ||
+       (1 != diff && LiteralType::None == GetLiteral(right.GetChild(right_count - 1))))
+   {
+       return false;
+   }
 
-   return AreFirstChildrenEqual(*data_left.m_expression_to_check,
-                                *data_right.m_expression_to_check, amount_to_check);
-
+   return AreFirstChildrenEqual(left, right, (1 == diff) ? right_count : left_count);
 }
 
 bool ExpressionEvaluator::AreFirstChildrenEqual(
@@ -1142,7 +1115,7 @@ bool ExpressionEvaluator::AreFirstChildrenEqual(
    if (!AreOperandsMovable(left.GetOperation()))
    {
       // If operands are movable, just use sequential pairwise comparison.
-      for (int index = size - 1; index >= 0; --index)
+      for (auto index = size - 1; index >= 0; --index)
       {
          if (!IsEqual(left.GetChild(index), right.GetChild(index)))
          {

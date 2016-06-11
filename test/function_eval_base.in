@@ -17,6 +17,8 @@ base5c(x, y) :=  (x + y + 1) & (y = x)
 call eval(base5c)
 base5d(x, y) :=  !(x + y) & (y = x)
 call eval(base5d)
+base5e(x, y, z) := (x + y) & (y = x = z)
+call eval(base5e)
 
 # test of representative negation equivalents.
 base6a(x, y) := !(x -> y)

@@ -22,6 +22,8 @@ enum class OperationType
 // Actually it means that operation is commutative and associative.
 bool AreOperandsMovable(OperationType operation);
 
+bool AreOperationsMutuallyReverse(OperationType operation1, OperationType operation2);
+
 LiteralType PerformOperation(OperationType operation, const LiteralType values[], long amount);
 
 const char* OperationTypeToString(OperationType operation);
