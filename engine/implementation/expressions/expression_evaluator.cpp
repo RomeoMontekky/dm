@@ -754,7 +754,7 @@ void ExpressionEvaluator::InPlaceSimplification(OperationExpression& expression,
    auto& child_expression = CastToOperation(expression.GetChild(child_index));
 
    const auto last_index = expression.GetChildCount() - 1;
-   const auto last_child_index = child_expression.GetChildCount();
+   const auto last_child_index = child_expression.GetChildCount() - 1;
    const auto last_literal = GetLiteral(expression.GetChild(last_index));
    const auto last_child_literal = GetLiteral(child_expression.GetChild(last_child_index));
 
