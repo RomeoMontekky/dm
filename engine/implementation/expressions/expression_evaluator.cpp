@@ -109,7 +109,7 @@ bool ExpressionEvaluator::Evaluate(TExpressionPtr& expr)
    const auto operation = expression.GetOperation();
    const auto are_operands_movable = AreOperandsMovable(operation);
 
-   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
+   for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
    {
       auto& child = expression.GetChild(index);
 
@@ -156,7 +156,7 @@ void ExpressionEvaluator::EvaluateOperation(OperationExpression& expression)
       EvaluatePlus
    };
 
-   auto method = methods[static_cast<long>(expression.GetOperation())];
+   auto method = methods[static_cast<int>(expression.GetOperation())];
    (this->*method)(expression);
 
    // If the only operand is remained after the evaluation, then the whole operation
@@ -299,7 +299,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    // According to rules 3 and 1, if there exist "1" operand,
    // we can remove all operands to the left, including this "1" operand.
 
-   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
+   for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
    {
       if (LiteralType::True == GetLiteral(expression.GetChild(index)))
       {
@@ -363,7 +363,7 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
 
       // According to rule 8, we can remove two zero literals
       // if they stay one after another.
-      for (long index = expression.GetChildCount() - 2; index >= 0; --index)
+      for (auto index = expression.GetChildCount() - 2; index >= 0; --index)
       {
          if (LiteralType::False == GetLiteral(expression.GetChild(index)) &&
              LiteralType::False == GetLiteral(expression.GetChild(index + 1)))
@@ -479,7 +479,7 @@ bool ExpressionEvaluator::RemoveAllIfLiteralExists(
 bool ExpressionEvaluator::RemoveAllIfNegNotNegExists(
    OperationExpression& expression, LiteralType remaining_literal)
 {
-   const long child_count = expression.GetChildCount();
+   const auto child_count = expression.GetChildCount();
 
    for (int i = expression.GetChildCount() - 1; i > 0; --i)
       for (int j = i - 1; j >= 0; --j)
@@ -496,7 +496,7 @@ bool ExpressionEvaluator::RemoveAllIfNegNotNegExists(
 void ExpressionEvaluator::RemoveLiteralIfExists(
    OperationExpression& expression, LiteralType literal)
 {
-   const long child_count = expression.GetChildCount();
+   const auto child_count = expression.GetChildCount();
    if (literal == GetLiteral(expression.GetChild(child_count - 1)))
    {
       expression.RemoveChild(child_count - 1);
@@ -505,20 +505,15 @@ void ExpressionEvaluator::RemoveLiteralIfExists(
 
 void ExpressionEvaluator::RemoveDuplicates(OperationExpression& expression)
 {
-   long child_count = expression.GetChildCount();
-
-   for (long i = 0; i < child_count - 1; ++i)
+   for (auto i = expression.GetChildCount() - 1; i > 0; --i)
    {
-      long j = i + 1;
-      while (j < child_count)
+      for (auto j = i - 1; j >= 0; --j)
       {
          if (IsEqual(expression.GetChild(i), expression.GetChild(j)))
          {
-            expression.RemoveChild(j);
-            --child_count;
-            continue;
+            expression.RemoveChild(i);
+            break;
          }
-         ++j;
       }
    }
 }
@@ -526,7 +521,7 @@ void ExpressionEvaluator::RemoveDuplicates(OperationExpression& expression)
 bool ExpressionEvaluator::AbsorbDuplicates(
    OperationExpression& expression, LiteralType remaining_literal)
 {
-   long child_count = expression.GetChildCount();
+   auto child_count = expression.GetChildCount();
 
    long i = 0;
    while (i < child_count - 1)
@@ -572,7 +567,7 @@ void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, Liter
 
    if (is_negation_lonely)
    {
-      const long child_count = expression.GetChildCount();
+      const auto child_count = expression.GetChildCount();
       if (GetLiteral(expression.GetChild(child_count - 1)) == eq_to_neg_literal)
       {
          expression.RemoveChild(child_count - 1);
@@ -594,7 +589,7 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
    //    !(x & y) & x & y & z
    //    ((x | y)->0) | x | y | z
    
-   const long child_count = expression.GetChildCount();
+   const auto child_count = expression.GetChildCount();
    
    if (child_count < 3)
    {
@@ -685,7 +680,7 @@ bool ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
       return false;
    }
    
-   const long child_count = expression.GetChildCount();
+   const auto child_count = expression.GetChildCount();
    const auto opposite_operation = (expression.GetOperation() == OperationType::Conjunction) ?
       OperationType::Disjunction : OperationType::Conjunction; 
 
@@ -693,7 +688,7 @@ bool ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
           OperationType::Disjunction == opposite_operation);
              
    long negation_count = 0;
-   for (long index = child_count - 1; index >= 0; --index)
+   for (auto index = child_count - 1; index >= 0; --index)
    {
       if (IsNegationEquivalent(expression.GetChild(index)))
       {
@@ -873,7 +868,7 @@ bool ExpressionEvaluator::IsNegationEquivalent(const OperationExpression& expres
    //    4.  x + 1
 
    const auto operation = expression.GetOperation();
-   const long child_count = expression.GetChildCount();
+   const auto child_count = expression.GetChildCount();
 
    if (OperationType::Negation == operation)
    {
@@ -1021,7 +1016,7 @@ void ExpressionEvaluator::RevertNegations(TExpressionPtr& expr)
 {
    auto& expression = CastToOperation(expr);
    
-   for (long index = expression.GetChildCount() - 1; index >= 0; --index)
+   for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
    {
       auto& child_expr = expression.GetChild(index);
       
