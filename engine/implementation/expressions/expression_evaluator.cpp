@@ -64,6 +64,14 @@ private:
    // Utility
    static bool IsNegationEquivalent(const TExpressionPtr& expr);
    static bool IsNegationEquivalent(const OperationExpression& expression);
+   static bool IsShortNegationEquivalent(const TExpressionPtr& expr);
+   static bool IsShortNegationEquivalent(const OperationExpression& expression);
+
+   static bool IsShortNegationEquivalentWithChildOperation(
+      const TExpressionPtr& expr, OperationType operation);
+   static bool IsShortNegationEquivalentWithChildOperation(
+      const OperationExpression& expression, OperationType operation);
+
    static bool CheckNegNotNeg(const TExpressionPtr& neg_expr, const TExpressionPtr& expr);
    static void ExtractFromUnderNegationEquivalent(TExpressionPtr& expr);
    static void CoverWithNegationEquivalent(TExpressionPtr& expr);
@@ -598,74 +606,41 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
    
    for (long index = 0, i = 0, j = 0; index < child_count; ++index)
    {
-      const auto& child_expr = expression.GetChild(index);
+      const auto& child = expression.GetChild(index);
       
       // If current child is a negation equivalent and it encapsulates the same operation
       // as current one, then we need to check whether other children are the same as
       // children of the negated child.
       
-      if (IsNegationEquivalent(child_expr))
+      if (IsShortNegationEquivalentWithChildOperation(child, expression.GetOperation()))
       {
-         // We can do casting without checking return value of GetType becuase IsNegationEquivalent
-         // will return false for a non-operation expression.
-         const auto& child_expression = CastToOperation(child_expr);
-         
-         // Checking of the fact, that amount of child operands of the 'child_expr' is less
-         // than 3, needs additional clarification. Let's explain this on examples.
-         
-         // Example 1:
-         //    (x = y = 0) = x = y
-         // Before evaluation start it had to be normalized to:
-         //     x = y = 0 = x = y
-         // So it's impossible situation.
-   
-         // Example 2:
-         //    (x -> y -> 0) = x = y
-         // This expression could not be normalized before evaluation, so it's possible. But it
-         // can't be grouped because removing of negation from bracket's content gives (x -> y),
-         // and this operation isn't equality.
-   
-         // Example 3:
-         //   ((x = y) -> 0) = x = y
-         // This expression could not be normalized, so is possible like to the previous one.
-         // But after negation removing it will give (x = y), so remained operarands of the
-         // female operation are really can be grouped to have the same set.
-   
-         // Let's make a line. The grouping is possible only if operands' amount of the
-         // negation equivalent is less, then 3. This condition is OK for binary operations,
-         // and also fits raw negation operation, that is ought to have a single child operand.
-         
-         if (child_expression.GetChildCount() < 3 &&
-             GetOperation(child_expression.GetChild(0)) == expression.GetOperation())
+         const auto& child_to_check = CastToOperation(CastToOperation(child).GetChild(0));
+         const long child_to_check_count = child_to_check.GetChildCount();
+
+         for (i = 0; i < child_to_check_count; ++i)
          {
-            const auto& child_to_check = CastToOperation(child_expression.GetChild(0));
-            const long child_to_check_count = child_to_check.GetChildCount();
-
-            for (i = 0; i < child_to_check_count; ++i)
+            for (j = 0; j < child_count; ++j)
             {
-               for (j = 0; j < child_count; ++j)
+               if (j != index && IsEqual(expression.GetChild(j), child_to_check.GetChild(i)))
                {
-                  if (j != index && IsEqual(expression.GetChild(j), child_to_check.GetChild(i)))
-                  {
-                     // Break if equal child is found.
-                     break;
-                  }
-               }
-
-               // If counter "j" reached the end of the cycle, then child expression that
-               // equals to the children_to_check.GetChild(i) was not found.
-               if (child_count == j)
-               {
+                  // Break if equal child is found.
                   break;
                }
             }
 
-            // If counter "i" reached the end of the cycle then there exists equivalent
-            // for each child under the negation.
-            if (child_to_check_count == i)
+            // If counter "j" reached the end of the cycle, then child expression that
+            // equals to the children_to_check.GetChild(i) was not found.
+            if (child_count == j)
             {
-               return true;
+               break;
             }
+         }
+
+         // If counter "i" reached the end of the cycle then there exists equivalent
+         // for each child under the negation.
+         if (child_to_check_count == i)
+         {
+            return true;
          }
       }
    }
@@ -687,17 +662,12 @@ void ExpressionEvaluator::DeMorganForChildren(OperationExpression& expression)
    
    for (long index = expression.GetChildCount() - 1; index >= 0; --index)
    {
-      auto& child_expr = expression.GetChild(index);
-      if (IsNegationEquivalent(child_expr))
+      auto& child = expression.GetChild(index);
+      if (IsShortNegationEquivalentWithChildOperation(child, opposite_operation))
       {
-         auto& child_expression = CastToOperation(child_expr);
-         if (child_expression.GetChildCount() < 3 &&
-             GetOperation(child_expression.GetChild(0)) == opposite_operation)
-         {
-             ExtractFromUnderNegationEquivalent(child_expr);
-             RevertNegations(child_expr);
-             MoveChildExpressionsUp(expression, index);
-         }
+          ExtractFromUnderNegationEquivalent(child);
+          RevertNegations(child);
+          MoveChildExpressionsUp(expression, index);
       }
    }
 }
@@ -760,7 +730,7 @@ bool ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
 
 bool ExpressionEvaluator::MakeNegationRepresentative(OperationExpression& expression)
 {
-   if (IsNegationEquivalent(expression) && expression.GetChildCount() < 3)
+   if (IsShortNegationEquivalent(expression))
    {
       auto& child = expression.GetChild(0);
       
@@ -923,6 +893,41 @@ bool ExpressionEvaluator::IsNegationEquivalent(const OperationExpression& expres
              (LiteralType::True == GetLiteral(expression.GetChild(child_count - 1))));
 }
 
+bool ExpressionEvaluator::IsShortNegationEquivalent(const TExpressionPtr& expr)
+{
+   if (expr->GetType() != ExpressionType::Operation)
+   {
+      return false;
+   }
+
+   return IsShortNegationEquivalent(CastToOperation(expr));
+}
+
+bool ExpressionEvaluator::IsShortNegationEquivalent(const OperationExpression& expression)
+{
+   // Short negation equivalent is such a negation equivalent that will turn into
+   // single operand expression if negation is removed.
+   return IsNegationEquivalent(expression) && (expression.GetChildCount() < 3);
+}
+
+bool ExpressionEvaluator::IsShortNegationEquivalentWithChildOperation(
+   const TExpressionPtr& expr, OperationType operation)
+{
+   if (expr->GetType() != ExpressionType::Operation)
+   {
+      return false;
+   }
+   return IsShortNegationEquivalentWithChildOperation(CastToOperation(expr), operation);
+}
+
+bool ExpressionEvaluator::IsShortNegationEquivalentWithChildOperation(
+   const OperationExpression& expression, OperationType operation)
+{
+   return IsShortNegationEquivalent(expression) &&
+          GetOperation(expression.GetChild(0)) == operation;
+}
+
+
 bool ExpressionEvaluator::CheckNegNotNeg(
    const TExpressionPtr& neg_expr, const TExpressionPtr& expr)
 {
@@ -1082,7 +1087,7 @@ bool ExpressionEvaluator::IsEqualUpToMutuallyReverseOperations(
       MutuallyReverseData(const OperationExpression& expression) :
          m_items(0), m_expression_to_check(&expression)
       {
-         if (IsNegationEquivalent(expression) && expression.GetChildCount() < 3)
+         if (IsShortNegationEquivalent(expression))
          {
             const auto& first_child = expression.GetChild(0);
             if (first_child->GetType() == ExpressionType::Operation)
