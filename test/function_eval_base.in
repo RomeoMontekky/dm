@@ -8,20 +8,48 @@ call eval(base3)
 base4(x, y) := (x = y) + (y = x)
 call eval(base4)
 
-# test of equality of negation equivalents
-base5a(x, y, z) := (x & y & (z=0)) + (x & y & (z+1))
+# test of equality/inequality of mutually reverse operations.
+base5a(x, y) :=  (x + y) & (x = y = 0)
 call eval(base5a)
-base5b(x, y, u1, u2, u3) := !(x + y) & (x + y + 1) & u1 & u2 & u3
+base5b(x, y) :=  (x + y) & ((x = y)->0)
 call eval(base5b)
-base5c(x, y, u1, u2, u3) := (x + y + 1) & ((x + y)->0) & u1 & u2 & u3
+base5c(x, y) :=  (x + y + 1) & (y = x)
 call eval(base5c)
+base5d(x, y) :=  !(x + y) & (y = x)
+call eval(base5d)
 
-# test of equality/inequality of mutually reverse operations
-base6a(x, y) :=  (x + y) & (x = y = 0)
+# test of representative negation equivalents.
+base6a(x, y) := !(x -> y)
 call eval(base6a)
-base6b(x, y) :=  (x + y) & ((x = y)->0)
+base6b(x, y) :=  (x -> y) = 0
 call eval(base6b)
-base6c(x, y) :=  (x + y + 1) & (y = x)
+base6c(x, y) :=  (x -> y) + 1
 call eval(base6c)
-base6d(x, y) :=  !(x + y) & (y = x)
+base6d(x, y) := !(x = y)
 call eval(base6d)
+base6e(x, y) :=  (x = y) -> 0
+call eval(base6e)
+base6f(x, y) :=  (x = y) +  1
+call eval(base6f)
+base6g(x, y) := !(x + y)
+call eval(base6g)
+base6h(x, y) :=  (x + y) -> 0
+call eval(base6h)
+base6i(x, y) :=  (x + y) =  0
+call eval(base6i)
+base6j(x) :=  x -> 0
+call eval(base6j)
+base6k(x) :=  x = 0
+call eval(base6k)
+base6l(x) :=  x + 1
+call eval(base6l)
+base6m(x, y) :=  (x & y) -> 0
+call eval(base6m)
+base6n(x, y) :=  (x & y) = 0
+call eval(base6n)
+base6o(x, y) :=  (x & y) + 1
+call eval(base6o)
+
+# test of in-place simplification after making negation equivalents representative.
+base7(x, y, z) := (((x + y) -> 0) + z) -> 0
+call eval(base7)

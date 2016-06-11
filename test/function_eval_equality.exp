@@ -1,7 +1,7 @@
 eq1(x) := (x = 1)
 eq1(x) := x
 eq2(x) := (x = 0)
-eq2(x) := (x = 0)
+eq2(x) := !x
 eq3(x) := (x = x)
 eq3(x) := 1
 eq4(x, y) := (!x = !y)
@@ -25,4 +25,4 @@ eq9(x) := x
 eq10(x, y) := (!(!(x = y) = y) = x)
 eq10(x, y) := 1
 eq11(x, y, z) := (((x + y) = 0) + y + z + x)
-eq11(x, y, z) := (z + 1)
+eq11(x, y, z) := !z

@@ -49,6 +49,8 @@ private:
    bool DeMorganForOperation(OperationExpression& expression);
    bool MakeNegationRepresentative(OperationExpression& expression);
 
+   static void InPlaceSimplification(OperationExpression& expression, long child_index);
+
    // In-place normatlization for equality/plus
    static void InPlaceNormalization(OperationExpression& expression, long child_index);
    // In-place normatlization for implication
@@ -68,8 +70,6 @@ private:
    static void RevertNegations(TExpressionPtr& expr);
 
    static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
-   static bool IsEqualNegations(
-      const OperationExpression& left, const OperationExpression& right);
    static bool IsEqualUpToMutuallyReverseOperations(
       const OperationExpression& left, const OperationExpression& right,
       OperationType operation1, OperationType operation2);
@@ -106,12 +106,20 @@ bool ExpressionEvaluator::Evaluate(TExpressionPtr& expr)
       auto& child = expression.GetChild(index);
 
       if (Evaluate(child) &&
-         (are_operands_movable || 0 == index) && (GetOperation(child) == operation))
+          OperationType::Negation != operation &&
+          GetOperation(child) == operation)
       {
-         // Full normalization/simplification is unnecessary, as currently the condition
-         // can be true only after negation evaluation, so the child operation
-         // is guaranteed not to have literal operand.
-         MoveChildExpressionsUp(expression, index);
+         // In-place simplification
+         if (are_operands_movable)
+         {
+            InPlaceSimplification(expression, index);
+         }
+
+         // In-place normalization
+         if ((are_operands_movable || 0 == index))
+         {
+            MoveChildExpressionsUp(expression, index);
+         }
       }
    }
 
@@ -756,21 +764,55 @@ bool ExpressionEvaluator::MakeNegationRepresentative(OperationExpression& expres
    {
       auto& child = expression.GetChild(0);
       
-      // It can't be negation equivalent, since otherwise it would have been evaluated before.
+      // It can't be negation equivalent, since otherwise it would have
+      // been evaluated before.
       assert(!IsNegationEquivalent(child));
-      
-      const auto operation = GetOperation(child);
-      if (OperationType::Implication == operation ||
-          OperationType::Equality == operation ||
-          OperationType::Plus == operation)
+
+      if (OperationType::Negation != expression.GetOperation() ||
+          OperationType::None != GetOperation(child))
       {
          CoverWithNegationEquivalent(child);
          m_evaluated_expression = std::move(child);
          return true;
       }
-   }
+    }
    
    return false;
+}
+
+void ExpressionEvaluator::InPlaceSimplification(OperationExpression& expression, long child_index)
+{
+   // Simplification is necessary only if child operation has a literal at the end.
+   // Because the literal can be only the last operand (since all operations are
+   // already simplified), the task is not so difficult.
+
+   auto& child_expression = CastToOperation(expression.GetChild(child_index));
+
+   const auto last_child_literal = GetLiteral(
+      child_expression.GetChild(child_expression.GetChildCount() - 1));
+   const auto last_literal = GetLiteral(
+      expression.GetChild(expression.GetChildCount() - 1));
+
+   if (LiteralType::None != last_child_literal &&
+       LiteralType::None != last_literal)
+   {
+      // If both literals exist, calculate result of operation and replace
+      // literal operand of parent expression with appropriate operand.
+      const LiteralType literals[] = { last_child_literal, last_literal };
+      auto result = PerformOperation(expression.GetOperation(), literals, 2);
+      child_expression.RemoveChild(child_expression.GetChildCount() - 1);
+      expression.GetChild(expression.GetChildCount() - 1) =
+         std::make_unique<LiteralExpression>(result);
+   }
+   else if (LiteralType::None != last_child_literal)
+   {
+      // If literal exists only in child operation, just move it to the
+      // end of parent operation.
+      auto last_child_expr = std::move(child_expression.GetChild(
+         child_expression.GetChildCount() - 1));
+      child_expression.RemoveChild(child_expression.GetChildCount() - 1);
+      expression.AddChild(std::move(last_child_expr));
+   }
 }
 
 void ExpressionEvaluator::InPlaceNormalization(OperationExpression& expression, long child_index)
@@ -1019,13 +1061,6 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
                                           left_operation.GetChildCount()));
          }
 
-         // If operations aren't equal, equality is still possible if both operations
-         // are negation equivalents and its contain equal expressions under the negation.
-         if (IsEqualNegations(left_operation, right_operation))
-         {
-            return true;
-         }
-
          // Equality is still possible, if operations are mutually reverse, for example:
          //    (x + y) equals (x = y = 0)
          return IsEqualUpToMutuallyReverseOperations(
@@ -1035,64 +1070,6 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
 
    assert(!"Unknown expression type.");
 
-   return false;
-}
-
-bool ExpressionEvaluator::IsEqualNegations(
-   const OperationExpression& left, const OperationExpression& right)
-{
-   if (!IsNegationEquivalent(left) || !IsNegationEquivalent(right))
-   {
-      return false;
-   }
-   
-   const auto left_is_short = (left.GetChildCount() < 3);
-   const auto right_is_short = (right.GetChildCount() < 3);
-   
-   if (left_is_short)
-   {
-      const auto& left_first_child = left.GetChild(0);
-      if (right_is_short)
-      {
-         return IsEqual(left_first_child, right.GetChild(0));
-      }
-      else if (left_first_child->GetType() == ExpressionType::Operation)
-      {
-         const auto& left_first_child_operation = CastToOperation(left_first_child);
-         return (left_first_child_operation.GetOperation() == right.GetOperation() &&
-                 left_first_child_operation.GetChildCount() == right.GetChildCount() - 1 &&
-                 AreFirstChildrenEqual(left_first_child_operation, right, 
-                                       left_first_child_operation.GetChildCount()));
-      }
-      // else => case 1 (see below)
-   }
-   else // !left_is_short
-   {
-      if (right_is_short)
-      {
-         const auto& right_first_child = right.GetChild(0);
-         if (right_first_child->GetType() == ExpressionType::Operation)
-         {
-            const auto& right_first_child_operation = CastToOperation(right_first_child);
-            return (right_first_child_operation.GetOperation() == left.GetOperation() &&
-                    right_first_child_operation.GetChildCount() == left.GetChildCount() - 1 &&
-                    AreFirstChildrenEqual(right_first_child_operation, left, 
-                                          right_first_child_operation.GetChildCount()));
-         }
-      }
-      // else => case 2 (see below)
-   }
-   
-   // We return false in two cases:
-   //    1. left_is_short && !right_is_short && (left_first_child->GetType() != ExpressionType::Operation))
-   //    2. !left_is_short && !right_is_short
-   
-   // Second case must be clarified.
-   // If both left and right expressions are not short, than equality is possible only if they
-   // are the same operations, but checking of the operation types is already done at the beginning
-   // of IsEqual method, and if we are here, then the check returned false. Thus we don't need
-   // to check equality of operation types one more time and can return false at once.
-             
    return false;
 }
 
@@ -1183,7 +1160,7 @@ bool ExpressionEvaluator::AreFirstChildrenEqual(
    // using child_linked_flags to mark element of "right" as linked.
    for (long index1 = 0, index2; index1 < size; ++index1)
    {
-      auto& left_child = left.GetChild(index1);
+      const auto& left_child = left.GetChild(index1);
 
       for (index2 = 0; index2 < size; ++index2)
       {
