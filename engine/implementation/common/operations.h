@@ -24,7 +24,7 @@ LiteralType PerformOperation(OperationType operation, const LiteralType values[]
 bool AreOperandsMovable(OperationType operation);
 // Mutually reverse operations satisfy the rule: op1(x, y) <=>  !op2(x, y)
 bool AreOperationsMutuallyReverse(OperationType operation1, OperationType operation2);
-// Implied opposition concerning De Morgan's laws.
+// Implied opposition concerning De Morgan's laws/Gluing rules/Absorption rules.
 OperationType GetOppositeOperation(OperationType operation);
 
 const char* OperationTypeToString(OperationType operation);

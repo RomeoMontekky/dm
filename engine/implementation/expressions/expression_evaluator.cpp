@@ -38,6 +38,7 @@ private:
    // evaluation for associative/commutative operations.
    // If a method returns true it means it set m_evaluated_expression
    // member, so the calling side must return control up as soon as possible.
+   bool MakeNegationRepresentative(OperationExpression& expression);
    bool RemoveAllIfLiteralExists(OperationExpression& expression, LiteralType literal);
    bool RemoveAllIfNegNotNegExists(OperationExpression& expression, LiteralType remaining_literal);
    void RemoveLiteralIfExists(OperationExpression& expression, LiteralType literal);
@@ -47,7 +48,6 @@ private:
    bool CanBeGroupedAsNegNotNeg(const OperationExpression& expression);
    void DeMorganForChildren(OperationExpression& expression);
    bool DeMorganForOperation(OperationExpression& expression);
-   bool MakeNegationRepresentative(OperationExpression& expression);
 
    static void InPlaceSimplification(OperationExpression& expression, long child_index);
 
@@ -113,8 +113,7 @@ bool ExpressionEvaluator::Evaluate(TExpressionPtr& expr)
       auto& child = expression.GetChild(index);
 
       if (Evaluate(child) &&
-          OperationType::Negation != operation &&
-          GetOperation(child) == operation)
+          OperationType::Negation != operation && GetOperation(child) == operation)
       {
          // In-place simplification
          if (are_operands_movable)
@@ -463,6 +462,28 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    MakeNegationRepresentative(expression);
 }
 
+bool ExpressionEvaluator::MakeNegationRepresentative(OperationExpression& expression)
+{
+   if (IsShortNegationEquivalent(expression))
+   {
+      auto& child = expression.GetChild(0);
+
+      // It can't be negation equivalent, since otherwise it would have
+      // been evaluated before.
+      assert(!IsNegationEquivalent(child));
+
+      if (OperationType::Negation != expression.GetOperation() ||
+          OperationType::None != GetOperation(child))
+      {
+         CoverWithNegationEquivalent(child);
+         m_evaluated_expression = std::move(child);
+         return true;
+      }
+   }
+
+   return false;
+}
+
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
    OperationExpression& expression, LiteralType literal)
 {
@@ -713,28 +734,6 @@ bool ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
    m_evaluated_expression = std::make_unique<OperationExpression>(std::move(new_expr));
    
    return true;
-}
-
-bool ExpressionEvaluator::MakeNegationRepresentative(OperationExpression& expression)
-{
-   if (IsShortNegationEquivalent(expression))
-   {
-      auto& child = expression.GetChild(0);
-      
-      // It can't be negation equivalent, since otherwise it would have
-      // been evaluated before.
-      assert(!IsNegationEquivalent(child));
-
-      if (OperationType::Negation != expression.GetOperation() ||
-          OperationType::None != GetOperation(child))
-      {
-         CoverWithNegationEquivalent(child);
-         m_evaluated_expression = std::move(child);
-         return true;
-      }
-    }
-   
-   return false;
 }
 
 void ExpressionEvaluator::InPlaceSimplification(OperationExpression& expression, long child_index)

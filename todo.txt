@@ -1,6 +1,5 @@
 - show position of erred character in the error message.
 - function for evaluation of expressions.
-   - review code to find places that can be optimized after making negations representative.
    - implement gluing rules.
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.
