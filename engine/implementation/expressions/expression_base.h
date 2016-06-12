@@ -26,9 +26,6 @@ public:
    Expression(const Expression& rhs);
    Expression& operator=(const Expression& rhs) = delete;
    
-   // Check whether the expression equals to another one.
-   bool IsEqualTo(const Expression& rhs);
-   
    // Returns expression type.
    virtual ExpressionType GetType() const = 0;
    // Clones expression tree as is.
