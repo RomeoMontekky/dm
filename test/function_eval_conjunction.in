@@ -23,3 +23,10 @@ call eval(conj8b)
 # De Morgan (child evaluation, in-place normalization and backward transformation)
 conj8c(x, y, z) := !(x | y | z) & !x
 call eval(conj8c)
+
+# Absorption law (simple case)
+conj9a(x, y, z) := (x->y) & (y | (x->y)) & z
+call eval(conj9a)
+# Absorption law (complex case)
+conj9b(x, y, z) := z & (x | y) & (y | (x->y) | x)
+call eval(conj9b)

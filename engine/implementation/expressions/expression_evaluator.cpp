@@ -46,8 +46,15 @@ private:
    bool AbsorbDuplicates(OperationExpression& expression, LiteralType remaining_literal);
    void RemoveNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
    bool CanBeGroupedAsNegNotNeg(const OperationExpression& expression);
-   void DeMorganForChildren(OperationExpression& expression);
-   bool DeMorganForOperation(OperationExpression& expression);
+   void ApplyDeMorganLawsForChildren(OperationExpression& expression);
+   bool ApplyDeMorganLawsForOperation(OperationExpression& expression);
+
+   // Appies absorption/gluing laws while it is possible.
+   void ApplyAbsorptionGluingLaws(OperationExpression& expression);
+   // Returns true if modification was done.
+   bool ApplyAbsorptionLaws(OperationExpression& expression);
+   // Returns true if modification was done.
+   bool ApplyGluingLaws(OperationExpression& expression);
 
    static void InPlaceSimplification(OperationExpression& expression, long child_index);
 
@@ -81,11 +88,19 @@ private:
    static bool IsEqualUpToMutuallyReverseOperations(
       const OperationExpression& left, const OperationExpression& right);
 
-   // Checks that first size children of "left" have one-to-one accordance with
-   // first size children of "specified "right" operation expression.
-   static bool AreFirstChildrenEqual(const OperationExpression& left,
-                                     const OperationExpression& right, long size);
+   static bool IsEqualToAnyChild(
+      const TExpressionPtr& expr, const OperationExpression& expression);
 
+   static bool AreFirstChildrenEqual(const OperationExpression& left,
+                                     const OperationExpression& right, long amount);
+
+   // Check whether first enclosing_amount children of enclosing operation are included
+   // in first enveloping_amount children of enveloping operation.
+   // If skip_index is not -1, then skip_index-th child is to be skipped during
+   // analyzing enveloping children.
+   static bool AreFirstChildrenIncludedInFirstChildren(
+      const OperationExpression& enclosing, long enclosing_amount,
+      const OperationExpression& enveloping, long enveloping_amount, long skip_index = -1);
 
 private:
    // Will be filled by new evaluated expression if the whole
@@ -206,7 +221,10 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    RemoveLiteralIfExists(expression, LiteralType::True);
    
    // Evaluation of child negations, according to De Morgan's laws.
-   DeMorganForChildren(expression);
+   ApplyDeMorganLawsForChildren(expression);
+
+   // Apply absorption/gluing rules while it is possible.
+   ApplyAbsorptionGluingLaws(expression);
    
    // According to rule 4, evaluate expression to literal 0
    // if there exists x and !x.
@@ -227,7 +245,7 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    }
 
    // Transformation of the whole operation, according to De Morgan's laws.
-   DeMorganForOperation(expression);
+   ApplyDeMorganLawsForOperation(expression);
 }
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
@@ -250,7 +268,10 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    RemoveLiteralIfExists(expression, LiteralType::False);
    
    // Evaluation of child negations, according to De Morgan's laws.
-   DeMorganForChildren(expression);
+   ApplyDeMorganLawsForChildren(expression);
+
+   // Apply absorption/gluing rules while it is possible.
+   ApplyAbsorptionGluingLaws(expression);
    
    // According to rule 4, evaluate expression to literal 1
    // if there exists x and !x.
@@ -271,7 +292,7 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    }
 
    // Transformation of the whole operation, according to De Morgan's laws.
-   DeMorganForOperation(expression);
+   ApplyDeMorganLawsForOperation(expression);
 }
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
@@ -499,16 +520,18 @@ bool ExpressionEvaluator::RemoveAllIfLiteralExists(
 bool ExpressionEvaluator::RemoveAllIfNegNotNegExists(
    OperationExpression& expression, LiteralType remaining_literal)
 {
-   const auto child_count = expression.GetChildCount();
-
    for (int i = expression.GetChildCount() - 1; i > 0; --i)
+   {
       for (int j = i - 1; j >= 0; --j)
+      {
          if (CheckNegNotNeg(expression.GetChild(i), expression.GetChild(j)) ||
              CheckNegNotNeg(expression.GetChild(j), expression.GetChild(i)))
          {
             m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
             return true;
          }
+      }
+   }
 
    return false;
 }
@@ -516,10 +539,10 @@ bool ExpressionEvaluator::RemoveAllIfNegNotNegExists(
 void ExpressionEvaluator::RemoveLiteralIfExists(
    OperationExpression& expression, LiteralType literal)
 {
-   const auto child_count = expression.GetChildCount();
-   if (literal == GetLiteral(expression.GetChild(child_count - 1)))
+   const auto last_index = expression.GetChildCount() - 1;
+   if (literal == GetLiteral(expression.GetChild(last_index)))
    {
-      expression.RemoveChild(child_count - 1);
+      expression.RemoveChild(last_index);
    }
 }
 
@@ -580,10 +603,10 @@ void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, Liter
 
    if (is_negation_lonely)
    {
-      const auto child_count = expression.GetChildCount();
-      if (GetLiteral(expression.GetChild(child_count - 1)) == eq_to_neg_literal)
+      const auto last_index = expression.GetChildCount() - 1;
+      if (GetLiteral(expression.GetChild(last_index)) == eq_to_neg_literal)
       {
-         expression.RemoveChild(child_count - 1);
+         expression.RemoveChild(last_index);
       }
       else
       {
@@ -623,30 +646,9 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
       if (IsShortNegationEquivalentWithChildOperation(child, expression.GetOperation()))
       {
          const auto& child_to_check = CastToOperation(CastToOperation(child).GetChild(0));
-         const auto child_to_check_count = child_to_check.GetChildCount();
-
-         for (i = 0; i < child_to_check_count; ++i)
-         {
-            for (j = 0; j < child_count; ++j)
-            {
-               if (j != index && IsEqual(expression.GetChild(j), child_to_check.GetChild(i)))
-               {
-                  // Break if equal child is found.
-                  break;
-               }
-            }
-
-            // If counter "j" reached the end of the cycle, then child expression that
-            // equals to the children_to_check.GetChild(i) was not found.
-            if (child_count == j)
-            {
-               break;
-            }
-         }
-
-         // If counter "i" reached the end of the cycle then there exists equivalent
-         // for each child under the negation.
-         if (child_to_check_count == i)
+         if (AreFirstChildrenIncludedInFirstChildren(
+                child_to_check, child_to_check.GetChildCount(),
+                expression, expression.GetChildCount(), index))
          {
             return true;
          }
@@ -656,7 +658,7 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
    return false;
 }
 
-void ExpressionEvaluator::DeMorganForChildren(OperationExpression& expression)
+void ExpressionEvaluator::ApplyDeMorganLawsForChildren(OperationExpression& expression)
 {
    // Method uses De Morgan's laws for each child negation of the operation.
    //    1. !(x & y) => !x | !y
@@ -679,7 +681,7 @@ void ExpressionEvaluator::DeMorganForChildren(OperationExpression& expression)
    }
 }
 
-bool ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
+bool ExpressionEvaluator::ApplyDeMorganLawsForOperation(OperationExpression& expression)
 {
    // Method uses De Morgan's laws for the whole operation.
    //    1. (!x & !y) => !(x | y)
@@ -735,6 +737,79 @@ bool ExpressionEvaluator::DeMorganForOperation(OperationExpression& expression)
    
    return true;
 }
+
+void ExpressionEvaluator::ApplyAbsorptionGluingLaws(OperationExpression& expression)
+{
+   while (ApplyAbsorptionLaws(expression) || ApplyGluingLaws(expression));
+}
+
+bool ExpressionEvaluator::ApplyAbsorptionLaws(OperationExpression& expression)
+{
+   // Absorptions rules are:
+   //    1. x | (x & y) => x
+   //    2. x & (x | y) => x
+
+   // Two sub-cases are available for both rules. Let's consider them on the first rule.
+   //    1. simple case: x is not conjunction:
+   //          x | (x & y) => x
+   //    2. complex case: x is conjunction (u1 & ... & un)
+   //          (u1 & ... & un) | (u1 & .. & un & y) => (u1 & ... & un)
+
+   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
+
+   assert(OperationType::Conjunction == opposite_operation ||
+          OperationType::Disjunction == opposite_operation);
+
+   const auto child_count = expression.GetChildCount();
+   for (auto index = 0; index < child_count; ++index)
+   {
+      auto& child_expr = expression.GetChild(index);
+
+      const auto is_complex_case = (GetOperation(child_expr) == opposite_operation);
+
+      for (auto check_index = 0; check_index < child_count; ++check_index)
+      {
+         auto& child_check_expr = expression.GetChild(check_index);
+
+         if (index == check_index ||
+             GetOperation(child_check_expr) != opposite_operation)
+         {
+            continue;
+         }
+
+         auto& child_check_expression = CastToOperation(child_check_expr);
+
+         auto does_law_match = false;
+         if (is_complex_case)
+         {
+            auto& child_expression = CastToOperation(child_expr);
+            does_law_match =
+                child_expression.GetChildCount() <= child_check_expression.GetChildCount() ||
+                AreFirstChildrenIncludedInFirstChildren(
+                   child_expression, child_expression.GetChildCount(),
+                   child_check_expression, child_check_expression.GetChildCount());
+         }
+         else
+         {
+            does_law_match = IsEqualToAnyChild(child_expr, child_check_expression);
+         }
+
+         if (does_law_match)
+         {
+            expression.RemoveChild(check_index);
+            return true;
+         }
+      }
+   }
+
+   return false;
+}
+
+bool ExpressionEvaluator::ApplyGluingLaws(OperationExpression& expression)
+{
+   return false;
+}
+
 
 void ExpressionEvaluator::InPlaceSimplification(OperationExpression& expression, long child_index)
 {
@@ -912,7 +987,6 @@ bool ExpressionEvaluator::IsShortNegationEquivalentWithChildOperation(
           GetOperation(expression.GetChild(0)) == operation;
 }
 
-
 bool ExpressionEvaluator::CheckNegNotNeg(
    const TExpressionPtr& neg_expr, const TExpressionPtr& expr)
 {
@@ -1089,52 +1163,83 @@ bool ExpressionEvaluator::IsEqualUpToMutuallyReverseOperations(
    return AreFirstChildrenEqual(left, right, (1 == diff) ? right_count : left_count);
 }
 
-bool ExpressionEvaluator::AreFirstChildrenEqual(
-   const OperationExpression& left, const OperationExpression& right, long size)
+bool ExpressionEvaluator::IsEqualToAnyChild(
+   const TExpressionPtr& expr, const OperationExpression& expression)
 {
-   assert(size <= left.GetChildCount());
-   assert(size <= right.GetChildCount());
-
-   if (!AreOperandsMovable(left.GetOperation()))
+   for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
    {
-      // If operands are movable, just use sequential pairwise comparison.
-      for (auto index = size - 1; index >= 0; --index)
+      if (IsEqual(expr, expression.GetChild(index)))
       {
-         if (!IsEqual(left.GetChild(index), right.GetChild(index)))
+         return true;
+      }
+   }
+   return false;
+}
+
+bool ExpressionEvaluator::AreFirstChildrenEqual(
+   const OperationExpression& left, const OperationExpression& right, long amount)
+{
+   return AreFirstChildrenIncludedInFirstChildren(left, amount, right, amount);
+}
+
+bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
+   const OperationExpression& enclosing, long enclosing_amount,
+   const OperationExpression& enveloping, long enveloping_amount, long skip_index)
+{
+   assert(enclosing_amount <= enveloping_amount);
+   assert(enclosing_amount <= enclosing.GetChildCount());
+   assert(enveloping_amount <= enveloping.GetChildCount());
+
+   if (!AreOperandsMovable(enclosing.GetOperation()))
+   {
+      // If operands are movable, use sequential pairwise comparison with gaps.
+      for (auto index1 = enclosing_amount - 1, index2 = enveloping_amount - 1;
+           index1 >= 0; --index1)
+      {
+         for (; index2 >= 0; --index2)
          {
+            if (index2 != skip_index &&
+                IsEqual(enclosing.GetChild(index1), enveloping.GetChild(index2)))
+            {
+               break;
+            }
+         }
+
+         if (-1 == index2)
+         {
+            // No pair for "enclosing" child.
             return false;
          }
       }
       return true;
    }
 
-   // If operands are movable, it's not enough just to use sequential pairwise
-   // comparison. We need to check whether two sets of child operands contain
-   // the same operands up to a permutation.
+   // If operands are movable, it's not enough just to use sequential pairwise comparison.
+   // We need to check whether two sets of child operands contain the same operands up
+   // to a permutation.
 
-   // The array contains information about whether i-th operand of "right" was
-   // linked to some operand of "left", during conformity detection.
-   LOCAL_ARRAY(bool, child_linked_flags, size);
-   std::fill_n(child_linked_flags, size, false);
+   // The array contains information about whether i-th operand of "enveloping" was linked
+   // to some operand of "enclosing", during conformity detection.
+   LOCAL_ARRAY(bool, child_linked_flags, enveloping_amount);
+   std::fill_n(child_linked_flags, enveloping_amount, false);
 
-   // Let's establish one-to-one corresponce between elements of "left" and "right",
-   // using child_linked_flags to mark element of "right" as linked.
-   for (auto index1 = 0L, index2 = 0L; index1 < size; ++index1)
+   // Let's establish one-to-one corresponce between elements of "enclosing" and "enveloping",
+   // using child_linked_flags to mark element of "enveloping" as linked.
+   for (auto index1 = enclosing_amount - 1, index2 = 0L; index1 >= 0; --index1)
    {
-      const auto& left_child = left.GetChild(index1);
-
-      for (index2 = 0; index2 < size; ++index2)
+      for (index2 = enveloping_amount - 1; index2 >= 0; --index2)
       {
-         if (!child_linked_flags[index2] && IsEqual(left_child, right.GetChild(index2)))
+         if (!child_linked_flags[index2] && index2 != skip_index &&
+             IsEqual(enclosing.GetChild(index1), enveloping.GetChild(index2)))
          {
             child_linked_flags[index2] = true;
             break;
          }
       }
 
-      if (size == index2)
+      if (-1 == index2)
       {
-         // No pair for "left_child".
+         // No pair for "enclosing" child.
          return false;
       }
    }
