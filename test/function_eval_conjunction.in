@@ -13,12 +13,13 @@ call eval(conj6)
 # rule x & !x with grouping
 conj7(x, y, z) := !(x & y) & y & z & x
 call eval(conj7)
+
 # De Morgan (all)
-conj8(x, y) := (x+1) & (y->0)
-call eval(conj8)
+conj8a(x, y) := (x+1) & (y->0)
+call eval(conj8a)
 # De Morgan (half)
-conj9(x, y) := !x & y
-call eval(conj9)
+conj8b(x, y) := !x & y
+call eval(conj8b)
 # De Morgan (child evaluation, in-place normalization and backward transformation)
-conj10(x, y, z) := !(x | y | z) & !x
-call eval(conj10)
+conj8c(x, y, z) := !(x | y | z) & !x
+call eval(conj8c)

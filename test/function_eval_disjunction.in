@@ -13,12 +13,13 @@ call eval(disj6)
 # rule x & !x with grouping
 disj7(x, y, z) := ((x | y) -> 0) | y | z | x
 call eval(disj7)
+
 # De Morgan (all)
-disj8(x, y) := (x+1) | (y->0)
-call eval(disj8)
+disj8a(x, y) := (x+1) | (y->0)
+call eval(disj8a)
 # De Morgan (half)
-disj9(x, y) := !x | y
-call eval(disj9)
+disj8b(x, y) := !x | y
+call eval(disj8b)
 # De Morgan (child evaluation, in-place normalization and backward transformation)
-disj10(x, y, z) := !(x & y & z) | !x
-call eval(disj10)
+disj8c(x, y, z) := !(x & y & z) | !x
+call eval(disj8c)
