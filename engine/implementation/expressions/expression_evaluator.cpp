@@ -51,10 +51,8 @@ private:
 
    // Appies absorption/gluing laws while it is possible.
    void ApplyAbsorptionGluingLaws(OperationExpression& expression);
-   // Returns true if modification was done.
-   bool ApplyAbsorptionLaws(OperationExpression& expression);
-   // Returns true if modification was done.
-   bool ApplyGluingLaws(OperationExpression& expression);
+   // Single absorption/gluing laws applying. True is returned, if any rule is applied.
+   bool ApplyAbsorptionGluingLawsOnce(OperationExpression& expression);
 
    static void InPlaceSimplification(OperationExpression& expression, long child_index);
 
@@ -740,10 +738,10 @@ bool ExpressionEvaluator::ApplyDeMorganLawsForOperation(OperationExpression& exp
 
 void ExpressionEvaluator::ApplyAbsorptionGluingLaws(OperationExpression& expression)
 {
-   while (ApplyAbsorptionLaws(expression) || ApplyGluingLaws(expression));
+   while (ApplyAbsorptionGluingLawsOnce(expression));
 }
 
-bool ExpressionEvaluator::ApplyAbsorptionLaws(OperationExpression& expression)
+bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& expression)
 {
    // Absorptions rules are:
    //    1. (x & y) | x => x
@@ -755,44 +753,64 @@ bool ExpressionEvaluator::ApplyAbsorptionLaws(OperationExpression& expression)
    //    2. complex case: x is conjunction (u1 & ... & un)
    //          (u1 & ... & un & y) | (u1 & .. & un) => (u1 & ... & un)
 
+   // Gluing rules are:
+   //    1. (x & y) | (x & !y) = x
+   //    2. (x | y) & (x | !y) = y
+
    const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
 
    assert(OperationType::Conjunction == opposite_operation ||
           OperationType::Disjunction == opposite_operation);
 
    const auto child_count = expression.GetChildCount();
-   for (auto index = 0; index < child_count; ++index)
+   for (auto index1 = 0; index1 < child_count; ++index1)
    {
-      if (GetOperation(expression.GetChild(index)) == opposite_operation)
+      if (GetOperation(expression.GetChild(index1)) == opposite_operation)
       {
-         auto& child_expression = CastToOperation(expression.GetChild(index));
-         for (auto check_index = 0; check_index < child_count; ++check_index)
+         auto& child1_expression = CastToOperation(expression.GetChild(index1));
+         for (auto index2 = 0; index2 < child_count; ++index2)
          {
-            if (index != check_index)
+            if (index1 != index2)
             {
-               auto& child_check_expr = expression.GetChild(check_index);
-               auto does_law_match = false;
+               auto& child2_expr = expression.GetChild(index2);
                
-               if (GetOperation(child_check_expr) == opposite_operation)
+               // Complex case for absorption and gluing.
+               if (GetOperation(child2_expr) == opposite_operation)
                {
-                  // Complex case
-                  auto& child_check_expression = CastToOperation(child_check_expr);
-                  does_law_match = 
-                     (child_check_expression.GetChildCount() <= child_expression.GetChildCount()) &&
-                     AreFirstChildrenIncludedInFirstChildren(
-                        child_check_expression, child_check_expression.GetChildCount(),
-                        child_expression, child_expression.GetChildCount());
-                  // TODO: Optimize
+                  auto& child2_expression = CastToOperation(child2_expr);
+
+                  const auto child1_count = child1_expression.GetChildCount();
+                  const auto child2_count = child2_expression.GetChildCount();
+
+                  if (child1_count < child2_count)
+                  {
+                     if (AreFirstChildrenIncludedInFirstChildren(
+                           child1_expression, child1_count,
+                           child2_expression, child2_count))
+                     {
+                        expression.RemoveChild(index2);
+                        return true;
+                     }
+                  }
+                  else if (child1_count > child2_count)
+                  {
+                     if (AreFirstChildrenIncludedInFirstChildren(
+                           child2_expression, child2_count,
+                           child1_expression, child1_count))
+                     {
+                        expression.RemoveChild(index1);
+                        return true;
+                     }
+                  }
+                  else // (child1_count == child2_count)
+                  {
+                     // TODO: Implement gluing rules
+                  }
                }
-               else
+               // Simple case for absorption
+               else if (IsEqualToAnyChild(child2_expr, child1_expression))
                {
-                  // Simple case
-                  does_law_match = IsEqualToAnyChild(child_check_expr, child_expression);
-               }
-               
-               if (does_law_match)
-               {
-                  expression.RemoveChild(index);
+                  expression.RemoveChild(index1);
                   return true;
                }
             }
@@ -800,24 +818,6 @@ bool ExpressionEvaluator::ApplyAbsorptionLaws(OperationExpression& expression)
       }
    }
 
-   return false;
-}
-
-bool ExpressionEvaluator::ApplyGluingLaws(OperationExpression& expression)
-{
-   // Gluing rules are:
-   //    1. (x & y) | (x & !y) = x
-   //    2. (x | y) & (x | !y) = y
-   
-   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
-
-   assert(OperationType::Conjunction == opposite_operation ||
-          OperationType::Disjunction == opposite_operation);
-
-   // TODO
-   //const auto child_count = expression.GetChildCount();
-   //for (auto index = 0; index < child_count; ++index)
-   
    return false;
 }
 
