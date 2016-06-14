@@ -119,7 +119,7 @@ void StringPtrLen::TrimLeft()
    assert(m_ptr != nullptr);
    assert(m_len != -1);
 
-   while (std::isspace(*m_ptr))
+   while (m_len > 0 && std::isspace(*m_ptr))
    {
       ++m_ptr;
       --m_len;
