@@ -92,13 +92,19 @@ private:
    static bool AreFirstChildrenEqual(const OperationExpression& left,
                                      const OperationExpression& right, long amount);
 
-   // Check whether first enclosing_amount children of enclosing operation are included
+   // Checks whether first enclosing_amount children of enclosing operation are included
    // in first enveloping_amount children of enveloping operation.
    // If skip_index is not -1, then skip_index-th child is to be skipped during
    // analyzing enveloping children.
    static bool AreFirstChildrenIncludedInFirstChildren(
       const OperationExpression& enclosing, long enclosing_amount,
       const OperationExpression& enveloping, long enveloping_amount, long skip_index = -1);
+
+   // Checks whether children of expression1 differs from children of expression2 by a single
+   // item. If it is true, diff_index1 and diff_index2 are filled with differed indexes.
+   static bool AreChildrenDifferByOne(const OperationExpression& expression1,
+                                      const OperationExpression& expression2,
+                                      long& diff_index1, long& diff_index2);
 
 private:
    // Will be filled by new evaluated expression if the whole
@@ -743,7 +749,7 @@ void ExpressionEvaluator::ApplyAbsorptionGluingLaws(OperationExpression& express
 
 bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& expression)
 {
-   // Absorptions rules are:
+   // Absorptions laws are:
    //    1. (x & y) | x => x
    //    2. (x | y) & x => x
 
@@ -753,9 +759,9 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
    //    2. complex case: x is conjunction (u1 & ... & un)
    //          (u1 & ... & un & y) | (u1 & .. & un) => (u1 & ... & un)
 
-   // Gluing rules are:
+   // Gluing laws are:
    //    1. (x & y) | (x & !y) = x
-   //    2. (x | y) & (x | !y) = y
+   //    2. (x | y) & (x | !y) = x
 
    const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
 
@@ -794,6 +800,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                   }
                   else if (child1_count > child2_count)
                   {
+
                      if (AreFirstChildrenIncludedInFirstChildren(
                            child2_expression, child2_count,
                            child1_expression, child1_count))
@@ -804,10 +811,25 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                   }
                   else // (child1_count == child2_count)
                   {
-                     // TODO: Implement gluing rules
+                     // Gluing law.
+                     auto diff_index1 = -1L, diff_index2 = -1L;
+                     if (AreChildrenDifferByOne(child1_expression, child2_expression,
+                                                diff_index1, diff_index2))
+                     {
+                        auto& diff1_expr = child1_expression.GetChild(diff_index1);
+                        auto& diff2_expr = child1_expression.GetChild(diff_index2);
+
+                        if (CheckNegNotNeg(diff1_expr, diff2_expr) ||
+                            CheckNegNotNeg(diff2_expr, diff1_expr))
+                        {
+                           child1_expression.RemoveChild(diff_index1);
+                           expression.RemoveChild(index2);
+                           return true;
+                        }
+                     }
                   }
                }
-               // Simple case for absorption
+               // Simple case for absorption.
                else if (IsEqualToAnyChild(child2_expr, child1_expression))
                {
                   expression.RemoveChild(index1);
@@ -1251,6 +1273,61 @@ bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
    }
 
    // Full conformity is detected.
+   return true;
+}
+
+bool ExpressionEvaluator::AreChildrenDifferByOne(
+   const OperationExpression& expression1, const OperationExpression& expression2,
+   long& diff_index1, long& diff_index2)
+{
+   assert(expression1.GetOperation() == expression2.GetOperation());
+   assert(expression1.GetChildCount() == expression2.GetChildCount());
+   assert(AreOperandsMovable(expression1.GetOperation()));
+
+   diff_index1 = -1;
+   diff_index2 = -1;
+
+   const auto child_count = expression1.GetChildCount();
+
+   LOCAL_ARRAY(bool, child_linked_flags, child_count);
+   std::fill_n(child_linked_flags, child_count, false);
+
+   for (auto index1 = child_count - 1, index2 = 0L; index1 >= 0; --index1)
+   {
+      for (index2 = child_count - 1; index2 >= 0; --index2)
+      {
+         if (!child_linked_flags[index2] &&
+             IsEqual(expression1.GetChild(index1), expression2.GetChild(index2)))
+         {
+            child_linked_flags[index2] = true;
+            break;
+         }
+      }
+
+      if (-1 == index2)
+      {
+         // No pair for "expression1" child.
+         if (-1 == diff_index1)
+         {
+            diff_index1 = index1;
+         }
+         else
+         {
+            return false;
+         }
+      }
+   }
+
+   if (-1 == diff_index1)
+   {
+      // Fully equal sets of children is not our case.
+      return false;
+   }
+
+   // Find unset element of child_linked_flags and set its index to diff_index2.
+   auto it = std::find(child_linked_flags, child_linked_flags + child_count, false);
+   assert(it != child_linked_flags + child_count);
+   diff_index2 = (it - child_linked_flags);
    return true;
 }
 
