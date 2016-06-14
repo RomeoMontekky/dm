@@ -28,5 +28,5 @@ call eval(disj8c)
 conj9a(x, y, z) := (x->y) | (y & (x->y)) | z
 call eval(conj9a)
 # Absorption law (complex case)
-conj9b(x, y, z) := z | (x & y) | (y | (x->y) & x)
+conj9b(x, y, z) := z | (x & y) | (y & (x->y) & x)
 call eval(conj9b)

@@ -746,14 +746,14 @@ void ExpressionEvaluator::ApplyAbsorptionGluingLaws(OperationExpression& express
 bool ExpressionEvaluator::ApplyAbsorptionLaws(OperationExpression& expression)
 {
    // Absorptions rules are:
-   //    1. x | (x & y) => x
-   //    2. x & (x | y) => x
+   //    1. (x & y) | x => x
+   //    2. (x | y) & x => x
 
    // Two sub-cases are available for both rules. Let's consider them on the first rule.
    //    1. simple case: x is not conjunction:
-   //          x | (x & y) => x
+   //          (x & y) | y => x
    //    2. complex case: x is conjunction (u1 & ... & un)
-   //          (u1 & ... & un) | (u1 & .. & un & y) => (u1 & ... & un)
+   //          (u1 & ... & un & y) | (u1 & .. & un) => (u1 & ... & un)
 
    const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
 
@@ -763,41 +763,39 @@ bool ExpressionEvaluator::ApplyAbsorptionLaws(OperationExpression& expression)
    const auto child_count = expression.GetChildCount();
    for (auto index = 0; index < child_count; ++index)
    {
-      auto& child_expr = expression.GetChild(index);
-
-      const auto is_complex_case = (GetOperation(child_expr) == opposite_operation);
-
-      for (auto check_index = 0; check_index < child_count; ++check_index)
+      if (GetOperation(expression.GetChild(index)) == opposite_operation)
       {
-         auto& child_check_expr = expression.GetChild(check_index);
-
-         if (index == check_index ||
-             GetOperation(child_check_expr) != opposite_operation)
+         auto& child_expression = CastToOperation(expression.GetChild(index));
+         for (auto check_index = 0; check_index < child_count; ++check_index)
          {
-            continue;
-         }
-
-         auto& child_check_expression = CastToOperation(child_check_expr);
-
-         auto does_law_match = false;
-         if (is_complex_case)
-         {
-            auto& child_expression = CastToOperation(child_expr);
-            does_law_match =
-                child_expression.GetChildCount() <= child_check_expression.GetChildCount() ||
-                AreFirstChildrenIncludedInFirstChildren(
-                   child_expression, child_expression.GetChildCount(),
-                   child_check_expression, child_check_expression.GetChildCount());
-         }
-         else
-         {
-            does_law_match = IsEqualToAnyChild(child_expr, child_check_expression);
-         }
-
-         if (does_law_match)
-         {
-            expression.RemoveChild(check_index);
-            return true;
+            if (index != check_index)
+            {
+               auto& child_check_expr = expression.GetChild(check_index);
+               auto does_law_match = false;
+               
+               if (GetOperation(child_check_expr) == opposite_operation)
+               {
+                  // Complex case
+                  auto& child_check_expression = CastToOperation(child_check_expr);
+                  does_law_match = 
+                     (child_check_expression.GetChildCount() <= child_expression.GetChildCount()) &&
+                     AreFirstChildrenIncludedInFirstChildren(
+                        child_check_expression, child_check_expression.GetChildCount(),
+                        child_expression, child_expression.GetChildCount());
+                  // TODO: Optimize
+               }
+               else
+               {
+                  // Simple case
+                  does_law_match = IsEqualToAnyChild(child_check_expr, child_expression);
+               }
+               
+               if (does_law_match)
+               {
+                  expression.RemoveChild(index);
+                  return true;
+               }
+            }
          }
       }
    }
@@ -807,9 +805,21 @@ bool ExpressionEvaluator::ApplyAbsorptionLaws(OperationExpression& expression)
 
 bool ExpressionEvaluator::ApplyGluingLaws(OperationExpression& expression)
 {
+   // Gluing rules are:
+   //    1. (x & y) | (x & !y) = x
+   //    2. (x | y) & (x | !y) = y
+   
+   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
+
+   assert(OperationType::Conjunction == opposite_operation ||
+          OperationType::Disjunction == opposite_operation);
+
+   // TODO
+   //const auto child_count = expression.GetChildCount();
+   //for (auto index = 0; index < child_count; ++index)
+   
    return false;
 }
-
 
 void ExpressionEvaluator::InPlaceSimplification(OperationExpression& expression, long child_index)
 {
@@ -1192,25 +1202,21 @@ bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
 
    if (!AreOperandsMovable(enclosing.GetOperation()))
    {
-      // If operands are movable, use sequential pairwise comparison with gaps.
-      for (auto index1 = enclosing_amount - 1, index2 = enveloping_amount - 1;
-           index1 >= 0; --index1)
+      // If operands are not movable, then gaps are not available.
+      if (enclosing_amount != enveloping_amount)
       {
-         for (; index2 >= 0; --index2)
+         return false;
+      }
+      
+      // Just use sequential pairwaise comparison.
+      for (auto index = enclosing_amount - 1; index >= 0; --index)
+      {
+         if (!IsEqual(enclosing.GetChild(index), enveloping.GetChild(index)))
          {
-            if (index2 != skip_index &&
-                IsEqual(enclosing.GetChild(index1), enveloping.GetChild(index2)))
-            {
-               break;
-            }
-         }
-
-         if (-1 == index2)
-         {
-            // No pair for "enclosing" child.
             return false;
          }
       }
+      
       return true;
    }
 
