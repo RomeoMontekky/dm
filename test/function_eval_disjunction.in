@@ -25,8 +25,21 @@ disj8c(x, y, z) := !(x & y & z) | !x
 call eval(disj8c)
 
 # Absorption law (simple case)
-conj9a(x, y, z) := (x->y) | (y & (x->y)) | z
-call eval(conj9a)
+disj9a(x, y, z) := (x->y) | (y & (x->y)) | z
+call eval(disj9a)
 # Absorption law (complex case)
-conj9b(x, y, z) := z | (x & y) | (y & (x->y) & x)
-call eval(conj9b)
+disj9b(x, y, z) := z | (x & y) | (y & (x->y) & x)
+call eval(disj9b)
+
+# Gluing laws (simple case) - ok
+disj10a(x, y, z) := (x & y) | (!y & x) | z
+call eval(disj10a)
+# Gluing laws (simple case) - fail
+disj10b(x, y, z, u) := z | (x & y) | (!y & x & u)
+call eval(disj10b)
+# Gluing laws (complex case) - ok
+disj10c(x, y, z) := (x & y & z) | (x -> z) | (!z & y & x) 
+call eval(disj10c)
+# Gluing laws (complex case) - fail
+disj10d(x, y, z, u, v) := (x & y & z) | (x & u & v) | (x -> z)
+call eval(disj10d)

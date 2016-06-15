@@ -35,7 +35,7 @@ call eval(conj9b)
 conj10a(x, y, z) := (x | y) & (!y | x) & z
 call eval(conj10a)
 # Gluing laws (simple case) - fail
-conj10b(x, y, z) := z & (x | y) & (!y | x | z)
+conj10b(x, y, z, u) := z & (x | y) & (!y | x | u)
 call eval(conj10b)
 # Gluing laws (complex case) - ok
 conj10c(x, y, z) := (x | y | z) & (x -> z) & (!z | y | x) 
