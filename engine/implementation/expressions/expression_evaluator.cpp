@@ -777,6 +777,8 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
    //    1. (x & y) | (x & !y) = x
    //    2. (x | y) & (x | !y) = x
 
+   auto is_modified = false;
+
    const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
    assert(OperationType::None != opposite_operation);
 
@@ -810,7 +812,8 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                         child2_expression, child2_count))
                   {
                      expression.RemoveChild(index2);
-                     return true;
+                     is_modified = true;
+                     --index1;
                   }
                }
                else if (child1_count > child2_count)
@@ -821,7 +824,8 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                         child1_expression, child1_count))
                   {
                      expression.RemoveChild(index1);
-                     return true;
+                     is_modified = true;
+                     break;
                   }
                }
                else // (child1_count == child2_count)
@@ -837,13 +841,15 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                      if (CheckNegNotNeg(diff1_expr, diff2_expr) ||
                          CheckNegNotNeg(diff2_expr, diff1_expr))
                      {
-                        child1_expression.RemoveChild(diff_index1);
-                        if (2 == child1_count)
+                        child2_expression.RemoveChild(diff_index2);
+                        if (2 == child2_count)
                         {
-                           child1_expr = std::move(child1_expression.GetChild(0));
+                           // In-place normalization
+                           child2_expr = std::move(child2_expression.GetChild(0));
                         }
-                        expression.RemoveChild(index2);
-                        return true;
+                        expression.RemoveChild(index1);
+                        is_modified = true;
+                        break;
                      }
                   }
                }
@@ -852,19 +858,21 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
             else if (IsEqualToAnyChild(child2_expr, child1_expression))
             {
                expression.RemoveChild(index1);
-               return true;
+               is_modified = true;
+               break;
             }
          }
          // Simple case for absorption (backward indexes)
          else if (is_opposite_operation2 && IsEqualToAnyChild(child1_expr, CastToOperation(child2_expr)))
          {
             expression.RemoveChild(index2);
-            return true;
+            is_modified = true;
+            --index1;
          }
       }
    }
 
-   return false;
+   return is_modified;
 }
 
 void ExpressionEvaluator::InPlaceSimplification(OperationExpression& expression, long child_index)
