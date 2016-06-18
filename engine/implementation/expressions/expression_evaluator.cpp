@@ -538,6 +538,7 @@ bool ExpressionEvaluator::RemoveAllIfLiteralExists(
       m_evaluated_expression = std::move(last_child);
       return true;
    }
+
    return false;
 }
 
@@ -647,9 +648,6 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
    //    ((x & y) | !x | !y)  =/ De Morgan /=> (!(!x | !y) | !x | !y) = 1
 
    const auto child_count = expression.GetChildCount();
-   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
-   assert(OperationType::None != opposite_operation);
-
    if (child_count < 3)
    {
       // Two operarands cannot be grouped, because it means that operation under
@@ -658,7 +656,10 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
       return false;
    }
 
-   for (auto index = 0L, i = 0L, j = 0L; index < child_count; ++index)
+   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
+   assert(OperationType::None != opposite_operation);
+
+   for (auto index = child_count -1; index >= 0; --index)
    {
       const auto& child = expression.GetChild(index);
       
