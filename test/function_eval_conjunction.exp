@@ -10,8 +10,10 @@ conj5(x) := (x & (x = 0))
 conj5(x) := 0
 conj6(x, y) := ((x + y) & x & (y + x + 1))
 conj6(x, y) := 0
-conj7(x, y, z) := (!(x & y) & y & z & x)
-conj7(x, y, z) := 0
+conj7a(x, y, z) := (!(x & y) & y & z & x)
+conj7a(x, y, z) := 0
+conj7b(x, y, u1, u2, u3) := (u1 & u2 & u3 & (x | y) & !x & !y)
+conj7b(x, y, u1, u2, u3) := 0
 conj8a(x, y) := ((x + 1) & (y -> 0))
 conj8a(x, y) := !(x | y)
 conj8b(x, y) := (!x & y)

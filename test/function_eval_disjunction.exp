@@ -10,8 +10,10 @@ disj5(x) := (x | (x = 0))
 disj5(x) := 1
 disj6(x, y) := ((x + y) | x | (y + x + 1))
 disj6(x, y) := 1
-disj7(x, y, z) := (((x | y) -> 0) | y | z | x)
-disj7(x, y, z) := 1
+disj7a(x, y, z) := (((x | y) -> 0) | y | z | x)
+disj7a(x, y, z) := 1
+disj7b(x, y, u1, u2, u3) := (u1 | u2 | u3 | (x & y) | !x | !y)
+disj7b(x, y, u1, u2, u3) := 1
 disj8a(x, y) := ((x + 1) | (y -> 0))
 disj8a(x, y) := !(x & y)
 disj8b(x, y) := (!x | y)

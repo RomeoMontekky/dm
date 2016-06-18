@@ -621,16 +621,22 @@ void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, Liter
 
 bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& expression)
 {
-   // Checks whether there exists some negated child, that (under negation)
-   // contains child operands, that all have equivalents between
-   // children of the current operation.
+   // Checks whether there exists some negated child, that (under negation) contains child
+   // operands, that all have equivalents between children of the current operation.
 
    // Examples:
    //    !(x & y) & x & y & z
    //    ((x | y)->0) | x | y | z
 
+   // Additional variant of grouping is using De Morgan's law.
+
+   // Example:
+   //    ((x & y) | !x | !y)  =/ De Morgan /=> (!(!x | !y) | !x | !y) = 1
+
    const auto child_count = expression.GetChildCount();
-   
+   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
+   assert(OperationType::None != opposite_operation);
+
    if (child_count < 3)
    {
       // Two operarands cannot be grouped, because it means that operation under
@@ -646,12 +652,24 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
       // If current child is a negation equivalent and it encapsulates the same operation
       // as current one, then we need to check whether other children are the same as
       // children of the negated child.
-
       if (IsShortNegationEquivalentWithChildOperation(child, expression.GetOperation()))
       {
          const auto& child_to_check = CastToOperation(CastToOperation(child).GetChild(0));
          if (AreFirstChildrenIncludedInFirstChildren(
                 child_to_check, child_to_check.GetChildCount(),
+                expression, expression.GetChildCount(), index))
+         {
+            return true;
+         }
+      }
+      // If child operation is opposite, try to group after reverting children negations.
+      else if (GetOperation(child) == opposite_operation)
+      {
+         auto cloned_child = child->Clone();
+         RevertNegations(cloned_child);
+         const auto& cloned_child_expression = CastToOperation(cloned_child);
+         if (AreFirstChildrenIncludedInFirstChildren(
+                cloned_child_expression, cloned_child_expression.GetChildCount(),
                 expression, expression.GetChildCount(), index))
          {
             return true;
@@ -669,9 +687,7 @@ void ExpressionEvaluator::ApplyDeMorganLawsForChildren(OperationExpression& expr
    //    2. !(x | y) => !x & !y
    
    const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
-
-   assert(OperationType::Conjunction == opposite_operation ||
-          OperationType::Disjunction == opposite_operation);
+   assert(OperationType::None != opposite_operation);
 
    for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
    {
@@ -700,9 +716,7 @@ bool ExpressionEvaluator::ApplyDeMorganLawsForOperation(OperationExpression& exp
 
    const auto child_count = expression.GetChildCount();
    const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
-
-   assert(OperationType::Conjunction == opposite_operation ||
-          OperationType::Disjunction == opposite_operation);
+   assert(OperationType::None != opposite_operation);
              
    auto negation_count = 0L;
    for (auto index = child_count - 1; index >= 0; --index)
@@ -764,9 +778,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
    //    2. (x | y) & (x | !y) = x
 
    const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
-
-   assert(OperationType::Conjunction == opposite_operation ||
-          OperationType::Disjunction == opposite_operation);
+   assert(OperationType::None != opposite_operation);
 
    const auto last_index = expression.GetChildCount() - 1;
    for (auto index1 = last_index ; index1 > 0; --index1)
