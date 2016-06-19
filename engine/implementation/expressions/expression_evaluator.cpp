@@ -39,7 +39,6 @@ private:
    // If a method returns true it means it set m_evaluated_expression
    // member, so the calling side must return control up as soon as possible.
    bool MakeNegationRepresentative(OperationExpression& expression);
-   bool SetLiteralIfNone(OperationExpression& expression, LiteralType remaining_literal);
    bool RemoveAllIfLiteralExists(OperationExpression& expression, LiteralType literal);
    bool RemoveAllIfNegNotNegExists(OperationExpression& expression, LiteralType remaining_literal);
    void RemoveLiteralIfExists(OperationExpression& expression, LiteralType literal);
@@ -51,7 +50,7 @@ private:
    bool ApplyDeMorganLawsForOperation(OperationExpression& expression);
 
    // Appies absorption/gluing laws while it is possible.
-   bool ApplyAbsorptionGluingLaws(OperationExpression& expression, LiteralType remaining_literal);
+   void ApplyAbsorptionGluingLaws(OperationExpression& expression, LiteralType remaining_literal);
    // Single absorption/gluing laws applying. If any rule was applied, true is returned.
    bool ApplyAbsorptionGluingLawsOnce(OperationExpression& expression);
 
@@ -229,10 +228,7 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    ApplyDeMorganLawsForChildren(expression);
 
    // Apply absorption/gluing rules while it is possible.
-   if (ApplyAbsorptionGluingLaws(expression, LiteralType::False))
-   {
-      return;
-   }
+   ApplyAbsorptionGluingLaws(expression, LiteralType::False);
 
    // According to rule 4, evaluate expression to literal 0
    // if there exists x and !x.
@@ -279,10 +275,7 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    ApplyDeMorganLawsForChildren(expression);
 
    // Apply absorption/gluing rules while it is possible.
-   if (ApplyAbsorptionGluingLaws(expression, LiteralType::False))
-   {
-      return;
-   }
+   ApplyAbsorptionGluingLaws(expression, LiteralType::False);
 
    // According to rule 4, evaluate expression to literal 1
    // if there exists x and !x.
@@ -517,18 +510,6 @@ bool ExpressionEvaluator::MakeNegationRepresentative(OperationExpression& expres
    return false;
 }
 
-bool ExpressionEvaluator::SetLiteralIfNone(
-   OperationExpression& expression, LiteralType remaining_literal)
-{
-   if (0 == expression.GetChildCount())
-   {
-      m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
-      return true;
-   }
-
-   return false;
-}
-
 bool ExpressionEvaluator::RemoveAllIfLiteralExists(
    OperationExpression& expression, LiteralType literal)
 {
@@ -602,7 +583,13 @@ bool ExpressionEvaluator::AbsorbDuplicates(
       }
    }
 
-   return SetLiteralIfNone(expression, remaining_literal);
+   if (0 == expression.GetChildCount())
+   {
+      m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
+      return true;
+   }
+
+   return false;
 }
 
 void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, LiteralType eq_to_neg_literal)
@@ -770,11 +757,10 @@ bool ExpressionEvaluator::ApplyDeMorganLawsForOperation(OperationExpression& exp
    return true;
 }
 
-bool ExpressionEvaluator::ApplyAbsorptionGluingLaws(
+void ExpressionEvaluator::ApplyAbsorptionGluingLaws(
    OperationExpression& expression, LiteralType remaining_literal)
 {
    while (ApplyAbsorptionGluingLawsOnce(expression));
-   return SetLiteralIfNone(expression, remaining_literal);
 }
 
 bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& expression)
