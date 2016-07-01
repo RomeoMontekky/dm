@@ -1,6 +1,13 @@
 - show position of erred character in the error message.
 - function for evaluation of expressions.
-   - implement fix for gluing rules (take in account De Morgan rules).
+
+   - implement fix for gluing rules (take into account De Morgan rules).
+
+   - alternative way is to move negation for conjunction/disjunction
+     always below, using De Morgan laws: it will require to implement
+     additional checks in NegNotNeg methods and in IsEqual method, but
+     will allow not to fix intricated logic of gluing/absorbing.
+
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.
 - function for CNF/SCNF/MinCNF building.
