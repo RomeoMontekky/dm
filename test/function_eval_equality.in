@@ -28,6 +28,10 @@ call eval(eq9)
 # double negation reduction with literal adding
 eq10(x, y) := !(!(x = y) = y) = x
 call eval(eq10)
+# making negation representative 2 times, in-place simplification/normalization
 eq11(x, y, z) := ((x + y) = 0) + y + z + x
 call eval(eq11)
+# neg/not-neg absorbation, basing on De Morgan matching
+eq12(x, y) := (x | y) = (!x & !y)
+call eval(eq12)
 

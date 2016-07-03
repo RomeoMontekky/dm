@@ -1,12 +1,11 @@
 - show position of erred character in the error message.
 - function for evaluation of expressions.
 
-   - implement fix for gluing rules (take into account De Morgan rules).
+   - fix IsEqual algorithm for (x -> y) and (!y -> !x),
+     derive the common formula for n operands.
 
-   - alternative way is to move negation for conjunction/disjunction
-     always below, using De Morgan laws: it will require to implement
-     additional checks in NegNotNeg methods and in IsEqual method, but
-     will allow not to fix intricated logic of gluing/absorbing.
+   - implement reversible equality checking and get rid of cloning
+     of operands.
 
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.

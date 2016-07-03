@@ -41,10 +41,10 @@ base6k(x) := !x
 base6l(x) := (x + 1)
 base6l(x) := !x
 base6m(x, y) := ((x & y) -> 0)
-base6m(x, y) := !(x & y)
+base6m(x, y) := (!x | !y)
 base6n(x, y) := ((x & y) = 0)
-base6n(x, y) := !(x & y)
+base6n(x, y) := (!x | !y)
 base6o(x, y) := ((x & y) + 1)
-base6o(x, y) := !(x & y)
+base6o(x, y) := (!x | !y)
 base7(x, y, z) := ((((x + y) -> 0) + z) -> 0)
 base7(x, y, z) := (x + y + z)

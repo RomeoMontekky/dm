@@ -28,6 +28,10 @@ call eval(plus9)
 # double negation reduction with literal adding
 plus10(x, y) := !(!(x + y) + y) + x
 call eval(plus10)
+# making negation representative 2 times, in-place simplification/normalization
 plus11(x, y, z) := ((x + y)->0) + y + !z + x
 call eval(plus11)
+# neg/not-neg absorbation, basing on De Morgan matching
+plus12(x, y) := (x | y) + (!x & !y)
+call eval(plus12)
 
