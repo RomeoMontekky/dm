@@ -91,26 +91,34 @@ private:
    static void RevertNegations(TExpressionPtr& expr);
 
    static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
-   static bool IsEqualUpToMutuallyReverseOperations(
-      const OperationExpression& left, const OperationExpression& right);
-
+   static bool IsEqual(const OperationExpression& left, const OperationExpression& right);
    static bool IsEqualToAnyChild(
       const TExpressionPtr& expr, const OperationExpression& expression);
 
    static bool AreFirstChildrenEqual(const OperationExpression& left,
                                      const OperationExpression& right, long amount);
+   static bool AreFirstChildrenNegNotNeg(const OperationExpression& left,
+                                         const OperationExpression& right, long amount);
+
+   static bool AreFirstChildrenIncludedByEquality(
+      const OperationExpression& enclosing, long enclosing_amount,
+      const OperationExpression& enveloping, long enveloping_amount, long skip_index = -1);
+   static bool AreFirstChildrenIncludedByNegNotNeg(
+      const OperationExpression& enclosing, long enclosing_amount,
+      const OperationExpression& enveloping, long enveloping_amount, long skip_index = -1);
 
    // Checks whether first enclosing_amount children of enclosing operation are included
    // in first enveloping_amount children of enveloping operation.
    // If skip_index is not -1, then skip_index-th child is to be skipped during
    // analyzing enveloping children.
-   static bool AreFirstChildrenIncludedInFirstChildren(
+   static bool AreFirstChildrenIncluded(
       const OperationExpression& enclosing, long enclosing_amount,
-      const OperationExpression& enveloping, long enveloping_amount, long skip_index = -1);
+      const OperationExpression& enveloping, long enveloping_amount, long skip_index,
+      bool (*Comparator)(const TExpressionPtr&, const TExpressionPtr&));
 
    // Checks whether children of expression1 differs from children of expression2 by a single
    // item. If it is true, diff_index1 and diff_index2 are filled with differed indexes.
-   static bool AreChildrenDifferByOne(const OperationExpression& expression1,
+   static bool DoChildrenDifferByOne(const OperationExpression& expression1,
                                       const OperationExpression& expression2,
                                       long& diff_index1, long& diff_index2);
 
@@ -717,15 +725,13 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
 
    for (auto index = child_count - 1; index >= 0; --index)
    {
-      const auto& child = expression.GetChild(index);
-      if (GetOperation(child) == opposite_operation)
+      const auto& child_expr = expression.GetChild(index);
+      if (GetOperation(child_expr) == opposite_operation)
       {
-         auto cloned_child = child->Clone();
-         RevertNegations(cloned_child);
-         const auto& cloned_child_expression = CastToOperation(cloned_child);
-         if (AreFirstChildrenIncludedInFirstChildren(
-                cloned_child_expression, cloned_child_expression.GetChildCount(),
-                expression, expression.GetChildCount(), index))
+         const auto& child_expression = CastToOperation(child_expr);
+         if (AreFirstChildrenIncludedByNegNotNeg(
+               child_expression, child_expression.GetChildCount(),
+               expression, expression.GetChildCount(), index))
          {
             return true;
          }
@@ -787,7 +793,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
 
                if (child1_count < child2_count)
                {
-                  if (AreFirstChildrenIncludedInFirstChildren(
+                  if (AreFirstChildrenIncludedByEquality(
                         child1_expression, child1_count,
                         child2_expression, child2_count))
                   {
@@ -799,7 +805,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                else if (child1_count > child2_count)
                {
 
-                  if (AreFirstChildrenIncludedInFirstChildren(
+                  if (AreFirstChildrenIncludedByEquality(
                         child2_expression, child2_count,
                         child1_expression, child1_count))
                   {
@@ -812,8 +818,8 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                {
                   // Application of gluing law.
                   auto diff_index1 = -1L, diff_index2 = -1L;
-                  if (AreChildrenDifferByOne(child1_expression, child2_expression,
-                                             diff_index1, diff_index2))
+                  if (DoChildrenDifferByOne(child1_expression, child2_expression,
+                                            diff_index1, diff_index2))
                   {
                      auto& diff1_expr = child1_expression.GetChild(diff_index1);
                      auto& diff2_expr = child2_expression.GetChild(diff_index2);
@@ -1077,7 +1083,8 @@ bool ExpressionEvaluator::CheckNegNotNegCommon(
 bool ExpressionEvaluator::CheckNegNotNegDeMorgan(
    const TExpressionPtr& expr1, const TExpressionPtr& expr2)
 {
-   // Checks whether operations has reverse equality according to De Morgan laws, e.g:
+   // Checks whether operations have reverse equality according to De Morgan laws.
+   // Example:
    //    (x & y) and (!x | !y).
 
    const auto expr1_operation = GetOperation(expr1);
@@ -1093,16 +1100,13 @@ bool ExpressionEvaluator::CheckNegNotNegDeMorgan(
    const auto& expression1 = CastToOperation(expr1);
    const auto& expression2 = CastToOperation(expr2);
 
-   if (expression1.GetChildCount() != expression2.GetChildCount())
+   const auto child_count = expression1.GetChildCount();
+   if (child_count != expression2.GetChildCount())
    {
       return false;
    }
 
-   auto expr1_cloned = expr1->Clone();
-   RevertNegations(expr1_cloned);
-
-   return AreFirstChildrenEqual(
-      CastToOperation(expr1_cloned), expression2, expression2.GetChildCount());
+   return AreFirstChildrenNegNotNeg(expression1, expression2, child_count);
 }
 
 void ExpressionEvaluator::ExtractFromUnderNegationEquivalent(TExpressionPtr& expr)
@@ -1194,21 +1198,7 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
          return (CastToParamRef(left).GetParamIndex() == CastToParamRef(right).GetParamIndex());
 
       case ExpressionType::Operation:
-      {
-         auto& left_operation = CastToOperation(left);
-         auto& right_operation = CastToOperation(right);
-
-         if (left_operation.GetOperation() == right_operation.GetOperation())
-         {
-            return (left_operation.GetChildCount() == right_operation.GetChildCount() &&
-                    AreFirstChildrenEqual(left_operation, right_operation,
-                                          left_operation.GetChildCount()));
-         }
-
-         // Equality is still possible, if operations are mutually reverse, for example:
-         //    (x + y) equals (x = y = 0)
-         return IsEqualUpToMutuallyReverseOperations(left_operation, right_operation);
-      }
+         return IsEqual(CastToOperation(left), CastToOperation(right));
    }
 
    assert(!"Unknown expression type.");
@@ -1216,9 +1206,17 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
    return false;
 }
 
-bool ExpressionEvaluator::IsEqualUpToMutuallyReverseOperations(
-   const OperationExpression& left, const OperationExpression& right)
+bool ExpressionEvaluator::IsEqual(const OperationExpression& left, const OperationExpression& right)
 {
+   if (left.GetOperation() == right.GetOperation())
+   {
+      return (left.GetChildCount() == right.GetChildCount() &&
+              AreFirstChildrenEqual(left, right, left.GetChildCount()));
+   }
+
+   // Equality is still possible, if operations are mutually reverse, for example:
+   //    (x + y) equals (x = y = 0)
+
    if (!AreOperationsMutuallyReverse(left.GetOperation(), right.GetOperation()))
    {
       return false;
@@ -1262,12 +1260,39 @@ bool ExpressionEvaluator::IsEqualToAnyChild(
 bool ExpressionEvaluator::AreFirstChildrenEqual(
    const OperationExpression& left, const OperationExpression& right, long amount)
 {
-   return AreFirstChildrenIncludedInFirstChildren(left, amount, right, amount);
+   return AreFirstChildrenIncludedByEquality(left, amount, right, amount);
 }
 
-bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
+bool ExpressionEvaluator::AreFirstChildrenNegNotNeg(
+   const OperationExpression& left, const OperationExpression& right, long amount)
+{
+   return AreFirstChildrenIncludedByNegNotNeg(left, amount, right, amount);
+}
+
+bool ExpressionEvaluator::AreFirstChildrenIncludedByEquality(
    const OperationExpression& enclosing, long enclosing_amount,
    const OperationExpression& enveloping, long enveloping_amount, long skip_index)
+{
+   return AreFirstChildrenIncluded(
+      enclosing, enclosing_amount,
+      enveloping, enveloping_amount, skip_index,
+      ExpressionEvaluator::IsEqual);
+}
+
+bool ExpressionEvaluator::AreFirstChildrenIncludedByNegNotNeg(
+   const OperationExpression& enclosing, long enclosing_amount,
+   const OperationExpression& enveloping, long enveloping_amount, long skip_index)
+{
+   return AreFirstChildrenIncluded(
+      enclosing, enclosing_amount,
+      enveloping, enveloping_amount, skip_index,
+      ExpressionEvaluator::CheckNegNotNeg);
+}
+
+bool ExpressionEvaluator::AreFirstChildrenIncluded(
+   const OperationExpression& enclosing, long enclosing_amount,
+   const OperationExpression& enveloping, long enveloping_amount, long skip_index,
+   bool (*Comparator)(const TExpressionPtr&, const TExpressionPtr&))
 {
    assert(enclosing_amount <= enveloping_amount);
    assert(enclosing_amount <= enclosing.GetChildCount());
@@ -1284,7 +1309,7 @@ bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
       // Just use sequential pairwaise comparison.
       for (auto index = enclosing_amount - 1; index >= 0; --index)
       {
-         if (!IsEqual(enclosing.GetChild(index), enveloping.GetChild(index)))
+         if (!Comparator(enclosing.GetChild(index), enveloping.GetChild(index)))
          {
             return false;
          }
@@ -1309,7 +1334,7 @@ bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
       for (index2 = enveloping_amount - 1; index2 >= 0; --index2)
       {
          if (!child_linked_flags[index2] && index2 != skip_index &&
-             IsEqual(enclosing.GetChild(index1), enveloping.GetChild(index2)))
+             Comparator(enclosing.GetChild(index1), enveloping.GetChild(index2)))
          {
             child_linked_flags[index2] = true;
             break;
@@ -1327,7 +1352,7 @@ bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
    return true;
 }
 
-bool ExpressionEvaluator::AreChildrenDifferByOne(
+bool ExpressionEvaluator::DoChildrenDifferByOne(
    const OperationExpression& expression1, const OperationExpression& expression2,
    long& diff_index1, long& diff_index2)
 {

@@ -4,9 +4,6 @@
    - fix IsEqual algorithm for (x -> y) and (!y -> !x),
      derive the common formula for n operands.
 
-   - implement reversible equality checking and get rid of cloning
-     of operands.
-
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.
 - function for CNF/SCNF/MinCNF building.
