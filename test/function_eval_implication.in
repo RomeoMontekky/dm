@@ -41,3 +41,6 @@ call eval(imp13)
 # absense of commutativity
 imp14(x, y) := (x -> y) -> (y -> x)
 call eval(imp14)
+# reverse implication rule
+imp15(x, y, z) := (z=0) -> (x->y->0)
+call eval(imp15)

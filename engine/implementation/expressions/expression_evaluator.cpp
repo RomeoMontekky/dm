@@ -51,8 +51,6 @@ private:
                          LiteralType eq_to_neg_literal, LiteralType remaining_literal);
 
    bool CanBeGroupedAsNegNotNeg(const OperationExpression& expression);
-   void ApplyDeMorganLawsForChildren(OperationExpression& expression);
-   bool ApplyDeMorganLawsForOperation(OperationExpression& expression);
 
    // Appies absorption/gluing laws while it is possible.
    void ApplyAbsorptionGluingLaws(OperationExpression& expression, LiteralType remaining_literal);
@@ -90,10 +88,22 @@ private:
    static void CoverWithNegationEquivalent(TExpressionPtr& expr);
    static void RevertNegations(TExpressionPtr& expr);
 
+   enum class MutuallyReverseStatus
+   {
+      None, Equality, Reversibility
+   };
+
+   static MutuallyReverseStatus GetMutuallyReverseStatus(
+      const TExpressionPtr& left, const TExpressionPtr& right);
+   static MutuallyReverseStatus GetMutuallyReverseStatus(
+      const OperationExpression& left, const OperationExpression& right);
+
    static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
    static bool IsEqual(const OperationExpression& left, const OperationExpression& right);
-   static bool IsEqualToAnyChild(
-      const TExpressionPtr& expr, const OperationExpression& expression);
+   static bool IsEqualReverseImplications(const OperationExpression& left,
+                                          const OperationExpression& right);
+   static bool IsEqualToAnyChild(const TExpressionPtr& expr,
+                                 const OperationExpression& expression);
 
    static bool AreFirstChildrenEqual(const OperationExpression& left,
                                      const OperationExpression& right, long amount);
@@ -313,15 +323,16 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    // in other EvaluateXXX methods.
 
    // We have following rules:
-   //    1. ( 1 ->  x)      =>  x
-   //    2. ( 0 ->  x)      =>  1
-   //    3. ( x ->  1)      =>  1
-   //    4. (!x ->  0)      =>  x
-   //    5. ( x ->  x)      =>  1
-   //    6. (!x ->  x)      =>  x
-   //    7. ( x -> !x)      => !x
-   //    8. ( x ->  0 -> 0) =>  x
-   //    9. ( x ->  y -> x) =>  x
+   //    1.  ( 1 ->  x)      =>  x
+   //    2.  ( 0 ->  x)      =>  1
+   //    3.  ( x ->  1)      =>  1
+   //    4.  (!x ->  0)      =>  x
+   //    5.  ( x ->  x)      =>  1
+   //    6.  (!x ->  x)      =>  x
+   //    7.  ( x -> !x)      => !x
+   //    8.  ( x ->  0 -> 0) =>  x
+   //    9.  ( x ->  y -> x) =>  x
+   //    10. (!y -> !x)      =>  x -> y
 
    // According to rules 3 and 1, if there exist "1" operand,
    // we can remove all operands to the left, including this "1" operand.
@@ -344,36 +355,49 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
       {
          was_evaluated = false;
 
+         auto& child0 = expression.GetChild(0);
+         auto& child1 = expression.GetChild(1);
+
          // According to rules 2 and 1, we can remove subexpression (0 -> x)
          // if it is at the beginning of the expression.
          // According to rules 5 and 1, we can remove subexpression (x -> x)
-         // if it is at the beginning of the expression
-         if (LiteralType::False == GetLiteral(expression.GetChild(0)) ||
-             IsEqual(expression.GetChild(0), expression.GetChild(1)))
+         // if it is at the beginning of the expression.
+         if (LiteralType::False == GetLiteral(child0) || IsEqual(child0, child1))
          {
             expression.RemoveChildren(0, 2);
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
-         // According to rule 4 perform transformation (!x -> 0) => x
-         else if (IsNegationEquivalent(expression.GetChild(0)) &&
-                  LiteralType::False == GetLiteral(expression.GetChild(1)))
+         // According to rule 4 perform transformation (!x -> 0) => x.
+         else if (IsNegationEquivalent(child0) && LiteralType::False == GetLiteral(child1))
          {
-            ExtractFromUnderNegationEquivalent(expression.GetChild(0));
+            ExtractFromUnderNegationEquivalent(child0);
             expression.RemoveChild(1);
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
-         // According to rule 6, we can remove first operand in case of (!x ->  x)
-         // According to rule 7, we can remove first operand in case of ( x -> !x)
-         else if (CheckNegNotNeg(expression.GetChild(0), expression.GetChild(1)))
+         // According to rule 6, we can remove first operand in case of (!x ->  x).
+         // According to rule 7, we can remove first operand in case of ( x -> !x).
+         else if (CheckNegNotNeg(child0, child1))
          {
             expression.RemoveChild(0);
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
-         // According to rule 9, we can remove first two operands in case of (x -> y -> x)
-         else if (expression.GetChildCount() > 2 && IsEqual(expression.GetChild(0), expression.GetChild(2)))
+         // According to rules 10, we can exchange two operands with negation removing.
+         else if (IsNegationEquivalent(child0) && IsNegationEquivalent(child1))
+         {
+            ExtractFromUnderNegationEquivalent(child0);
+            ExtractFromUnderNegationEquivalent(child1);
+            auto temp = std::move(child0);
+            expression.GetChild(0) = std::move(child1);
+            expression.GetChild(1) = std::move(temp);
+            InPlaceNormalization(expression);
+            was_evaluated = true;
+            // TODO: Complex case
+         }
+         // According to rule 9, we can remove first two operands in case of (x -> y -> x).
+         else if (expression.GetChildCount() > 2 && IsEqual(child0, expression.GetChild(2)))
          {
             expression.RemoveChildren(0, 2);
             InPlaceNormalization(expression);
@@ -1041,7 +1065,8 @@ bool ExpressionEvaluator::CheckNegNotNeg(
 {
    return CheckNegNotNegCommon(expr1, expr2) ||
           CheckNegNotNegCommon(expr2, expr1) ||
-          CheckNegNotNegDeMorgan(expr1, expr2);
+          CheckNegNotNegDeMorgan(expr1, expr2) ||
+          GetMutuallyReverseStatus(expr1, expr2) == MutuallyReverseStatus::Reversibility;
 }
 
 bool ExpressionEvaluator::CheckNegNotNegCommon(
@@ -1180,10 +1205,78 @@ void ExpressionEvaluator::RevertNegations(TExpressionPtr& expr)
    }
 }
 
+ExpressionEvaluator::MutuallyReverseStatus ExpressionEvaluator::GetMutuallyReverseStatus(
+   const TExpressionPtr& left, const TExpressionPtr& right)
+{
+   if (left->GetType() != ExpressionType::Operation ||
+       right->GetType() != ExpressionType::Operation)
+   {
+      return MutuallyReverseStatus::None;
+   }
+
+   return GetMutuallyReverseStatus(CastToOperation(left), CastToOperation(right));
+}
+
+ExpressionEvaluator::MutuallyReverseStatus ExpressionEvaluator::GetMutuallyReverseStatus(
+   const OperationExpression& left, const OperationExpression& right)
+{
+   // Analyzes mutually reversibility of operations and pairwise equality of
+   // its non-literal operands.
+
+   // Mutually reverse operations are operations that satisfy to the rule:
+   //    Operation1(x, y) = !Operation2(x, y)
+   // Currently the only such operations pair is Equality/Plus.
+
+   // Accorsing to the formula, we obtain a single negation for each formula
+   // application. So if an operation consists of N operands, we will obtain
+   // (N-1) negations after full transformation to a reverse operation.
+
+   // As both left/right expressions are already evaluated (including removing
+   // of negations from operands and making negation representative), negation
+   // from the formula will be expressed by the terminal literal. And these
+   // literals just give us from one to two more negations to negations, obtained
+   // from sequential formula application on the previous step.
+
+   // The final step is checking of pairwise equality of operands.
+
+   // Examples:
+   //    1. (x + y)     <equal to>   (x = y = 0)
+   //    2. (x + y)     <reverse to> (x = y)
+   //    3. (x = y = z) <equal to>   (x + y + z + 1)
+   //    4. (x = y = z) <reverse to> (x + y + z + 1)
+
+   if (!AreOperationsMutuallyReverse(left.GetOperation(), right.GetOperation()))
+   {
+      return MutuallyReverseStatus::None;
+   }
+
+   auto left_count = left.GetChildCount();
+   auto right_count = right.GetChildCount();
+   auto negation_count = left_count - 1;
+
+   if (GetLiteral(left.GetChild(left_count - 1)) != LiteralType::None)
+   {
+      --left_count;
+   }
+
+   if (GetLiteral(right.GetChild(right_count - 1)) != LiteralType::None)
+   {
+      --right_count;
+      ++negation_count;
+   }
+
+   if (left_count != right_count || !AreFirstChildrenEqual(left, right, left_count))
+   {
+      return MutuallyReverseStatus::None;
+   }
+
+   return (negation_count & 1) ?
+      MutuallyReverseStatus::Reversibility : MutuallyReverseStatus::Equality;
+}
+
 bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionPtr& right)
 {
    const auto type = left->GetType();
-
    if (type != right->GetType())
    {
       return false;
@@ -1208,40 +1301,73 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
 
 bool ExpressionEvaluator::IsEqual(const OperationExpression& left, const OperationExpression& right)
 {
-   if (left.GetOperation() == right.GetOperation())
+   const auto operation = left.GetOperation();
+
+   if (right.GetOperation() == operation)
    {
-      return (left.GetChildCount() == right.GetChildCount() &&
-              AreFirstChildrenEqual(left, right, left.GetChildCount()));
+      const auto child_count = left.GetChildCount();
+      if (right.GetChildCount() == child_count && AreFirstChildrenEqual(left, right, child_count))
+      {
+         return true;
+      }
+
+      return (OperationType::Implication == operation &&
+              IsEqualReverseImplications(left, right));
    }
 
-   // Equality is still possible, if operations are mutually reverse, for example:
-   //    (x + y) equals (x = y = 0)
+   return (GetMutuallyReverseStatus(left, right) == MutuallyReverseStatus::Equality);
+}
 
-   if (!AreOperationsMutuallyReverse(left.GetOperation(), right.GetOperation()))
-   {
-      return false;
-   }
+bool ExpressionEvaluator::IsEqualReverseImplications(
+   const OperationExpression& left, const OperationExpression& right)
+{
+   assert(left.GetOperation() == OperationType::Implication);
+   assert(right.GetOperation() == OperationType::Implication);
+
+   // Checks whether operations are reverse implications, according to the
+   // following rule:
+   //    (x -> y) = (!y -> !x)
+
+   // The left operations is called forward, the second - backward.
 
    const auto left_count = left.GetChildCount();
    const auto right_count = right.GetChildCount();
 
-   const auto diff = (left_count - right_count);
-   // Amounts of child operands are to be distinguished from each other by 1.
-   if ((diff != 1) && (diff != -1))
+   if (left_count == 2 && right_count == 2)
    {
-      return false;
+      return (CheckNegNotNeg(left.GetChild(0), right.GetChild(1)) &&
+              CheckNegNotNeg(left.GetChild(1), right.GetChild(0)));
    }
 
-   // Operation with greater amount of operands must have literal at the end.
-   // So return false if it's not so.
-   if ((1 == diff && LiteralType::None == GetLiteral(left.GetChild(left_count - 1))) ||
-       (1 != diff && LiteralType::None == GetLiteral(right.GetChild(right_count - 1))))
+   // Aditionally we need to check complex case of the rule, when x, in turn,
+   // is another implication. If so, it was normalized before is passed to
+   // this method. Thus we have following:
+   //    (x1 -> .. -> xn -> y) = (!y -> !(x1 -> .. -> xn))
+
+   if (left_count == 2 || right_count == 2)
    {
-       return false;
+      decltype(left) forward = (right_count == 2) ? left : right;
+      decltype(left) backward = (left_count == 2) ? left : right;
+
+      if (GetOperation(backward.GetChild(0)) == OperationType::None ||
+          GetOperation(backward.GetChild(1)) == OperationType::None)
+      {
+         return false;
+      }
+
+      const auto forward_count = forward.GetChildCount();
+
+      if (!CheckNegNotNeg(forward.GetChild(forward_count - 1), backward.GetChild(0)))
+      {
+         return false;
+      }
+
+      auto forward_cloned = forward.Clone();
+      CastToOperation(forward_cloned).RemoveChild(forward_count - 1);
+      return CheckNegNotNeg(forward_cloned, backward.GetChild(1));
    }
 
-   // All other operands (not taking into account the last literal) must be equal in pairs.
-   return AreFirstChildrenEqual(left, right, (1 == diff) ? right_count : left_count);
+   return false;
 }
 
 bool ExpressionEvaluator::IsEqualToAnyChild(

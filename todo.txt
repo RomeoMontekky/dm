@@ -1,8 +1,10 @@
 - show position of erred character in the error message.
 - function for evaluation of expressions.
 
-   - fix IsEqual algorithm for (x -> y) and (!y -> !x),
-     derive the common formula for n operands.
+   - finish support of reverse implication rule.
+
+   - fix moving of negation according to De Morgan rule;
+     now it happens only on the first level.
 
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.
