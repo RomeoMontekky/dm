@@ -86,7 +86,6 @@ private:
 
    static void ExtractFromUnderNegationEquivalent(TExpressionPtr& expr);
    static void CoverWithNegationEquivalent(TExpressionPtr& expr);
-   static void RevertNegations(TExpressionPtr& expr);
 
    enum class MutuallyReverseStatus
    {
@@ -394,7 +393,6 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
             expression.GetChild(1) = std::move(temp);
             InPlaceNormalization(expression);
             was_evaluated = true;
-            // TODO: Complex case
          }
          // According to rule 9, we can remove first two operands in case of (x -> y -> x).
          else if (expression.GetChildCount() > 2 && IsEqual(child0, expression.GetChild(2)))
@@ -541,31 +539,14 @@ bool ExpressionEvaluator::MakeNegationRepresentative(OperationExpression& expres
       assert(!IsNegationEquivalent(child));
 
       const auto child_operation = GetOperation(child);
-
       const auto opposite_child_operation =
          (OperationType::None != child_operation) ?
             GetOppositeOperation(child_operation) : OperationType::None;
 
-      // Always move negation under conjunction/disjunction using De Morgan's laws.
-      //    1. !(x & y) => !x | !y
-      //    2. !(x | y) => !x & !y
-      if (OperationType::None != opposite_child_operation)
-      {
-         // Re-create expression in order to set another operation.
-         TExpressionPtrVector moved_expressions;
-         MoveChildExpressions(moved_expressions, child);
-         TExpressionPtr new_expr = std::make_unique<OperationExpression>(
-            opposite_child_operation, std::move(moved_expressions));
-
-         RevertNegations(new_expr);
-
-         m_evaluated_expression = std::move(new_expr);
-         return true;
-      }
       // Additional checks will allow not to do negation recreation
       // if negation is already is representative form.
-      else if (OperationType::Negation != expression.GetOperation() ||
-               OperationType::None != child_operation)
+      if (OperationType::Negation != expression.GetOperation() ||
+          OperationType::None != child_operation)
       {
          CoverWithNegationEquivalent(child);
          m_evaluated_expression = std::move(child);
@@ -1108,7 +1089,7 @@ bool ExpressionEvaluator::CheckNegNotNegCommon(
 bool ExpressionEvaluator::CheckNegNotNegDeMorgan(
    const TExpressionPtr& expr1, const TExpressionPtr& expr2)
 {
-   // Checks whether operations have reverse equality according to De Morgan laws.
+   // Checks whether operations have reverse equality according to De Morgan's laws.
    // Example:
    //    (x & y) and (!x | !y).
 
@@ -1165,42 +1146,55 @@ void ExpressionEvaluator::CoverWithNegationEquivalent(TExpressionPtr& expr)
    assert(!IsNegationEquivalent(expr));
 
    // Let's use following rules to make negation more presentable.
-   //    1. ( x -> 0), in case of implication
-   //    2. ( x  = 0), in case of equality
-   //    3. ( x  + 1), in case of plus
-   //    4. (!x),      otherwise
+   //    1. !(x -> y) => ( x -> y -> 0)
+   //    2. !(x =  y) => ( x =  y =  0)
+   //    3. !(x +  y) => ( x =  y =  1)
+   //    4. !(x &  y) => (!x | !y)
+   //    5. !(x |  y) => (!x & !y)
+   //    6. (!x), otherwise
 
-   const auto child_operation = GetOperation(expr);
-
-   if (OperationType::Implication == child_operation ||
-       OperationType::Equality == child_operation)
-   {
-      CastToOperation(expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::False));
-   }
-   else if (OperationType::Plus == child_operation)
-   {
-      CastToOperation(expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::True));
-   }
-   else
+   // Application of rule 6.
+   if (expr->GetType() != ExpressionType::Operation)
    {
       expr = std::make_unique<OperationExpression>(std::move(expr));
+      return;
    }
-}
 
-void ExpressionEvaluator::RevertNegations(TExpressionPtr& expr)
-{
    auto& expression = CastToOperation(expr);
-   for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
+   const auto operation = expression.GetOperation();
+
+   // Application of rules 1 and 2.
+   if (OperationType::Implication == operation ||
+       OperationType::Equality == operation)
    {
-      auto& child_expr = expression.GetChild(index);
-      if (IsNegationEquivalent(child_expr))
+      expression.AddChild(std::make_unique<LiteralExpression>(LiteralType::False));
+   }
+   // Application of rule 3.
+   else if (OperationType::Plus == operation)
+   {
+      expression.AddChild(std::make_unique<LiteralExpression>(LiteralType::True));
+   }
+   // Application of rules 4 and 5.
+   else if (OperationType::Conjunction == operation ||
+            OperationType::Disjunction == operation)
+   {
+      // Always move negation under conjunction/disjunction using De Morgan's laws:
+      //    1. !(x & y) => !x | !y
+      //    2. !(x | y) => !x & !y
+
+      expression.SetOperation(GetOppositeOperation(expression.GetOperation()));
+      for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
       {
-         ExtractFromUnderNegationEquivalent(child_expr);
-         InPlaceNormalization(expression, index);
-      }
-      else
-      {
-         CoverWithNegationEquivalent(child_expr);
+         auto& child_expr = expression.GetChild(index);
+         if (IsNegationEquivalent(child_expr))
+         {
+            ExtractFromUnderNegationEquivalent(child_expr);
+            InPlaceNormalization(expression, index);
+         }
+         else
+         {
+            CoverWithNegationEquivalent(child_expr);
+         }
       }
    }
 }
