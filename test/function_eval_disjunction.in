@@ -10,9 +10,13 @@ disj5(x) := x | (x = 0)
 call eval(disj5)
 disj6(x, y) := (x + y) | x | (y + x + 1)
 call eval(disj6)
+
 # rule x & !x with grouping
-disj7(x, y, z) := ((x | y) -> 0) | y | z | x
-call eval(disj7)
+disj7a(x, y, z) := ((x | y) -> 0) | y | z | x
+call eval(disj7a)
+# rule x & !x with grouping after De Morgan
+disj7b(x, y, u1, u2, u3) := u1 | u2 | u3 | (x & y) | !x | !y 
+call eval(disj7b)
 
 # De Morgan (all)
 disj8a(x, y) := (x+1) | (y->0)

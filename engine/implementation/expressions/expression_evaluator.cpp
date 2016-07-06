@@ -39,19 +39,22 @@ private:
    // If a method returns true it means it set m_evaluated_expression
    // member, so the calling side must return control up as soon as possible.
    bool MakeNegationRepresentative(OperationExpression& expression);
+
    bool RemoveAllIfLiteralExists(OperationExpression& expression, LiteralType literal);
    bool RemoveAllIfNegNotNegExists(OperationExpression& expression, LiteralType remaining_literal);
    void RemoveLiteralIfExists(OperationExpression& expression, LiteralType literal);
    void RemoveDuplicates(OperationExpression& expression);
+
    bool AbsorbDuplicates(OperationExpression& expression, LiteralType remaining_literal);
    void RemoveNegations(OperationExpression& expression, LiteralType eq_to_neg_literal);
+   bool AbsorbNegNotNegs(OperationExpression& expression,
+                         LiteralType eq_to_neg_literal, LiteralType remaining_literal);
+
    bool CanBeGroupedAsNegNotNeg(const OperationExpression& expression);
-   void ApplyDeMorganLawsForChildren(OperationExpression& expression);
-   bool ApplyDeMorganLawsForOperation(OperationExpression& expression);
 
    // Appies absorption/gluing laws while it is possible.
-   void ApplyAbsorptionGluingLaws(OperationExpression& expression);
-   // Single absorption/gluing laws applying. True is returned, if any rule is applied.
+   void ApplyAbsorptionGluingLaws(OperationExpression& expression, LiteralType remaining_literal);
+   // Single absorption/gluing laws applying. If any rule was applied, true is returned.
    bool ApplyAbsorptionGluingLawsOnce(OperationExpression& expression);
 
    static void InPlaceSimplification(OperationExpression& expression, long child_index);
@@ -77,32 +80,54 @@ private:
    static bool IsShortNegationEquivalentWithChildOperation(
       const OperationExpression& expression, OperationType operation);
 
-   static bool CheckNegNotNeg(const TExpressionPtr& neg_expr, const TExpressionPtr& expr);
+   static bool CheckNegNotNeg(const TExpressionPtr& expr1, const TExpressionPtr& expr2);
+   static bool CheckNegNotNegCommon(const TExpressionPtr& neg_expr, const TExpressionPtr& expr);
+   static bool CheckNegNotNegDeMorgan(const TExpressionPtr& expr1, const TExpressionPtr& expr2);
+
    static void ExtractFromUnderNegationEquivalent(TExpressionPtr& expr);
    static void CoverWithNegationEquivalent(TExpressionPtr& expr);
-   static void RevertNegations(TExpressionPtr& expr);
 
-   static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
-   static bool IsEqualUpToMutuallyReverseOperations(
+   enum class MutuallyReverseStatus
+   {
+      None, Equality, Reversibility
+   };
+
+   static MutuallyReverseStatus GetMutuallyReverseStatus(
+      const TExpressionPtr& left, const TExpressionPtr& right);
+   static MutuallyReverseStatus GetMutuallyReverseStatus(
       const OperationExpression& left, const OperationExpression& right);
 
-   static bool IsEqualToAnyChild(
-      const TExpressionPtr& expr, const OperationExpression& expression);
+   static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
+   static bool IsEqual(const OperationExpression& left, const OperationExpression& right);
+   static bool IsEqualReverseImplications(const OperationExpression& left,
+                                          const OperationExpression& right);
+   static bool IsEqualToAnyChild(const TExpressionPtr& expr,
+                                 const OperationExpression& expression);
 
    static bool AreFirstChildrenEqual(const OperationExpression& left,
                                      const OperationExpression& right, long amount);
+   static bool AreFirstChildrenNegNotNeg(const OperationExpression& left,
+                                         const OperationExpression& right, long amount);
+
+   static bool AreFirstChildrenIncludedByEquality(
+      const OperationExpression& enclosing, long enclosing_amount,
+      const OperationExpression& enveloping, long enveloping_amount, long skip_index = -1);
+   static bool AreFirstChildrenIncludedByNegNotNeg(
+      const OperationExpression& enclosing, long enclosing_amount,
+      const OperationExpression& enveloping, long enveloping_amount, long skip_index = -1);
 
    // Checks whether first enclosing_amount children of enclosing operation are included
    // in first enveloping_amount children of enveloping operation.
    // If skip_index is not -1, then skip_index-th child is to be skipped during
    // analyzing enveloping children.
-   static bool AreFirstChildrenIncludedInFirstChildren(
+   static bool AreFirstChildrenIncluded(
       const OperationExpression& enclosing, long enclosing_amount,
-      const OperationExpression& enveloping, long enveloping_amount, long skip_index = -1);
+      const OperationExpression& enveloping, long enveloping_amount, long skip_index,
+      bool (*Comparator)(const TExpressionPtr&, const TExpressionPtr&));
 
    // Checks whether children of expression1 differs from children of expression2 by a single
    // item. If it is true, diff_index1 and diff_index2 are filled with differed indexes.
-   static bool AreChildrenDifferByOne(const OperationExpression& expression1,
+   static bool DoChildrenDifferByOne(const OperationExpression& expression1,
                                       const OperationExpression& expression2,
                                       long& diff_index1, long& diff_index2);
 
@@ -224,11 +249,8 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
    // According to rule 2, remove literal 1 if exist.
    RemoveLiteralIfExists(expression, LiteralType::True);
    
-   // Evaluation of child negations, according to De Morgan's laws.
-   ApplyDeMorganLawsForChildren(expression);
-
    // Apply absorption/gluing rules while it is possible.
-   ApplyAbsorptionGluingLaws(expression);
+   ApplyAbsorptionGluingLaws(expression, LiteralType::False);
 
    // According to rule 4, evaluate expression to literal 0
    // if there exists x and !x.
@@ -247,9 +269,6 @@ void ExpressionEvaluator::EvaluateConjunction(OperationExpression& expression)
       m_evaluated_expression = std::make_unique<LiteralExpression>(LiteralType::False);
       return;
    }
-
-   // Transformation of the whole operation, according to De Morgan's laws.
-   ApplyDeMorganLawsForOperation(expression);
 }
 
 void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
@@ -271,11 +290,8 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
    // According to rule 2, remove literal 0 if exist.
    RemoveLiteralIfExists(expression, LiteralType::False);
 
-   // Evaluation of child negations, according to De Morgan's laws.
-   ApplyDeMorganLawsForChildren(expression);
-
    // Apply absorption/gluing rules while it is possible.
-   ApplyAbsorptionGluingLaws(expression);
+   ApplyAbsorptionGluingLaws(expression, LiteralType::False);
 
    // According to rule 4, evaluate expression to literal 1
    // if there exists x and !x.
@@ -294,9 +310,6 @@ void ExpressionEvaluator::EvaluateDisjunction(OperationExpression& expression)
       m_evaluated_expression = std::make_unique<LiteralExpression>(LiteralType::True);
       return;
    }
-
-   // Transformation of the whole operation, according to De Morgan's laws.
-   ApplyDeMorganLawsForOperation(expression);
 }
 
 void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
@@ -309,15 +322,16 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
    // in other EvaluateXXX methods.
 
    // We have following rules:
-   //    1. ( 1 ->  x)      =>  x
-   //    2. ( 0 ->  x)      =>  1
-   //    3. ( x ->  1)      =>  1
-   //    4. (!x ->  0)      =>  x
-   //    5. ( x ->  x)      =>  1
-   //    6. (!x ->  x)      =>  x
-   //    7. ( x -> !x)      => !x
-   //    8. ( x ->  0 -> 0) =>  x
-   //    9. ( x ->  y -> x) =>  x
+   //    1.  ( 1 ->  x)      =>  x
+   //    2.  ( 0 ->  x)      =>  1
+   //    3.  ( x ->  1)      =>  1
+   //    4.  (!x ->  0)      =>  x
+   //    5.  ( x ->  x)      =>  1
+   //    6.  (!x ->  x)      =>  x
+   //    7.  ( x -> !x)      => !x
+   //    8.  ( x ->  0 -> 0) =>  x
+   //    9.  ( x ->  y -> x) =>  x
+   //    10. (!y -> !x)      =>  x -> y
 
    // According to rules 3 and 1, if there exist "1" operand,
    // we can remove all operands to the left, including this "1" operand.
@@ -340,37 +354,48 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
       {
          was_evaluated = false;
 
+         auto& child0 = expression.GetChild(0);
+         auto& child1 = expression.GetChild(1);
+
          // According to rules 2 and 1, we can remove subexpression (0 -> x)
          // if it is at the beginning of the expression.
          // According to rules 5 and 1, we can remove subexpression (x -> x)
-         // if it is at the beginning of the expression
-         if (LiteralType::False == GetLiteral(expression.GetChild(0)) ||
-             IsEqual(expression.GetChild(0), expression.GetChild(1)))
+         // if it is at the beginning of the expression.
+         if (LiteralType::False == GetLiteral(child0) || IsEqual(child0, child1))
          {
             expression.RemoveChildren(0, 2);
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
-         // According to rule 4 perform transformation (!x -> 0) => x
-         else if (IsNegationEquivalent(expression.GetChild(0)) &&
-                  LiteralType::False == GetLiteral(expression.GetChild(1)))
+         // According to rule 4 perform transformation (!x -> 0) => x.
+         else if (IsNegationEquivalent(child0) && LiteralType::False == GetLiteral(child1))
          {
-            ExtractFromUnderNegationEquivalent(expression.GetChild(0));
+            ExtractFromUnderNegationEquivalent(child0);
             expression.RemoveChild(1);
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
-         // According to rule 6, we can remove first operand in case of (!x ->  x)
-         // According to rule 7, we can remove first operand in case of ( x -> !x)
-         else if (CheckNegNotNeg(expression.GetChild(0), expression.GetChild(1)) ||
-                  CheckNegNotNeg(expression.GetChild(1), expression.GetChild(0)))
+         // According to rule 6, we can remove first operand in case of (!x ->  x).
+         // According to rule 7, we can remove first operand in case of ( x -> !x).
+         else if (CheckNegNotNeg(child0, child1))
          {
             expression.RemoveChild(0);
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
-         // According to rule 9, we can remove first two operands in case of (x -> y -> x)
-         else if (expression.GetChildCount() > 2 && IsEqual(expression.GetChild(0), expression.GetChild(2)))
+         // According to rules 10, we can exchange two operands with negation removing.
+         else if (IsNegationEquivalent(child0) && IsNegationEquivalent(child1))
+         {
+            ExtractFromUnderNegationEquivalent(child0);
+            ExtractFromUnderNegationEquivalent(child1);
+            auto temp = std::move(child0);
+            expression.GetChild(0) = std::move(child1);
+            expression.GetChild(1) = std::move(temp);
+            InPlaceNormalization(expression);
+            was_evaluated = true;
+         }
+         // According to rule 9, we can remove first two operands in case of (x -> y -> x).
+         else if (expression.GetChildCount() > 2 && IsEqual(child0, expression.GetChild(2)))
          {
             expression.RemoveChildren(0, 2);
             InPlaceNormalization(expression);
@@ -442,6 +467,7 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
    //    2. (!x =  0 ) => x
    //    3. ( x =  x ) => 1
    //    4. (!x = !y ) => (x = y)
+   //    5. (!x =  x ) => 0
 
    // According to rule 1, remove literal 1.
    RemoveLiteralIfExists(expression, LiteralType::True);
@@ -453,6 +479,13 @@ void ExpressionEvaluator::EvaluateEquality(OperationExpression& expression)
    // According to rule 3 and 1, remove duplicates
    // and assign leteral 1 if all operands were removed.
    if (AbsorbDuplicates(expression, LiteralType::True))
+   {
+      return;
+   }
+
+   // According to rule 5 and 2, reduce !x and x, taking into account
+   // whether amount of reduced pairs even or odd, and corrent remaining literal.
+   if (AbsorbNegNotNegs(expression, LiteralType::False, LiteralType::True))
    {
       return;
    }
@@ -469,6 +502,7 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    //    2. (!x +  1 ) => x
    //    3. ( x +  x ) => 0
    //    4. (!x + !y ) => (x + y)
+   //    5. (!x =  x ) => 1
 
    // According to rule 1, remove literal 0.
    RemoveLiteralIfExists(expression, LiteralType::False);
@@ -480,6 +514,13 @@ void ExpressionEvaluator::EvaluatePlus(OperationExpression& expression)
    // According to rule 3 and 1, remove duplicates
    // and assign leteral 0 if all operands were removed.
    if (AbsorbDuplicates(expression, LiteralType::False))
+   {
+      return;
+   }
+
+   // According to rule 5 and 2, reduce !x and x, taking into account
+   // whether amount of reduced pairs even or odd, and corrent remaining literal.
+   if (AbsorbNegNotNegs(expression, LiteralType::True, LiteralType::False))
    {
       return;
    }
@@ -497,10 +538,16 @@ bool ExpressionEvaluator::MakeNegationRepresentative(OperationExpression& expres
       // been evaluated before.
       assert(!IsNegationEquivalent(child));
 
+      const auto child_operation = GetOperation(child);
+      const auto opposite_child_operation =
+         (OperationType::None != child_operation) ?
+            GetOppositeOperation(child_operation) : OperationType::None;
+
+      // Additional checks will allow not to do negation recreation
+      // if negation is already is representative form.
       if (OperationType::Negation != expression.GetOperation() ||
-          OperationType::None != GetOperation(child))
+          OperationType::None != child_operation)
       {
-         // Make negation representaive if it is necessary.
          CoverWithNegationEquivalent(child);
          m_evaluated_expression = std::move(child);
          return true;
@@ -519,6 +566,7 @@ bool ExpressionEvaluator::RemoveAllIfLiteralExists(
       m_evaluated_expression = std::move(last_child);
       return true;
    }
+
    return false;
 }
 
@@ -529,8 +577,7 @@ bool ExpressionEvaluator::RemoveAllIfNegNotNegExists(
    {
       for (int j = i - 1; j >= 0; --j)
       {
-         if (CheckNegNotNeg(expression.GetChild(i), expression.GetChild(j)) ||
-             CheckNegNotNeg(expression.GetChild(j), expression.GetChild(i)))
+         if (CheckNegNotNeg(expression.GetChild(i), expression.GetChild(j)))
          {
             m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
             return true;
@@ -619,40 +666,77 @@ void ExpressionEvaluator::RemoveNegations(OperationExpression& expression, Liter
    }
 }
 
+bool ExpressionEvaluator::AbsorbNegNotNegs(
+   OperationExpression& expression, LiteralType eq_to_neg_literal, LiteralType remaining_literal)
+{
+   bool is_negation_lonely = false;
+
+   for (auto i = expression.GetChildCount() - 1; i > 0; --i)
+   {
+      for (auto j = i - 1; j >= 0; --j)
+      {
+         if (CheckNegNotNegDeMorgan(expression.GetChild(i), expression.GetChild(j)))
+         {
+            expression.RemoveChild(i--);
+            expression.RemoveChild(j);
+            is_negation_lonely = !is_negation_lonely;
+            break;
+         }
+      }
+   }
+
+   if (is_negation_lonely)
+   {
+      const auto last_index = expression.GetChildCount() - 1;
+      if (last_index >= 0 && GetLiteral(expression.GetChild(last_index)) == eq_to_neg_literal)
+      {
+         expression.RemoveChild(last_index);
+      }
+      else
+      {
+         expression.AddChild(std::make_unique<LiteralExpression>(eq_to_neg_literal));
+      }
+   }
+
+   if (0 == expression.GetChildCount())
+   {
+      m_evaluated_expression = std::make_unique<LiteralExpression>(remaining_literal);
+      return true;
+   }
+
+   return false;
+}
+
 bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& expression)
 {
-   // Checks whether there exists some negated child, that (under negation)
-   // contains child operands, that all have equivalents between
-   // children of the current operation.
+   // Checks whether there exists some opposite child, that contains child operands,
+   // that all have reverse equivalents between children of the current operation.
 
-   // Examples:
-   //    !(x & y) & x & y & z
-   //    ((x | y)->0) | x | y | z
+   // Checking is based on the following calculations:
+   //    ((x & y) | !x | !y)  =/ De Morgan /=> (!(!x | !y) | !x | !y) =>
+   //    => [ u = (!x | !y) ] => (!u | u) => 1
 
    const auto child_count = expression.GetChildCount();
-   
    if (child_count < 3)
    {
-      // Two operarands cannot be grouped, because it means that operation under
-      // negation must have a single child. The last fact is possible for the only
-      // expression (!x * x), but this expression were to be already reduced before.
+      // Two operarands cannot be grouped, because it means that opposite operation
+      // must have a single child, but it's not possible due to operation's restriction
+      // on the child operands amount (should be > 1).
       return false;
    }
 
-   for (auto index = 0L, i = 0L, j = 0L; index < child_count; ++index)
+   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
+   assert(OperationType::None != opposite_operation);
+
+   for (auto index = child_count - 1; index >= 0; --index)
    {
-      const auto& child = expression.GetChild(index);
-      
-      // If current child is a negation equivalent and it encapsulates the same operation
-      // as current one, then we need to check whether other children are the same as
-      // children of the negated child.
-      
-      if (IsShortNegationEquivalentWithChildOperation(child, expression.GetOperation()))
+      const auto& child_expr = expression.GetChild(index);
+      if (GetOperation(child_expr) == opposite_operation)
       {
-         const auto& child_to_check = CastToOperation(CastToOperation(child).GetChild(0));
-         if (AreFirstChildrenIncludedInFirstChildren(
-                child_to_check, child_to_check.GetChildCount(),
-                expression, expression.GetChildCount(), index))
+         const auto& child_expression = CastToOperation(child_expr);
+         if (AreFirstChildrenIncludedByNegNotNeg(
+               child_expression, child_expression.GetChildCount(),
+               expression, expression.GetChildCount(), index))
          {
             return true;
          }
@@ -662,87 +746,8 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
    return false;
 }
 
-void ExpressionEvaluator::ApplyDeMorganLawsForChildren(OperationExpression& expression)
-{
-   // Method uses De Morgan's laws for each child negation of the operation.
-   //    1. !(x & y) => !x | !y
-   //    2. !(x | y) => !x & !y
-   
-   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
-
-   assert(OperationType::Conjunction == opposite_operation ||
-          OperationType::Disjunction == opposite_operation);
-
-   for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
-   {
-      auto& child = expression.GetChild(index);
-      if (IsShortNegationEquivalentWithChildOperation(child, opposite_operation))
-      {
-          ExtractFromUnderNegationEquivalent(child);
-          RevertNegations(child);
-          MoveChildExpressionsUp(expression, index);
-      }
-   }
-}
-
-bool ExpressionEvaluator::ApplyDeMorganLawsForOperation(OperationExpression& expression)
-{
-   // Method uses De Morgan's laws for the whole operation.
-   //    1. (!x & !y) => !(x | y)
-   //    2. (!x | !y) => !(x & y)
-
-   // It is possible to have the only child in case of removing other
-   // operarands on the previous phases of evaluation. Let's return if so.
-   if (expression.GetChildCount() < 2)
-   {
-      return false;
-   }
-
-   const auto child_count = expression.GetChildCount();
-   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
-
-   assert(OperationType::Conjunction == opposite_operation ||
-          OperationType::Disjunction == opposite_operation);
-             
-   auto negation_count = 0L;
-   for (auto index = child_count - 1; index >= 0; --index)
-   {
-      if (IsNegationEquivalent(expression.GetChild(index)))
-      {
-         ++negation_count;
-      }
-   }
-
-   negation_count <<= 1;
-
-   if ((OperationType::Conjunction == opposite_operation && negation_count <  child_count) ||
-       (OperationType::Disjunction == opposite_operation && negation_count <= child_count))
-   {
-      // Don't do transformation if amount of negated operands less (or equal) then non-negated ones.
-      
-      // As conjunction is transformed to disjunction and vise versa, we need to decide what to do
-      // if amounts of negations and non-negations are equal to stabilize the algorithm. Evidently
-      // one of these operations should be picked out as "preferable". Let it be conjunction.
-      // So if amounts of negations and non-negations are equal, skip transormation if operation is
-      // conjunction and don't skip otherwise.
-      
-      return false;
-   }
-   
-   // Re-create expression in order to set another operation and obtain TExpressionPtr type as result.
-   TExpressionPtrVector moved_expressions;
-   MoveChildExpressions(moved_expressions, expression);
-   TExpressionPtr new_expr = std::make_unique<OperationExpression>(opposite_operation, std::move(moved_expressions));
-   
-   RevertNegations(new_expr);
-
-   // Add negation to new expression according to the rule.
-   m_evaluated_expression = std::make_unique<OperationExpression>(std::move(new_expr));
-   
-   return true;
-}
-
-void ExpressionEvaluator::ApplyAbsorptionGluingLaws(OperationExpression& expression)
+void ExpressionEvaluator::ApplyAbsorptionGluingLaws(
+   OperationExpression& expression, LiteralType remaining_literal)
 {
    while (ApplyAbsorptionGluingLawsOnce(expression));
 }
@@ -763,10 +768,10 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
    //    1. (x & y) | (x & !y) = x
    //    2. (x | y) & (x | !y) = x
 
-   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
+   auto is_modified = false;
 
-   assert(OperationType::Conjunction == opposite_operation ||
-          OperationType::Disjunction == opposite_operation);
+   const auto opposite_operation = GetOppositeOperation(expression.GetOperation());
+   assert(OperationType::None != opposite_operation);
 
    const auto last_index = expression.GetChildCount() - 1;
    for (auto index1 = last_index ; index1 > 0; --index1)
@@ -793,45 +798,48 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
 
                if (child1_count < child2_count)
                {
-                  if (AreFirstChildrenIncludedInFirstChildren(
+                  if (AreFirstChildrenIncludedByEquality(
                         child1_expression, child1_count,
                         child2_expression, child2_count))
                   {
                      expression.RemoveChild(index2);
-                     return true;
+                     is_modified = true;
+                     --index1;
                   }
                }
                else if (child1_count > child2_count)
                {
 
-                  if (AreFirstChildrenIncludedInFirstChildren(
+                  if (AreFirstChildrenIncludedByEquality(
                         child2_expression, child2_count,
                         child1_expression, child1_count))
                   {
                      expression.RemoveChild(index1);
-                     return true;
+                     is_modified = true;
+                     break;
                   }
                }
                else // (child1_count == child2_count)
                {
                   // Application of gluing law.
                   auto diff_index1 = -1L, diff_index2 = -1L;
-                  if (AreChildrenDifferByOne(child1_expression, child2_expression,
-                                             diff_index1, diff_index2))
+                  if (DoChildrenDifferByOne(child1_expression, child2_expression,
+                                            diff_index1, diff_index2))
                   {
                      auto& diff1_expr = child1_expression.GetChild(diff_index1);
                      auto& diff2_expr = child2_expression.GetChild(diff_index2);
 
-                     if (CheckNegNotNeg(diff1_expr, diff2_expr) ||
-                         CheckNegNotNeg(diff2_expr, diff1_expr))
+                     if (CheckNegNotNeg(diff1_expr, diff2_expr))
                      {
-                        child1_expression.RemoveChild(diff_index1);
-                        if (2 == child1_count)
+                        child2_expression.RemoveChild(diff_index2);
+                        if (2 == child2_count)
                         {
-                           child1_expr = std::move(child1_expression.GetChild(0));
+                           // In-place normalization
+                           child2_expr = std::move(child2_expression.GetChild(0));
                         }
-                        expression.RemoveChild(index2);
-                        return true;
+                        expression.RemoveChild(index1);
+                        is_modified = true;
+                        break;
                      }
                   }
                }
@@ -840,19 +848,21 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
             else if (IsEqualToAnyChild(child2_expr, child1_expression))
             {
                expression.RemoveChild(index1);
-               return true;
+               is_modified = true;
+               break;
             }
          }
          // Simple case for absorption (backward indexes)
          else if (is_opposite_operation2 && IsEqualToAnyChild(child1_expr, CastToOperation(child2_expr)))
          {
             expression.RemoveChild(index2);
-            return true;
+            is_modified = true;
+            --index1;
          }
       }
    }
 
-   return false;
+   return is_modified;
 }
 
 void ExpressionEvaluator::InPlaceSimplification(OperationExpression& expression, long child_index)
@@ -998,7 +1008,7 @@ bool ExpressionEvaluator::IsNegationEquivalent(const OperationExpression& expres
 
 bool ExpressionEvaluator::IsShortNegationEquivalent(const TExpressionPtr& expr)
 {
-   return expr->GetType() == ExpressionType::Operation &&
+   return (expr->GetType() == ExpressionType::Operation) &&
           IsShortNegationEquivalent(CastToOperation(expr));
 }
 
@@ -1012,7 +1022,7 @@ bool ExpressionEvaluator::IsShortNegationEquivalent(const OperationExpression& e
 bool ExpressionEvaluator::IsShortNegationEquivalentWithChildOperation(
    const TExpressionPtr& expr, OperationType operation)
 {
-   return expr->GetType() == ExpressionType::Operation &&
+   return (expr->GetType() == ExpressionType::Operation) &&
           IsShortNegationEquivalentWithChildOperation(CastToOperation(expr), operation);
 }
 
@@ -1024,6 +1034,15 @@ bool ExpressionEvaluator::IsShortNegationEquivalentWithChildOperation(
 }
 
 bool ExpressionEvaluator::CheckNegNotNeg(
+   const TExpressionPtr& expr1, const TExpressionPtr& expr2)
+{
+   return CheckNegNotNegCommon(expr1, expr2) ||
+          CheckNegNotNegCommon(expr2, expr1) ||
+          CheckNegNotNegDeMorgan(expr1, expr2) ||
+          GetMutuallyReverseStatus(expr1, expr2) == MutuallyReverseStatus::Reversibility;
+}
+
+bool ExpressionEvaluator::CheckNegNotNegCommon(
    const TExpressionPtr& neg_expr, const TExpressionPtr& expr)
 {
    if (!IsNegationEquivalent(neg_expr))
@@ -1059,6 +1078,35 @@ bool ExpressionEvaluator::CheckNegNotNeg(
            AreFirstChildrenEqual(neg_expression, expression, expression.GetChildCount()));
 }
 
+bool ExpressionEvaluator::CheckNegNotNegDeMorgan(
+   const TExpressionPtr& expr1, const TExpressionPtr& expr2)
+{
+   // Checks whether operations have reverse equality according to De Morgan's laws.
+   // Example:
+   //    (x & y) and (!x | !y).
+
+   const auto expr1_operation = GetOperation(expr1);
+   const auto expr2_operation = GetOperation(expr2);
+
+   if (OperationType::None == expr1_operation ||
+       OperationType::None == expr2_operation ||
+       expr1_operation != GetOppositeOperation(expr2_operation))
+   {
+      return false;
+   }
+
+   const auto& expression1 = CastToOperation(expr1);
+   const auto& expression2 = CastToOperation(expr2);
+
+   const auto child_count = expression1.GetChildCount();
+   if (child_count != expression2.GetChildCount())
+   {
+      return false;
+   }
+
+   return AreFirstChildrenNegNotNeg(expression1, expression2, child_count);
+}
+
 void ExpressionEvaluator::ExtractFromUnderNegationEquivalent(TExpressionPtr& expr)
 {
    assert(IsNegationEquivalent(expr));
@@ -1090,50 +1138,131 @@ void ExpressionEvaluator::CoverWithNegationEquivalent(TExpressionPtr& expr)
    assert(!IsNegationEquivalent(expr));
 
    // Let's use following rules to make negation more presentable.
-   //    1. ( x -> 0), in case of implication
-   //    2. ( x  = 0), in case of equality
-   //    3. ( x  + 1), in case of plus
-   //    4. (!x),      otherwise
+   //    1. !(x -> y) => ( x -> y -> 0)
+   //    2. !(x =  y) => ( x =  y =  0)
+   //    3. !(x +  y) => ( x =  y =  1)
+   //    4. !(x &  y) => (!x | !y)
+   //    5. !(x |  y) => (!x & !y)
+   //    6. (!x), otherwise
 
-   const auto child_operation = GetOperation(expr);
-
-   if (OperationType::Implication == child_operation ||
-       OperationType::Equality == child_operation)
-   {
-      CastToOperation(expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::False));
-   }
-   else if (OperationType::Plus == child_operation)
-   {
-      CastToOperation(expr).AddChild(std::make_unique<LiteralExpression>(LiteralType::True));
-   }
-   else
+   // Application of rule 6.
+   if (expr->GetType() != ExpressionType::Operation)
    {
       expr = std::make_unique<OperationExpression>(std::move(expr));
+      return;
+   }
+
+   auto& expression = CastToOperation(expr);
+   const auto operation = expression.GetOperation();
+
+   // Application of rules 1 and 2.
+   if (OperationType::Implication == operation ||
+       OperationType::Equality == operation)
+   {
+      expression.AddChild(std::make_unique<LiteralExpression>(LiteralType::False));
+   }
+   // Application of rule 3.
+   else if (OperationType::Plus == operation)
+   {
+      expression.AddChild(std::make_unique<LiteralExpression>(LiteralType::True));
+   }
+   // Application of rules 4 and 5.
+   else if (OperationType::Conjunction == operation ||
+            OperationType::Disjunction == operation)
+   {
+      // Always move negation under conjunction/disjunction using De Morgan's laws:
+      //    1. !(x & y) => !x | !y
+      //    2. !(x | y) => !x & !y
+
+      expression.SetOperation(GetOppositeOperation(expression.GetOperation()));
+      for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
+      {
+         auto& child_expr = expression.GetChild(index);
+         if (IsNegationEquivalent(child_expr))
+         {
+            ExtractFromUnderNegationEquivalent(child_expr);
+            InPlaceNormalization(expression, index);
+         }
+         else
+         {
+            CoverWithNegationEquivalent(child_expr);
+         }
+      }
    }
 }
 
-void ExpressionEvaluator::RevertNegations(TExpressionPtr& expr)
+ExpressionEvaluator::MutuallyReverseStatus ExpressionEvaluator::GetMutuallyReverseStatus(
+   const TExpressionPtr& left, const TExpressionPtr& right)
 {
-   auto& expression = CastToOperation(expr);
-   for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
+   if (left->GetType() != ExpressionType::Operation ||
+       right->GetType() != ExpressionType::Operation)
    {
-      auto& child_expr = expression.GetChild(index);
-      if (IsNegationEquivalent(child_expr))
-      {
-         ExtractFromUnderNegationEquivalent(child_expr);
-         InPlaceNormalization(expression, index);
-      }
-      else
-      {
-         CoverWithNegationEquivalent(child_expr);
-      }
+      return MutuallyReverseStatus::None;
    }
+
+   return GetMutuallyReverseStatus(CastToOperation(left), CastToOperation(right));
+}
+
+ExpressionEvaluator::MutuallyReverseStatus ExpressionEvaluator::GetMutuallyReverseStatus(
+   const OperationExpression& left, const OperationExpression& right)
+{
+   // Analyzes mutually reversibility of operations and pairwise equality of
+   // its non-literal operands.
+
+   // Mutually reverse operations are operations that satisfy to the rule:
+   //    Operation1(x, y) = !Operation2(x, y)
+   // Currently the only such operations pair is Equality/Plus.
+
+   // Accorsing to the formula, we obtain a single negation for each formula
+   // application. So if an operation consists of N operands, we will obtain
+   // (N-1) negations after full transformation to a reverse operation.
+
+   // As both left/right expressions are already evaluated (including removing
+   // of negations from operands and making negation representative), negation
+   // from the formula will be expressed by the terminal literal. And these
+   // literals just give us from one to two more negations to negations, obtained
+   // from sequential formula application on the previous step.
+
+   // The final step is checking of pairwise equality of operands.
+
+   // Examples:
+   //    1. (x + y)     <equal to>   (x = y = 0)
+   //    2. (x + y)     <reverse to> (x = y)
+   //    3. (x = y = z) <equal to>   (x + y + z + 1)
+   //    4. (x = y = z) <reverse to> (x + y + z + 1)
+
+   if (!AreOperationsMutuallyReverse(left.GetOperation(), right.GetOperation()))
+   {
+      return MutuallyReverseStatus::None;
+   }
+
+   auto left_count = left.GetChildCount();
+   auto right_count = right.GetChildCount();
+   auto negation_count = left_count - 1;
+
+   if (GetLiteral(left.GetChild(left_count - 1)) != LiteralType::None)
+   {
+      --left_count;
+   }
+
+   if (GetLiteral(right.GetChild(right_count - 1)) != LiteralType::None)
+   {
+      --right_count;
+      ++negation_count;
+   }
+
+   if (left_count != right_count || !AreFirstChildrenEqual(left, right, left_count))
+   {
+      return MutuallyReverseStatus::None;
+   }
+
+   return (negation_count & 1) ?
+      MutuallyReverseStatus::Reversibility : MutuallyReverseStatus::Equality;
 }
 
 bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionPtr& right)
 {
    const auto type = left->GetType();
-
    if (type != right->GetType())
    {
       return false;
@@ -1148,21 +1277,7 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
          return (CastToParamRef(left).GetParamIndex() == CastToParamRef(right).GetParamIndex());
 
       case ExpressionType::Operation:
-      {
-         auto& left_operation = CastToOperation(left);
-         auto& right_operation = CastToOperation(right);
-
-         if (left_operation.GetOperation() == right_operation.GetOperation())
-         {
-            return (left_operation.GetChildCount() == right_operation.GetChildCount() &&
-                    AreFirstChildrenEqual(left_operation, right_operation,
-                                          left_operation.GetChildCount()));
-         }
-
-         // Equality is still possible, if operations are mutually reverse, for example:
-         //    (x + y) equals (x = y = 0)
-         return IsEqualUpToMutuallyReverseOperations(left_operation, right_operation);
-      }
+         return IsEqual(CastToOperation(left), CastToOperation(right));
    }
 
    assert(!"Unknown expression type.");
@@ -1170,31 +1285,75 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
    return false;
 }
 
-bool ExpressionEvaluator::IsEqualUpToMutuallyReverseOperations(
+bool ExpressionEvaluator::IsEqual(const OperationExpression& left, const OperationExpression& right)
+{
+   const auto operation = left.GetOperation();
+
+   if (right.GetOperation() == operation)
+   {
+      const auto child_count = left.GetChildCount();
+      if (right.GetChildCount() == child_count && AreFirstChildrenEqual(left, right, child_count))
+      {
+         return true;
+      }
+
+      return (OperationType::Implication == operation &&
+              IsEqualReverseImplications(left, right));
+   }
+
+   return (GetMutuallyReverseStatus(left, right) == MutuallyReverseStatus::Equality);
+}
+
+bool ExpressionEvaluator::IsEqualReverseImplications(
    const OperationExpression& left, const OperationExpression& right)
 {
-   if (!AreOperationsMutuallyReverse(left.GetOperation(), right.GetOperation()))
-   {
-      return false;
-   }
+   assert(left.GetOperation() == OperationType::Implication);
+   assert(right.GetOperation() == OperationType::Implication);
+
+   // Checks whether operations are reverse implications, according to the
+   // following rule:
+   //    (x -> y) = (!y -> !x)
+
+   // The left operations is called forward, the second - backward.
 
    const auto left_count = left.GetChildCount();
    const auto right_count = right.GetChildCount();
 
-   const auto diff = (left_count - right_count);
-   // Amounts of child operands are to be distinguished from each other by 1.
-   if ((diff != 1) && (diff != -1))
+   if (left_count == 2 && right_count == 2)
    {
-      return false;
+      return (CheckNegNotNeg(left.GetChild(0), right.GetChild(1)) &&
+              CheckNegNotNeg(left.GetChild(1), right.GetChild(0)));
    }
 
-   if ((1 == diff && LiteralType::None == GetLiteral(left.GetChild(left_count - 1))) ||
-       (1 != diff && LiteralType::None == GetLiteral(right.GetChild(right_count - 1))))
+   // Aditionally we need to check complex case of the rule, when x, in turn,
+   // is another implication. If so, it was normalized before is passed to
+   // this method. Thus we have following:
+   //    (x1 -> .. -> xn -> y) = (!y -> !(x1 -> .. -> xn))
+
+   if (left_count == 2 || right_count == 2)
    {
-       return false;
+      decltype(left) forward = (right_count == 2) ? left : right;
+      decltype(left) backward = (left_count == 2) ? left : right;
+
+      if (GetOperation(backward.GetChild(0)) == OperationType::None ||
+          GetOperation(backward.GetChild(1)) == OperationType::None)
+      {
+         return false;
+      }
+
+      const auto forward_count = forward.GetChildCount();
+
+      if (!CheckNegNotNeg(forward.GetChild(forward_count - 1), backward.GetChild(0)))
+      {
+         return false;
+      }
+
+      auto forward_cloned = forward.Clone();
+      CastToOperation(forward_cloned).RemoveChild(forward_count - 1);
+      return CheckNegNotNeg(forward_cloned, backward.GetChild(1));
    }
 
-   return AreFirstChildrenEqual(left, right, (1 == diff) ? right_count : left_count);
+   return false;
 }
 
 bool ExpressionEvaluator::IsEqualToAnyChild(
@@ -1213,12 +1372,39 @@ bool ExpressionEvaluator::IsEqualToAnyChild(
 bool ExpressionEvaluator::AreFirstChildrenEqual(
    const OperationExpression& left, const OperationExpression& right, long amount)
 {
-   return AreFirstChildrenIncludedInFirstChildren(left, amount, right, amount);
+   return AreFirstChildrenIncludedByEquality(left, amount, right, amount);
 }
 
-bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
+bool ExpressionEvaluator::AreFirstChildrenNegNotNeg(
+   const OperationExpression& left, const OperationExpression& right, long amount)
+{
+   return AreFirstChildrenIncludedByNegNotNeg(left, amount, right, amount);
+}
+
+bool ExpressionEvaluator::AreFirstChildrenIncludedByEquality(
    const OperationExpression& enclosing, long enclosing_amount,
    const OperationExpression& enveloping, long enveloping_amount, long skip_index)
+{
+   return AreFirstChildrenIncluded(
+      enclosing, enclosing_amount,
+      enveloping, enveloping_amount, skip_index,
+      ExpressionEvaluator::IsEqual);
+}
+
+bool ExpressionEvaluator::AreFirstChildrenIncludedByNegNotNeg(
+   const OperationExpression& enclosing, long enclosing_amount,
+   const OperationExpression& enveloping, long enveloping_amount, long skip_index)
+{
+   return AreFirstChildrenIncluded(
+      enclosing, enclosing_amount,
+      enveloping, enveloping_amount, skip_index,
+      ExpressionEvaluator::CheckNegNotNeg);
+}
+
+bool ExpressionEvaluator::AreFirstChildrenIncluded(
+   const OperationExpression& enclosing, long enclosing_amount,
+   const OperationExpression& enveloping, long enveloping_amount, long skip_index,
+   bool (*Comparator)(const TExpressionPtr&, const TExpressionPtr&))
 {
    assert(enclosing_amount <= enveloping_amount);
    assert(enclosing_amount <= enclosing.GetChildCount());
@@ -1235,7 +1421,7 @@ bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
       // Just use sequential pairwaise comparison.
       for (auto index = enclosing_amount - 1; index >= 0; --index)
       {
-         if (!IsEqual(enclosing.GetChild(index), enveloping.GetChild(index)))
+         if (!Comparator(enclosing.GetChild(index), enveloping.GetChild(index)))
          {
             return false;
          }
@@ -1260,7 +1446,7 @@ bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
       for (index2 = enveloping_amount - 1; index2 >= 0; --index2)
       {
          if (!child_linked_flags[index2] && index2 != skip_index &&
-             IsEqual(enclosing.GetChild(index1), enveloping.GetChild(index2)))
+             Comparator(enclosing.GetChild(index1), enveloping.GetChild(index2)))
          {
             child_linked_flags[index2] = true;
             break;
@@ -1278,7 +1464,7 @@ bool ExpressionEvaluator::AreFirstChildrenIncludedInFirstChildren(
    return true;
 }
 
-bool ExpressionEvaluator::AreChildrenDifferByOne(
+bool ExpressionEvaluator::DoChildrenDifferByOne(
    const OperationExpression& expression1, const OperationExpression& expression2,
    long& diff_index1, long& diff_index2)
 {
@@ -1330,6 +1516,7 @@ bool ExpressionEvaluator::AreChildrenDifferByOne(
    auto it = std::find(child_linked_flags, child_linked_flags + child_count, false);
    assert(it != child_linked_flags + child_count);
    diff_index2 = (it - child_linked_flags);
+
    return true;
 }
 

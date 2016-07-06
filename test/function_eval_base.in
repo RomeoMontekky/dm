@@ -1,12 +1,56 @@
 # test of operands' movability.
-base1(x, y) := (x -> y) + (x -> y)
-call eval(base1)
-base2(x, y) := (x -> y) + (y -> x)
-call eval(base2)
-base3(x, y) := (x = y) + (x = y)
+base1a(x, y) := (x -> y) + (x -> y)
+call eval(base1a)
+base1b(x, y) := (x -> y) + (y -> x)
+call eval(base1b)
+base1c(x, y) := (x = y) + (x = y)
+call eval(base1c)
+base1d(x, y) := (x = y) + (y = x)
+call eval(base1d)
+
+# test of representative negation equivalents.
+base2a(x, y) := !(x -> y)
+call eval(base2a)
+base2b(x, y) :=  (x -> y) = 0
+call eval(base2b)
+base2c(x, y) :=  (x -> y) + 1
+call eval(base2c)
+base2d(x, y) := !(x = y)
+call eval(base2d)
+base2e(x, y) :=  (x = y) -> 0
+call eval(base2e)
+base2f(x, y) :=  (x = y) +  1
+call eval(base2f)
+base2g(x, y) := !(x + y)
+call eval(base2g)
+base2h(x, y) :=  (x + y) -> 0
+call eval(base2h)
+base2i(x, y) :=  (x + y) =  0
+call eval(base2i)
+base2j(x) :=  x -> 0
+call eval(base2j)
+base2k(x) :=  x = 0
+call eval(base2k)
+base2l(x) :=  x + 1
+call eval(base2l)
+base2m(x, y) :=  (x & y) -> 0
+call eval(base2m)
+base2n(x, y) :=  (x & y) = 0
+call eval(base2n)
+base2o(x, y) :=  (x & y) + 1
+call eval(base2o)
+
+# test of in-place simplification after making negation equivalents representative.
+base3(x, y, z) := (((x + y) -> 0) + z) -> 0
 call eval(base3)
-base4(x, y) := (x = y) + (y = x)
-call eval(base4)
+
+# test of reserse implication equality
+base4a(x, y) := (x -> y) & (!y -> !x)
+call eval(base4a)
+base4b(x, y, z) := (x -> y -> z) & (!z -> !(x -> y))
+call eval(base4b)
+base4c(x, y, z) := (z -> !(!y -> !x)) & (x -> y -> !z)
+call eval(base4c)
 
 # test of equality/inequality of mutually reverse operations.
 base5a(x, y) :=  (x + y) & (x = y = 0)
@@ -17,41 +61,17 @@ base5c(x, y) :=  (x + y + 1) & (y = x)
 call eval(base5c)
 base5d(x, y) :=  !(x + y) & (y = x)
 call eval(base5d)
-base5e(x, y, z) := (x + y) & (y = x = z)
+base5e(x, y, z) := (x + y + z) & (y = x = z)
 call eval(base5e)
+base5f(x, y, z) := (x + y) & (y = x = z)
+call eval(base5f)
 
-# test of representative negation equivalents.
-base6a(x, y) := !(x -> y)
+# test neg/not-neg checking of mutually reverse operations.
+base6a(x, y) := (x = y) & (x + y)
 call eval(base6a)
-base6b(x, y) :=  (x -> y) = 0
+base6b(x, y) := (x = y = 0) & (x + y + 1)
 call eval(base6b)
-base6c(x, y) :=  (x -> y) + 1
+base6c(x, y, z) := (x = y = z) & (z + x + y + 1)
 call eval(base6c)
-base6d(x, y) := !(x = y)
-call eval(base6d)
-base6e(x, y) :=  (x = y) -> 0
-call eval(base6e)
-base6f(x, y) :=  (x = y) +  1
-call eval(base6f)
-base6g(x, y) := !(x + y)
-call eval(base6g)
-base6h(x, y) :=  (x + y) -> 0
-call eval(base6h)
-base6i(x, y) :=  (x + y) =  0
-call eval(base6i)
-base6j(x) :=  x -> 0
-call eval(base6j)
-base6k(x) :=  x = 0
-call eval(base6k)
-base6l(x) :=  x + 1
-call eval(base6l)
-base6m(x, y) :=  (x & y) -> 0
-call eval(base6m)
-base6n(x, y) :=  (x & y) = 0
-call eval(base6n)
-base6o(x, y) :=  (x & y) + 1
-call eval(base6o)
 
-# test of in-place simplification after making negation equivalents representative.
-base7(x, y, z) := (((x + y) -> 0) + z) -> 0
-call eval(base7)
+

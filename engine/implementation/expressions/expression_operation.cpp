@@ -58,6 +58,12 @@ OperationType OperationExpression::GetOperation() const
    return m_operation;
 }
 
+void OperationExpression::SetOperation(OperationType operation)
+{
+   assert(operation != OperationType::None);
+   m_operation = operation;
+}
+
 long OperationExpression::GetChildCount() const
 {
    return m_children.size();

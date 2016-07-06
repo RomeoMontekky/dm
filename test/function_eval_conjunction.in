@@ -10,9 +10,13 @@ conj5(x) := x & (x = 0)
 call eval(conj5)
 conj6(x, y) := (x + y) & x & (y + x + 1)
 call eval(conj6)
+
 # rule x & !x with grouping
-conj7(x, y, z) := !(x & y) & y & z & x
-call eval(conj7)
+conj7a(x, y, z) := !(x & y) & y & z & x
+call eval(conj7a)
+# rule x & !x with grouping after De Morgan
+conj7b(x, y, u1, u2, u3) := u1 & u2 & u3 & (x | y) & !x & !y 
+call eval(conj7b)
 
 # De Morgan (all)
 conj8a(x, y) := (x+1) & (y->0)
