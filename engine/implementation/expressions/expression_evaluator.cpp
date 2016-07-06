@@ -74,7 +74,6 @@ private:
    static bool IsNegationEquivalent(const OperationExpression& expression);
    static bool IsShortNegationEquivalent(const TExpressionPtr& expr);
    static bool IsShortNegationEquivalent(const OperationExpression& expression);
-
    static bool IsShortNegationEquivalentWithChildOperation(
       const TExpressionPtr& expr, OperationType operation);
    static bool IsShortNegationEquivalentWithChildOperation(
@@ -86,6 +85,7 @@ private:
 
    static void ExtractFromUnderNegationEquivalent(TExpressionPtr& expr);
    static void CoverWithNegationEquivalent(TExpressionPtr& expr);
+   static bool RevertNegation(TExpressionPtr& expr);
 
    enum class MutuallyReverseStatus
    {
@@ -384,13 +384,12 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
             was_evaluated = true;
          }
          // According to rules 10, we can exchange two operands with negation removing.
-         else if (IsNegationEquivalent(child0) && IsNegationEquivalent(child1))
+         else if (IsNegationEquivalent(child1) && (IsNegationEquivalent(child0) ||
+                  GetOperation(child1) == OperationType::Implication))
          {
-            ExtractFromUnderNegationEquivalent(child0);
+            RevertNegation(child0);
             ExtractFromUnderNegationEquivalent(child1);
-            auto temp = std::move(child0);
-            expression.GetChild(0) = std::move(child1);
-            expression.GetChild(1) = std::move(temp);
+            std::swap(child0, child1);
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
@@ -1170,18 +1169,26 @@ void ExpressionEvaluator::CoverWithNegationEquivalent(TExpressionPtr& expr)
       expression.SetOperation(GetOppositeOperation(expression.GetOperation()));
       for (auto index = expression.GetChildCount() - 1; index >= 0; --index)
       {
-         auto& child_expr = expression.GetChild(index);
-         if (IsNegationEquivalent(child_expr))
+         if (RevertNegation(expression.GetChild(index)))
          {
-            ExtractFromUnderNegationEquivalent(child_expr);
             InPlaceNormalization(expression, index);
-         }
-         else
-         {
-            CoverWithNegationEquivalent(child_expr);
          }
       }
    }
+}
+
+bool ExpressionEvaluator::RevertNegation(TExpressionPtr& expr)
+{
+   if (IsNegationEquivalent(expr))
+   {
+      ExtractFromUnderNegationEquivalent(expr);
+      return true;
+   }
+   else
+   {
+      CoverWithNegationEquivalent(expr);
+   }
+   return false;
 }
 
 ExpressionEvaluator::MutuallyReverseStatus ExpressionEvaluator::GetMutuallyReverseStatus(
