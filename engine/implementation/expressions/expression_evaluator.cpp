@@ -539,9 +539,6 @@ bool ExpressionEvaluator::MakeNegationRepresentative(OperationExpression& expres
       assert(!IsNegationEquivalent(child));
 
       const auto child_operation = GetOperation(child);
-      const auto opposite_child_operation =
-         (OperationType::None != child_operation) ?
-            GetOppositeOperation(child_operation) : OperationType::None;
 
       // Additional checks will allow not to do negation recreation
       // if negation is already is representative form.
@@ -969,12 +966,8 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
 
 bool ExpressionEvaluator::IsNegationEquivalent(const TExpressionPtr& expr)
 {
-   if (expr->GetType() != ExpressionType::Operation)
-   {
-      return false;
-   }
-
-   return IsNegationEquivalent(CastToOperation(expr));
+   return (expr->GetType() == ExpressionType::Operation) &&
+          IsNegationEquivalent(CastToOperation(expr));
 }
 
 bool ExpressionEvaluator::IsNegationEquivalent(const OperationExpression& expression)
