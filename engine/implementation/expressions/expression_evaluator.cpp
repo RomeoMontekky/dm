@@ -646,7 +646,7 @@ bool ExpressionEvaluator::CanBeGroupedAsNegNotNeg(const OperationExpression& exp
       // If current child is a negation equivalent and it encapsulates the same operation
       // as current one, then we need to check whether other children are the same as
       // children of the negated child.
-
+      
       if (IsShortNegationEquivalentWithChildOperation(child, expression.GetOperation()))
       {
          const auto& child_to_check = CastToOperation(CastToOperation(child).GetChild(0));
@@ -998,12 +998,8 @@ bool ExpressionEvaluator::IsNegationEquivalent(const OperationExpression& expres
 
 bool ExpressionEvaluator::IsShortNegationEquivalent(const TExpressionPtr& expr)
 {
-   if (expr->GetType() != ExpressionType::Operation)
-   {
-      return false;
-   }
-
-   return IsShortNegationEquivalent(CastToOperation(expr));
+   return expr->GetType() == ExpressionType::Operation &&
+          IsShortNegationEquivalent(CastToOperation(expr));
 }
 
 bool ExpressionEvaluator::IsShortNegationEquivalent(const OperationExpression& expression)
@@ -1016,12 +1012,8 @@ bool ExpressionEvaluator::IsShortNegationEquivalent(const OperationExpression& e
 bool ExpressionEvaluator::IsShortNegationEquivalentWithChildOperation(
    const TExpressionPtr& expr, OperationType operation)
 {
-   if (expr->GetType() != ExpressionType::Operation)
-   {
-      return false;
-   }
-
-   return IsShortNegationEquivalentWithChildOperation(CastToOperation(expr), operation);
+   return expr->GetType() == ExpressionType::Operation &&
+          IsShortNegationEquivalentWithChildOperation(CastToOperation(expr), operation);
 }
 
 bool ExpressionEvaluator::IsShortNegationEquivalentWithChildOperation(
