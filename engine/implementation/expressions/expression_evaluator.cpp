@@ -1209,17 +1209,18 @@ ExpressionEvaluator::MutuallyReverseStatus ExpressionEvaluator::GetMutuallyRever
 
    // Mutually reverse operations are operations that satisfy to the rule:
    //    Operation1(x, y) = !Operation2(x, y)
+   
    // Currently the only such operations pair is Equality/Plus.
 
-   // Accorsing to the formula, we obtain a single negation for each formula
+   // According to the formula, we obtain a single negation for each formula
    // application. So if an operation consists of N operands, we will obtain
    // (N-1) negations after full transformation to a reverse operation.
 
    // As both left/right expressions are already evaluated (including removing
    // of negations from operands and making negation representative), negation
    // from the formula will be expressed by the terminal literal. And these
-   // literals just give us from one to two more negations to negations, obtained
-   // from sequential formula application on the previous step.
+   // literals just give us one/two more negations to negations, obtained from
+   // sequential formula application on the previous step.
 
    // The final step is checking of pairwise equality of operands.
 
