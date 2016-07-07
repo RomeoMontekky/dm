@@ -51,6 +51,8 @@ base4b(x, y, z) := (x -> y -> z) & (!z -> !(x -> y))
 call eval(base4b)
 base4c(x, y, z) := (z -> !(!y -> !x)) & (x -> y -> !z)
 call eval(base4c)
+base4d(x, y, z) := (!z -> (!y -> !x)) & (!(x -> y) -> z)
+call eval(base4d)
 
 # test of equality/inequality of mutually reverse operations.
 base5a(x, y) :=  (x + y) & (x = y = 0)

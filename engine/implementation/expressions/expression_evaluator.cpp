@@ -99,15 +99,17 @@ private:
 
    static bool IsEqual(const TExpressionPtr& left, const TExpressionPtr& right);
    static bool IsEqual(const OperationExpression& left, const OperationExpression& right);
-   static bool IsEqualReverseImplications(const OperationExpression& left,
-                                          const OperationExpression& right);
-   static bool IsEqualToAnyChild(const TExpressionPtr& expr,
+   static bool IsEqualToAnyChild(const TExpressionPtr& expr, 
                                  const OperationExpression& expression);
 
    static bool AreFirstChildrenEqual(const OperationExpression& left,
                                      const OperationExpression& right, long amount);
    static bool AreFirstChildrenNegNotNeg(const OperationExpression& left,
                                          const OperationExpression& right, long amount);
+   
+   static bool AreFirstChildrenEqualAsReverseImplications(
+      const OperationExpression& left, long left_amount,
+      const OperationExpression& right, long right_amount);
 
    static bool AreFirstChildrenIncludedByEquality(
       const OperationExpression& enclosing, long enclosing_amount,
@@ -1287,72 +1289,14 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
 bool ExpressionEvaluator::IsEqual(const OperationExpression& left, const OperationExpression& right)
 {
    const auto operation = left.GetOperation();
-
+   
    if (right.GetOperation() == operation)
    {
       const auto child_count = left.GetChildCount();
-      if (right.GetChildCount() == child_count && AreFirstChildrenEqual(left, right, child_count))
-      {
-         return true;
-      }
-
-      return (OperationType::Implication == operation &&
-              IsEqualReverseImplications(left, right));
+      return (right.GetChildCount() == child_count && AreFirstChildrenEqual(left, right, child_count));
    }
-
+   
    return (GetMutuallyReverseStatus(left, right) == MutuallyReverseStatus::Equality);
-}
-
-bool ExpressionEvaluator::IsEqualReverseImplications(
-   const OperationExpression& left, const OperationExpression& right)
-{
-   assert(left.GetOperation() == OperationType::Implication);
-   assert(right.GetOperation() == OperationType::Implication);
-
-   // Checks whether operations are reverse implications, according to the
-   // following rule:
-   //    (x -> y) = (!y -> !x)
-
-   // The left operations is called forward, the second - backward.
-
-   const auto left_count = left.GetChildCount();
-   const auto right_count = right.GetChildCount();
-
-   if (left_count == 2 && right_count == 2)
-   {
-      return (CheckNegNotNeg(left.GetChild(0), right.GetChild(1)) &&
-              CheckNegNotNeg(left.GetChild(1), right.GetChild(0)));
-   }
-
-   // Aditionally we need to check complex case of the rule, when x, in turn,
-   // is another implication. If so, it was normalized before is passed to
-   // this method. Thus we have following:
-   //    (x1 -> .. -> xn -> y) = (!y -> !(x1 -> .. -> xn))
-
-   if (left_count == 2 || right_count == 2)
-   {
-      decltype(left) forward = (right_count == 2) ? left : right;
-      decltype(left) backward = (left_count == 2) ? left : right;
-
-      if (GetOperation(backward.GetChild(0)) == OperationType::None ||
-          GetOperation(backward.GetChild(1)) == OperationType::None)
-      {
-         return false;
-      }
-
-      const auto forward_count = forward.GetChildCount();
-
-      if (!CheckNegNotNeg(forward.GetChild(forward_count - 1), backward.GetChild(0)))
-      {
-         return false;
-      }
-
-      auto forward_cloned = forward.Clone();
-      CastToOperation(forward_cloned).RemoveChild(forward_count - 1);
-      return CheckNegNotNeg(forward_cloned, backward.GetChild(1));
-   }
-
-   return false;
 }
 
 bool ExpressionEvaluator::IsEqualToAnyChild(
@@ -1371,13 +1315,46 @@ bool ExpressionEvaluator::IsEqualToAnyChild(
 bool ExpressionEvaluator::AreFirstChildrenEqual(
    const OperationExpression& left, const OperationExpression& right, long amount)
 {
-   return AreFirstChildrenIncludedByEquality(left, amount, right, amount);
+   return AreFirstChildrenIncludedByEquality(left, amount, right, amount) ||
+          AreFirstChildrenEqualAsReverseImplications(
+            left, left.GetChildCount(), right, right.GetChildCount());
 }
 
 bool ExpressionEvaluator::AreFirstChildrenNegNotNeg(
    const OperationExpression& left, const OperationExpression& right, long amount)
 {
    return AreFirstChildrenIncludedByNegNotNeg(left, amount, right, amount);
+}
+
+bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
+   const OperationExpression& left, long left_amount,
+   const OperationExpression& right, long right_amount)
+{
+   // Checks whether operations are reverse implications, according to the
+   // following rule:
+   //    (!x -> y) = (!y -> x)
+
+   if (left.GetOperation() != OperationType::Implication ||
+       right.GetOperation() != OperationType::Implication)
+   {
+      return false;
+   }
+
+   if (left_amount == 2 && right_amount == 2)
+   {
+      return (CheckNegNotNeg(left.GetChild(0), right.GetChild(1)) &&
+              CheckNegNotNeg(left.GetChild(1), right.GetChild(0)));
+   }
+
+   // Aditionally we need to check complex case of the rule, when x and y,
+   // in turn, are is another implications. We have the only case that would
+   // not be evaluated by implication evaluation:
+   //    (x1 -> .. -> xn -> !(y1 -> .. -> yn)) = 
+   //    (y1 -> .. -> yn -> !(x1 -> .. -> xn))
+   
+   // TODO: Implement
+   
+   return false;
 }
 
 bool ExpressionEvaluator::AreFirstChildrenIncludedByEquality(
