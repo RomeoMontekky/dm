@@ -385,22 +385,38 @@ void ExpressionEvaluator::EvaluateImplication(OperationExpression& expression)
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
-         // According to rules 10, we can exchange two operands with negation removing.
-         else if (IsNegationEquivalent(child1) && (IsNegationEquivalent(child0) ||
-                  GetOperation(child1) == OperationType::Implication))
+         // According to rules 10, we can exchange two operands with negation reverting.
+         else if (GetOperation(child1) == OperationType::Implication ||
+                  (IsNegationEquivalent(child0) && IsNegationEquivalent(child1)))
          {
             RevertNegation(child0);
-            ExtractFromUnderNegationEquivalent(child1);
+            RevertNegation(child1);
             std::swap(child0, child1);
             InPlaceNormalization(expression);
             was_evaluated = true;
          }
-         // According to rule 9, we can remove first two operands in case of (x -> y -> x).
-         else if (expression.GetChildCount() > 2 && IsEqual(child0, expression.GetChild(2)))
+         else if (expression.GetChildCount() > 2)
          {
-            expression.RemoveChildren(0, 2);
-            InPlaceNormalization(expression);
-            was_evaluated = true;
+            auto& child2 = expression.GetChild(2);
+
+            // According to rule 9, we can remove first two operands in case of (x -> y -> x).
+            if (IsEqual(child0, child2))
+            {
+               expression.RemoveChildren(0, 2);
+               InPlaceNormalization(expression);
+               was_evaluated = true;
+            }
+            // According to rule 10, we can transmogrigy (y -> 0 -> !x) to (x -> y)
+            else if (LiteralType::False == GetLiteral(child1) &&
+                     (GetOperation(child2) == OperationType::Implication ||
+                      IsNegationEquivalent(child2)))
+            {
+               RevertNegation(child2);
+               std::swap(child0, child2);
+               expression.RemoveChild(1);
+               InPlaceNormalization(expression);
+               was_evaluated = true;
+            }
          }
       } // while (expression.GetChildCount() > 1 && was_evaluated)
 
@@ -1330,9 +1346,10 @@ bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
    const OperationExpression& left, long left_amount,
    const OperationExpression& right, long right_amount)
 {
-   // Checks whether operations are reverse implications, according to the
-   // following rule:
-   //    (!x -> y) = (!y -> x)
+   // Checks whether operations are equal reverse implications, according
+   // to the following rules:
+   //    1. ( x -> !y) = ( y -> !x)
+   //    2. (!x ->  y) = (!y ->  x)
 
    if (left.GetOperation() != OperationType::Implication ||
        right.GetOperation() != OperationType::Implication)
@@ -1348,12 +1365,39 @@ bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
 
    // Aditionally we need to check complex case of the rule, when x and y,
    // in turn, are is another implications. We have the only case that would
-   // not be evaluated by implication evaluation:
-   //    (x1 -> .. -> xn -> !(y1 -> .. -> yn)) = 
-   //    (y1 -> .. -> yn -> !(x1 -> .. -> xn))
-   
-   // TODO: Implement
-   
+   // not be evaluated by implication evaluation - x and y are BOTH
+   // implications:
+
+   //    1. (x1 -> .. -> xn -> (y1 -> .. -> yn -> 0)) =
+   //       (y1 -> .. -> yn -> (x1 -> .. -> xn -> 0))
+
+   //    2. x1 -> .. -> xn -> 0 -> (y1 -> .. -> yn) =
+   //       y1 -> .. -> yn -> 0 -> (x1 -> .. -> xn)
+
+   if (left_amount < 3 || right_amount < 3)
+   {
+      return false;
+   }
+
+   const auto& left_last_expr = left.GetChild(left_amount - 1);
+   const auto& right_last_expr = right.GetChild(right_amount - 1);
+
+   if (GetOperation(left_last_expr) != OperationType::Implication ||
+       GetOperation(right_last_expr) != OperationType::Implication)
+   {
+      return false;
+   }
+
+   if (IsNegationEquivalent(left_last_expr) &&
+       IsNegationEquivalent(right_last_expr))
+   {
+      const auto& left_last_expression = CastToOperation(left_last_expr);
+      const auto& right_last_expression = CastToOperation(right_last_expr);
+      // TODO: Finish
+   }
+
+   // TODO: Finish
+
    return false;
 }
 
