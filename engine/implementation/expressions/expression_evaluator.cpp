@@ -1184,10 +1184,8 @@ bool ExpressionEvaluator::RevertNegation(TExpressionPtr& expr)
       ExtractFromUnderNegationEquivalent(expr);
       return true;
    }
-   else
-   {
-      CoverWithNegationEquivalent(expr);
-   }
+   
+   CoverWithNegationEquivalent(expr);
    return false;
 }
 
