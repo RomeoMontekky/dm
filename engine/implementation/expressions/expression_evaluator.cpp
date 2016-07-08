@@ -104,6 +104,8 @@ private:
 
    static bool AreFirstChildrenEqual(const OperationExpression& left,
                                      const OperationExpression& right, long amount);
+   static bool AreFirstChildrenEqual(const OperationExpression& left, long left_amount,
+                                     const OperationExpression& right, long right_amount);
    static bool AreFirstChildrenNegNotNeg(const OperationExpression& left,
                                          const OperationExpression& right, long amount);
    
@@ -943,8 +945,8 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
 
       auto& child_expression = CastToOperation(child_expr);
       const auto child_operation = child_expression.GetOperation();
-      auto amount_to_check = index - operands_between;
-      auto child_correction = 0L;
+      auto amount_to_check_expr = index - operands_between;
+      auto amount_to_check_child = 0L;
       
       const OperationExpression* child_to_check = nullptr;
       if (negated_child)
@@ -953,7 +955,7 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
                   IsNegationEquivalent(child_expr))
          {
             child_to_check = &child_expression;
-            child_correction = 1;
+            --amount_to_check_child;
          }
       }
       else
@@ -964,22 +966,26 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
          }
          // case of x -> 0 -> y -> (x -> 0)
          else if (OperationType::Negation == child_operation &&
-                  index - operands_between == 2 && 
+                  2 == amount_to_check_expr &&
                   GetLiteral(expression.GetChild(1)) == LiteralType::False)
          {
             child_to_check = &child_expression;
-            --amount_to_check;
+            --amount_to_check_expr;
          }
       }
-      
-      if (child_to_check != nullptr &&
-          child_to_check->GetChildCount() - child_correction == amount_to_check &&
-          AreFirstChildrenEqual(*child_to_check, expression, amount_to_check))
+
+      if (child_to_check != nullptr)
       {
-         const auto right_bound = include_child ? (index + 1) : index;
-         expression.RemoveChildren(0, right_bound);
-         InPlaceNormalization(expression);
-         return true;
+         amount_to_check_child += child_to_check->GetChildCount();
+      
+         if (AreFirstChildrenEqual(*child_to_check, amount_to_check_child,
+                                   expression, amount_to_check_expr))
+         {
+            const auto right_bound = include_child ? (index + 1) : index;
+            expression.RemoveChildren(0, right_bound);
+            InPlaceNormalization(expression);
+            return true;
+         }
       }
    }
 
@@ -1313,8 +1319,7 @@ bool ExpressionEvaluator::IsEqual(const OperationExpression& left, const Operati
    
    if (right.GetOperation() == operation)
    {
-      const auto child_count = left.GetChildCount();
-      return (right.GetChildCount() == child_count && AreFirstChildrenEqual(left, right, child_count));
+      return (AreFirstChildrenEqual(left, left.GetChildCount(), right, right.GetChildCount()));
    }
    
    return (GetMutuallyReverseStatus(left, right) == MutuallyReverseStatus::Equality);
@@ -1336,9 +1341,17 @@ bool ExpressionEvaluator::IsEqualToAnyChild(
 bool ExpressionEvaluator::AreFirstChildrenEqual(
    const OperationExpression& left, const OperationExpression& right, long amount)
 {
-   return AreFirstChildrenIncludedByEquality(left, amount, right, amount) ||
-          AreFirstChildrenEqualAsReverseImplications(
-            left, left.GetChildCount(), right, right.GetChildCount());
+   return AreFirstChildrenEqual(left, amount, right, amount);
+}
+
+bool ExpressionEvaluator::AreFirstChildrenEqual(
+   const OperationExpression& left, long left_amount,
+   const OperationExpression& right, long right_amount)
+{
+   return (left_amount == right_amount &&
+           AreFirstChildrenIncludedByEquality(left, left_amount, right, right_amount)) ||
+             AreFirstChildrenEqualAsReverseImplications(
+                left, left_amount, right, right_amount);
 }
 
 bool ExpressionEvaluator::AreFirstChildrenNegNotNeg(
@@ -1369,15 +1382,15 @@ bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
    }
 
    // Aditionally we need to check complex case of the rule, when x and y,
-   // in turn, are is another implications. We have the only case that would
-   // not be evaluated by implication evaluation - x and y are BOTH
+   // in turn, are is another implications. We have just two cases that
+   // would not be evaluated by sibling evaluations - x and y are BOTH
    // implications:
 
-   //    1. (x1 -> .. -> xn -> (y1 -> .. -> yn -> 0)) =
-   //       (y1 -> .. -> yn -> (x1 -> .. -> xn -> 0))
+   //    1. (x1 -> .. -> xn -> (y1 -> .. -> ym -> 0)) =
+   //       (y1 -> .. -> ym -> (x1 -> .. -> xn -> 0))
 
-   //    2. x1 -> .. -> xn -> 0 -> (y1 -> .. -> yn) =
-   //       y1 -> .. -> yn -> 0 -> (x1 -> .. -> xn)
+   //    2. x1 -> .. -> xn -> 0 -> (y1 -> .. -> ym) =
+   //       y1 -> .. -> ym -> 0 -> (x1 -> .. -> xn)
 
    if (left_amount < 3 || right_amount < 3)
    {
@@ -1396,13 +1409,29 @@ bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
    const auto& left_last_expression = CastToOperation(left_last_expr);
    const auto& right_last_expression = CastToOperation(right_last_expr);
 
+   // Case 1.
    if (IsNegationEquivalent(left_last_expression) &&
        IsNegationEquivalent(right_last_expression))
    {
-      // TODO: Finish
+      return AreFirstChildrenEqual(
+                left_last_expression, left_last_expression.GetChildCount() - 1,
+                right, right_amount - 1) &&
+            AreFirstChildrenEqual(
+                right_last_expression, right_last_expression.GetChildCount() - 1,
+                left, left_amount - 1);
    }
 
-   // TODO: Finish
+   // Case 2.
+   if (LiteralType::False == GetLiteral(left.GetChild(left_amount - 2)) &&
+       LiteralType::False == GetLiteral(right.GetChild(right_amount - 2)))
+   {
+      return AreFirstChildrenEqual(
+                left_last_expression, left_last_expression.GetChildCount(),
+                right, right_amount - 2) &&
+            AreFirstChildrenEqual(
+                right_last_expression, right_last_expression.GetChildCount(),
+                left, left_amount - 2);
+   }
 
    return false;
 }
