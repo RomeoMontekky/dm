@@ -26,8 +26,8 @@ call eval(imp8)
 # grouping, reduction (x -> !x) => !x
 imp9(x, y) := (x + y) -> x -> !((x + y) -> x)
 call eval(imp9)
-# grouping, reduction (x -> (x -> 0)) => (x -> 0)
-imp10(x, y) := (x + y) -> x -> ((x + y) -> x -> 0)
+# grouping, reduction (x -> 0 -> y -> (x -> 0)
+imp10(x, y) := x -> 0 -> y -> (x -> 0)
 call eval(imp10)
 # rule (x -> y -> x) => (x) without grouping.
 imp11(x) := (x + 1) -> x -> (x + 1)

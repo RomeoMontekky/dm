@@ -943,32 +943,37 @@ bool ExpressionEvaluator::RemoveBeginningIfEqualToChild(
 
       auto& child_expression = CastToOperation(child_expr);
       const auto child_operation = child_expression.GetOperation();
-      const auto amount_to_check = index - operands_between;
-      auto implication_correction = 0L;
+      auto amount_to_check = index - operands_between;
+      auto child_correction = 0L;
       
-      OperationExpression* child_to_check = nullptr;
+      const OperationExpression* child_to_check = nullptr;
       if (negated_child)
       {
-         if (OperationType::Negation == child_operation &&
-             OperationType::Implication == GetOperation(child_expression.GetChild(0)))
-         {
-            child_to_check = &CastToOperation(child_expression.GetChild(0));
-         }
-         else if (OperationType::Implication == child_operation &&
-                  LiteralType::False == GetLiteral(
-                     child_expression.GetChild(child_expression.GetChildCount() - 1)))
+         if (OperationType::Implication == child_operation &&
+                  IsNegationEquivalent(child_expr))
          {
             child_to_check = &child_expression;
-            implication_correction = 1;
+            child_correction = 1;
          }
       }
-      else if (OperationType::Implication == child_operation)
+      else
       {
-         child_to_check = &child_expression;
+         if (OperationType::Implication == child_operation)
+         {
+            child_to_check = &child_expression;
+         }
+         // case of x -> 0 -> y -> (x -> 0)
+         else if (OperationType::Negation == child_operation &&
+                  index - operands_between == 2 && 
+                  GetLiteral(expression.GetChild(1)) == LiteralType::False)
+         {
+            child_to_check = &child_expression;
+            --amount_to_check;
+         }
       }
       
       if (child_to_check != nullptr &&
-          child_to_check->GetChildCount() - implication_correction == amount_to_check &&
+          child_to_check->GetChildCount() - child_correction == amount_to_check &&
           AreFirstChildrenEqual(*child_to_check, expression, amount_to_check))
       {
          const auto right_bound = include_child ? (index + 1) : index;
@@ -1387,12 +1392,13 @@ bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
    {
       return false;
    }
+   
+   const auto& left_last_expression = CastToOperation(left_last_expr);
+   const auto& right_last_expression = CastToOperation(right_last_expr);
 
-   if (IsNegationEquivalent(left_last_expr) &&
-       IsNegationEquivalent(right_last_expr))
+   if (IsNegationEquivalent(left_last_expression) &&
+       IsNegationEquivalent(right_last_expression))
    {
-      const auto& left_last_expression = CastToOperation(left_last_expr);
-      const auto& right_last_expression = CastToOperation(right_last_expr);
       // TODO: Finish
    }
 
