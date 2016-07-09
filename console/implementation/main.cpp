@@ -7,7 +7,7 @@
 
 int ProcessStream(std::istream& stream)
 {
-   dm::TIEnginePtr engine = dm::CreateEngine();
+   auto engine = dm::CreateEngine();
 
    std::string str;
    while (!stream.eof())
@@ -32,6 +32,7 @@ int ProcessStream(std::istream& stream)
          std::cout << "Error: " << ex.GetDescription() << std::endl;
       }
    }
+
    return 0;
 }
 
