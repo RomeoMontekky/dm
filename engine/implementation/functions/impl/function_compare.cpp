@@ -40,20 +40,20 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
       return std::make_unique<FunctionOutput>(stream.str());
    }
    
-   const long param_count = variable1->GetParameterCount();
+   const auto param_count = variable1->GetParameterCount();
    
    CombinationGenerator generator(param_count);
-   const LiteralType* param_values = generator.GenerateFirst();
+   auto param_values = generator.GenerateFirst();
    while (param_values != nullptr)
    {
-      const LiteralType result1 = CalculateExpression(variable1->GetExpression(), param_values);
-      const LiteralType result2 = CalculateExpression(variable2->GetExpression(), param_values);
+      const auto result1 = CalculateExpression(variable1->GetExpression(), param_values);
+      const auto result2 = CalculateExpression(variable2->GetExpression(), param_values);
       
       if (result1 != result2)
       {
          stream << "not equal. Different results on parameter combination (";
-         bool is_first = true;
-         for (long index = 0; index < param_count; ++index)
+         auto is_first = true;
+         for (auto index = 0L; index < param_count; ++index)
          {
             if (is_first)
             {

@@ -24,8 +24,8 @@ std::string ConstructHeader(const Variable* variable)
 
    std::string header;
 
-   const long param_count = variable->GetParameterCount();
-   for (long index = 0; index < param_count; ++index)
+   const auto param_count = variable->GetParameterCount();
+   for (auto index = 0L; index < param_count; ++index)
    {
       header += g_char_vert_line;
       header += g_char_filler;
@@ -50,8 +50,8 @@ std::string ConstructRow(const Variable* variable, const LiteralType param_value
 
    std::stringstream row;
 
-   const long param_count = variable->GetParameterCount();
-   for (long index = 0; index < param_count; ++index)
+   const auto param_count = variable->GetParameterCount();
+   for (auto index = 0L; index < param_count; ++index)
    {
       row << g_char_vert_line;
       row << g_char_filler;
@@ -99,11 +99,11 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
 
    CombinationGenerator generator(variable->GetParameterCount());
 
-   for (const LiteralType* param_values = generator.GenerateFirst();
+   for (auto param_values = generator.GenerateFirst();
         param_values != nullptr;
         param_values = generator.GenerateNext())
    {
-      const LiteralType result = CalculateExpression(variable->GetExpression(), param_values);
+      const auto result = CalculateExpression(variable->GetExpression(), param_values);
       output->AddLine(ConstructRow(variable, param_values, result));
    }
 

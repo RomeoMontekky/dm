@@ -28,7 +28,8 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    auto output = std::make_unique<FunctionOutput>();
 
    for (auto variable = variable_mgr.GetFirstVariable(); 
-        variable != nullptr; variable = variable_mgr.GetNextVariable())
+        variable != nullptr;
+        variable = variable_mgr.GetNextVariable())
    {
       output->AddLine(variable->ToString());
    }
