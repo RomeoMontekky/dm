@@ -78,9 +78,9 @@ void MoveChildExpressions(TExpressionPtrVector& target, OperationExpression& exp
 {
    target.clear();
 
-   const long child_count = expression.GetChildCount();
+   const auto child_count = expression.GetChildCount();
    target.reserve(child_count);
-   for (long index = 0; index < child_count; ++index)
+   for (auto index = 0L; index < child_count; ++index)
    {
       target.push_back(std::move(expression.GetChild(index)));
    }

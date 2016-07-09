@@ -35,7 +35,7 @@ void VariableDeclaration::AddParameter(const StringPtrLen& name)
 long VariableDeclaration::FindParameter(const StringPtrLen& name) const
 {
    std::string parameter_name = name;
-   for (size_t index = 0; index < m_parameters.size(); ++index)
+   for (auto index = 0L; index < (long)m_parameters.size(); ++index)
    {
       if (m_parameters[index].GetName() == parameter_name)
       {
@@ -69,7 +69,7 @@ std::string VariableDeclaration::ToString() const
       {
          ret += '(';
    
-         bool is_first = true;
+         auto is_first = true;
          for (const auto& parameter : m_parameters)
          {
             if (is_first)

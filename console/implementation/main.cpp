@@ -20,8 +20,8 @@ int ProcessStream(std::istream& stream)
 
       try
       {
-         const dm::IStringable& ret = engine->Process(str.c_str(), str.length());
-         std::string output = ret.ToString();
+         const auto& ret = engine->Process(str.c_str(), str.length());
+         auto output = ret.ToString();
          if (!output.empty())
          {
             std::cout << ret.ToString() << std::endl;

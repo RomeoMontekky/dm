@@ -15,7 +15,7 @@ namespace
 
 LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
 {
-   const ExpressionType type = expr->GetType();
+   const auto type = expr->GetType();
 
    if (ExpressionType::Literal == type)
    {
@@ -37,7 +37,7 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
    auto child_count = expression.GetChildCount();
    LOCAL_ARRAY(LiteralType, child_values, child_count);
 
-   for (long index = 0; index < child_count; ++index)
+   for (auto index = 0L; index < child_count; ++index)
    {
       child_values[index] = SimplifyExpressionImpl(expression.GetChild(index));
 
@@ -51,9 +51,9 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
       }
    }
 
-   LiteralType value = LiteralType::None;
+   auto value = LiteralType::None;
 
-   const long actual_values_count = child_count - non_actual_values_count;
+   const auto actual_values_count = child_count - non_actual_values_count;
    if (0 == actual_values_count)
    {
       // Nothing to simplify
@@ -107,9 +107,9 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
 
       // If we are here, then it is possible that there exist expressions
       // with actual values, but not raw. Let's simplify them.
-      for (long index = 0; index < child_count; ++index)
+      for (auto index = 0L; index < child_count; ++index)
       {
-         TExpressionPtr& child = expression.GetChild(index);
+         auto& child = expression.GetChild(index);
 
          if (LiteralType::None != child_values[index] &&
              LiteralType::None == GetLiteral(child))
@@ -131,7 +131,7 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
          LOCAL_ARRAY(LiteralType, actual_values, actual_values_count);
          std::remove_copy(child_values, child_values + child_count, actual_values, LiteralType::None);
 
-         for (long index = child_count - 1; index >= 0; --index)
+         for (auto index = child_count - 1; index >= 0; --index)
          {
             if (child_values[index] != LiteralType::None)
             {
@@ -139,7 +139,7 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
             }
          }
 
-         const LiteralType value = PerformOperation(operation, actual_values, actual_values_count);
+         const auto value = PerformOperation(operation, actual_values, actual_values_count);
          expression.AddChild(std::make_unique<LiteralExpression>(value));
       }
       else // actual_values_count == 1
@@ -148,11 +148,11 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
          // If it is raw - this is enough to move it.
          // Otherwise we need to create new literal expression to simplify it and delete the old one.
          
-         long actual_index = 0;
+         auto actual_index = 0L;
          for (; child_values[actual_index] == LiteralType::None; ++actual_index);
          assert(actual_index < child_count);
          
-         TExpressionPtr& child = expression.GetChild(actual_index);
+         auto& child = expression.GetChild(actual_index);
          if (LiteralType::None == GetLiteral(child))
          {
             // Move with simplification.
@@ -164,7 +164,7 @@ LiteralType SimplifyExpressionImpl(TExpressionPtr& expr)
             // If actual_index == child_count - 1, then actual expression is already on its place.
             if (actual_index < child_count - 1)
             {
-               TExpressionPtr actual_expression = std::move(child);
+               auto actual_expression = std::move(child);
                expression.RemoveChild(actual_index);
                expression.AddChild(std::move(actual_expression));
             }
@@ -181,7 +181,7 @@ void SimplifyExpression(TExpressionPtr& expr)
 {
    assert(expr.get() != nullptr);
 
-   const LiteralType value = SimplifyExpressionImpl(expr);
+   const auto value = SimplifyExpressionImpl(expr);
 
    // SimplifyExpressionImpl simplifies only child expressions of each operation
    // expression, so the root can be still not simplifed. Let's correct this if so.

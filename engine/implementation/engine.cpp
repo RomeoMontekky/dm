@@ -35,7 +35,7 @@ const IStringable& Engine::Process(const char* str, long len)
       return *m_last_function_output;
    }
 
-   TVariablePtr variable = m_parser.Parse(str_obj);
+   auto variable = m_parser.Parse(str_obj);
    if (variable->GetName().empty())
    {
       m_last_unnamed_var = std::move(variable);

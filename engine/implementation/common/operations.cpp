@@ -99,7 +99,7 @@ LiteralType PerformOperation(OperationType operation, const LiteralType values[]
 
       auto func = functions[static_cast<int>(operation)];
       result = values[0];
-      for (long i = 1; i < amount; ++i)
+      for (auto i = 1L; i < amount; ++i)
       {
          result = func(result, values[i]);
       }

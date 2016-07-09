@@ -14,7 +14,7 @@ const LiteralType* CombinationGenerator::GenerateFirst()
 {
    // Array has got additional element to hold carry-flag.
    // It will be stored at element with index 0.
-   const long count = m_dimension + 1;
+   const auto count = m_dimension + 1;
 
    if (m_combination.get() == nullptr)
    {
@@ -31,7 +31,7 @@ const LiteralType* CombinationGenerator::GenerateNext()
    // Generate next combination using algorithm of binary increment,
    // implying combination array elements as bits in some binary number representation.
 
-   long i = m_dimension;
+   auto i = m_dimension;
    for (; i > 0 && LiteralType::True == m_combination[i]; m_combination[i--] = LiteralType::False);
    m_combination[i] = LiteralType::True;
    

@@ -33,7 +33,7 @@ TVariablePtr ExpressionParser::Parse(StringPtrLen str)
 
    TVariablePtr variable;
    
-   const char* assignment = FindWithZeroBalance(str, g_token_assignment);
+   auto assignment = FindWithZeroBalance(str, g_token_assignment);
    if (assignment != nullptr)
    {
       variable = ParseVariableDeclaration(str.Left(assignment));
@@ -46,7 +46,7 @@ TVariablePtr ExpressionParser::Parse(StringPtrLen str)
    }
     
    m_curr_variable = variable.get();
-   TExpressionPtr expression = ParseExpression(str);
+   auto expression = ParseExpression(str);
    m_curr_variable = nullptr;
 
    NormalizeExpression(expression);
@@ -72,7 +72,7 @@ TVariablePtr ExpressionParser::ParseVariableDeclaration(StringPtrLen str) const
       Error("Variable '", str, "' is already declared.");
    }
 
-   TVariablePtr variable = std::make_unique<Variable>(str);
+   auto variable = std::make_unique<Variable>(str);
 
    StringPtrLen param;
    while (content.GetPart(param))
@@ -127,9 +127,9 @@ TExpressionPtr ExpressionParser::ParseExpression(StringPtrLen str) const
 TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) const
 {
    BracketsBalancer balancer;
-   OperationType max_operation = OperationType::None;
-   long max_operation_amount = -1;
-   StringPtrLen tail = str;
+   auto max_operation = OperationType::None;
+   auto max_operation_amount = -1L;
+   auto tail = str;
 
    // Find operation with zero bracket balance and with maximum value.
    // Maximum value means minimal arithmetic priority.
@@ -137,7 +137,8 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
    {
       if (!balancer.ProcessChar(tail.At(0)) && balancer.GetBalance() == 0)
       {
-         OperationType operation = StartsWithOperation(tail); // TODO: Skip the whole operation symbols
+         OperationType operation = StartsWithOperation(tail);
+         // TODO: Skip the whole operation symbols
          if (operation != OperationType::None)
          {
             if (operation > max_operation)
@@ -161,8 +162,8 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
 
    assert(balancer.GetBalance() == 0);
 
-   const char* const max_operation_str = OperationTypeToString(max_operation);
-   const size_t max_operation_str_len = std::strlen(max_operation_str);
+   auto max_operation_str = OperationTypeToString(max_operation);
+   auto max_operation_str_len = std::strlen(max_operation_str);
 
    if (OperationType::Negation == max_operation)
    {
@@ -172,7 +173,7 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
       }
 
       str.RemoveLeft(max_operation_str_len);
-      TExpressionPtr child_expression = ParseExpression(str);
+      auto child_expression = ParseExpression(str);
       return std::make_unique<OperationExpression>(std::move(child_expression));
    }
 
@@ -186,7 +187,7 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
       {
          if (tail.StartsWith(max_operation_str))
          {
-            TExpressionPtr child_expression = ParseExpression(str.Left(tail.Ptr()));
+            auto child_expression = ParseExpression(str.Left(tail.Ptr()));
             children_expressions.push_back(std::move(child_expression));
             tail.RemoveLeft(max_operation_str_len);
             str = tail;
@@ -196,7 +197,7 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
       tail.RemoveLeft(1);
    }
 
-   TExpressionPtr child_expression = ParseExpression(str);
+   auto child_expression = ParseExpression(str);
    children_expressions.push_back(std::move(child_expression));
 
    return std::make_unique<OperationExpression>(max_operation, std::move(children_expressions));
@@ -204,7 +205,7 @@ TExpressionPtr ExpressionParser::ParseOperationExpression(StringPtrLen str) cons
 
 TExpressionPtr ExpressionParser::ParseLiteralExpression(StringPtrLen str) const
 {
-   LiteralType literal = StringToLiteralType(str);
+   auto literal = StringToLiteralType(str);
    if (LiteralType::None == literal)
    {
       return TExpressionPtr();
@@ -215,7 +216,7 @@ TExpressionPtr ExpressionParser::ParseLiteralExpression(StringPtrLen str) const
 TExpressionPtr ExpressionParser::ParseParameterizedVariableExpression(StringPtrLen str) const
 {
    BracketsContent content;
-   StringPtrLen name = content.Parse(str);
+   auto name = content.Parse(str);
    if (str.Len() == name.Len())
    {
       return TExpressionPtr();
@@ -236,7 +237,7 @@ TExpressionPtr ExpressionParser::ParseParameterizedVariableExpression(StringPtrL
    StringPtrLen param;
    while (content.GetPart(param))
    {
-      TExpressionPtr param_expr = ParseExpression(param);
+      auto param_expr = ParseExpression(param);
       actual_params.push_back(std::move(param_expr));
    }
 
@@ -251,7 +252,7 @@ TExpressionPtr ExpressionParser::ParseParameterizedVariableExpression(StringPtrL
 
 TExpressionPtr ExpressionParser::ParseParameterExpression(StringPtrLen str) const
 {
-   long param_index = m_curr_variable->FindParameter(str);
+   auto param_index = m_curr_variable->FindParameter(str);
    if (-1 == param_index)
    {
       return TExpressionPtr();
