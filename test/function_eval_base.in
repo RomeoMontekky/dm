@@ -45,11 +45,11 @@ base3(x, y, z) := (((x + y) -> 0) + z) -> 0
 call eval(base3)
 
 # test of reserse implication equality
-base4a(x, y) := (x -> !y) & (y -> !x)
+base4a(x, y) := (x -> !y) = (y -> !x)
 call eval(base4a)
-base4b(x1, x2, y1, y2, y3) := (x1 -> x2 -> (y1 -> y2 -> y3 -> 0)) & (y1 -> y2 -> y3 -> (x1 -> x2 -> 0))
+base4b(x1, x2, y1, y2, y3) := (x1 -> x2 -> (y1 -> y2 -> y3 -> 0)) = (y1 -> y2 -> y3 -> (x1 -> x2 -> 0))
 call eval(base4b)
-base4c(x1, x2, y1, y2, y3) := (x1 -> x2 -> 0 -> (y1 -> y2 -> y3)) & (y1 -> y2 -> y3 -> 0 -> (x1 -> x2))
+base4c(x1, x2, y1, y2, y3) := (x1 -> x2 -> 0 -> (y1 -> y2 -> y3)) = (y1 -> y2 -> y3 -> 0 -> (x1 -> x2))
 call eval(base4c)
 
 # test of equality/inequality of mutually reverse operations.
