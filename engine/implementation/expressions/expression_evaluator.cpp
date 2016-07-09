@@ -1411,7 +1411,7 @@ bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
       return AreFirstChildrenEqual(
                 left_last_expression, left_last_expression.GetChildCount() - 1,
                 right, right_amount - 1) &&
-            AreFirstChildrenEqual(
+             AreFirstChildrenEqual(
                 right_last_expression, right_last_expression.GetChildCount() - 1,
                 left, left_amount - 1);
    }
@@ -1423,7 +1423,7 @@ bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
       return AreFirstChildrenEqual(
                 left_last_expression, left_last_expression.GetChildCount(),
                 right, right_amount - 2) &&
-            AreFirstChildrenEqual(
+             AreFirstChildrenEqual(
                 right_last_expression, right_last_expression.GetChildCount(),
                 left, left_amount - 2);
    }
