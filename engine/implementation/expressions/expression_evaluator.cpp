@@ -1315,14 +1315,9 @@ bool ExpressionEvaluator::IsEqual(const TExpressionPtr& left, const TExpressionP
 
 bool ExpressionEvaluator::IsEqual(const OperationExpression& left, const OperationExpression& right)
 {
-   const auto operation = left.GetOperation();
-   
-   if (right.GetOperation() == operation)
-   {
-      return (AreFirstChildrenEqual(left, left.GetChildCount(), right, right.GetChildCount()));
-   }
-   
-   return (GetMutuallyReverseStatus(left, right) == MutuallyReverseStatus::Equality);
+   return ((left.GetOperation() == right.GetOperation()) &&
+           (AreFirstChildrenEqual(left, left.GetChildCount(), right, right.GetChildCount()))) ||
+                (GetMutuallyReverseStatus(left, right) == MutuallyReverseStatus::Equality);
 }
 
 bool ExpressionEvaluator::IsEqualToAnyChild(
