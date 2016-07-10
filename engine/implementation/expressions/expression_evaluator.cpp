@@ -771,18 +771,15 @@ void ExpressionEvaluator::ApplyAbsorptionGluingLaws(
 bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& expression)
 {
    // Absorptions laws are:
-   //    1. (x & y) | x => x
-   //    2. (x | y) & x => x
-
-   // Two sub-cases are available for both rules. Let's consider them on the first rule.
-   //    1. simple case: x is not conjunction:
-   //          (x & y) | y => x
-   //    2. complex case: x is conjunction (u1 & ... & un)
-   //          (u1 & ... & un & y) | (u1 & .. & un) => (u1 & ... & un)
+   //    1. x | (x & y) => x
+   //    2. x & (x | y) => x
 
    // Gluing laws are:
    //    1. (x & y) | (x & !y) = x
    //    2. (x | y) & (x | !y) = x
+
+   // In all these laws x can be conjunction/disjunction of x1 ... xn.
+   // In absorption laws y can be conjunction/disjunction of y1 .. ym.
 
    auto is_modified = false;
 
@@ -814,6 +811,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
 
                if (child1_count < child2_count)
                {
+                  // Check of absorption: (x1 | .. | xn) & (x1 | .. | xn | y1 | .. | ym)
                   if (AreFirstChildrenIncludedByEquality(
                         child1_expression, child1_count,
                         child2_expression, child2_count))
@@ -825,7 +823,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                }
                else if (child1_count > child2_count)
                {
-
+                  // Check of absorption: (x1 | .. | xn | y1 | .. | ym) & (x1 | .. | xn)
                   if (AreFirstChildrenIncludedByEquality(
                         child2_expression, child2_count,
                         child1_expression, child1_count))
@@ -837,7 +835,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                }
                else // (child1_count == child2_count)
                {
-                  // Application of gluing law.
+                  // Check of gluing: (x1 | .. | xn | y) & (x1 | .. | xn | !y)
                   auto diff_index1 = -1L, diff_index2 = -1L;
                   if (DoChildrenDifferByOne(child1_expression, child2_expression,
                                             diff_index1, diff_index2))
@@ -860,7 +858,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                   }
                }
             }
-            // Simple case for absorption.
+            // Simple case for absorption: (x | y1 | .. ym) & x
             else if (IsEqualToAnyChild(child2_expr, child1_expression))
             {
                expression.RemoveChild(index1);
@@ -868,7 +866,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
                break;
             }
          }
-         // Simple case for absorption (backward indexes)
+         // Simple case for absorption: x & (x | y1 | .. ym)
          else if (is_opposite_operation2 && IsEqualToAnyChild(child1_expr, CastToOperation(child2_expr)))
          {
             expression.RemoveChild(index2);

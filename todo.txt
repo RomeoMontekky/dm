@@ -1,6 +1,6 @@
 - show position of erred character in the error message.
 - function for evaluation of expressions.
-   - implement rule (!x | (x & y)) => (!x | y)
+   - implement rule (x | (!x & y)) => (x | y) - law of Blake-Porecky
 - function to open brackets.
 - function for DNF/SDNF/MinDNF building.
 - function for CNF/SCNF/MinCNF building.
