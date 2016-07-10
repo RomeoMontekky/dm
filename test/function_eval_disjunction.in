@@ -18,15 +18,9 @@ call eval(disj7a)
 disj7b(x, y, u1, u2, u3) := u1 | u2 | u3 | (x & y) | !x | !y 
 call eval(disj7b)
 
-# De Morgan (all)
-disj8a(x, y) := (x+1) | (y->0)
+# De Morgan (child evaluation and in-place normalization)
+disj8a(x, y, z) := !(x & y & z) | !x
 call eval(disj8a)
-# De Morgan (half)
-disj8b(x, y) := !x | y
-call eval(disj8b)
-# De Morgan (child evaluation, in-place normalization and backward transformation)
-disj8c(x, y, z) := !(x & y & z) | !x
-call eval(disj8c)
 
 # Absorption law (simple case)
 disj9a(x, y, z) := (x->y) | (y & (x->y)) | z
