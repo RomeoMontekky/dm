@@ -8,3 +8,4 @@ All variables were removed.
 Error: Usage of undefined variable 'f1'.
 Error: Usage of undefined variable 'f2'.
 Error: Usage of undefined variable 'f3'.
+Error: Incorrect amount of parameters during call of function 'remove_all'. Expected amount - 0, actual amount - 1.

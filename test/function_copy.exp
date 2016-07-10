@@ -1,2 +1,5 @@
 f(x, y) := ((x | y) -> (x + 1))
 g(x, y) := ((x | y) -> (x + 1))
+test := 1
+Error: Parameter 'test' of function 'copy' must not be an existing variable name.
+Error: Parameter 'unknown' of function 'copy' must be an existing variable name.

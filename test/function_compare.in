@@ -1,3 +1,5 @@
+# tests of compare function.
+
 f1(x, y) := x | y -> (x + 1)
 g1(x) := !x
 call compare(f1, g1)
@@ -9,3 +11,6 @@ call compare(f2, g2)
 f3(x, y) := x -> y -> x -> y
 g3(x, y) := x -> y
 call compare(f3, g3)
+
+call compare(f1, unknown) # error: uknown name of variable.
+call compare(unknown, f1) # error: uknown name of variable.

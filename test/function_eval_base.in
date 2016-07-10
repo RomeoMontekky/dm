@@ -1,3 +1,5 @@
+# tests of eval function (base set).
+
 # test of operands' movability.
 base1a(x, y) := (x -> y) + (x -> y)
 call eval(base1a)
@@ -75,3 +77,4 @@ base6c(x, y, z) := (x = y = z) & (z + x + y + 1)
 call eval(base6c)
 
 
+call eval(unknown) # error: uknown name of variable.

@@ -1,3 +1,5 @@
+# tests of supported operations.
+
 Negation(x) := !x
 call table(Negation)
 Conjunction(x, y) := x & y

@@ -1,3 +1,5 @@
+# tests of simplification algorithm.
+
 f1 := 1 + 0 + 1
 f2(x) := 1 + 0 + x
 f3(x) := 1 + 0 + x + 1

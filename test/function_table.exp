@@ -17,3 +17,5 @@ f(x, y, z) := ((x & y) -> z)
 | 1 | 1 | 0 ||          0 |
 | 1 | 1 | 1 ||          1 |
 ---------------------------
+Error: Parameter 'unknown' of function 'table' must be an existing variable name.
+Error: Incorrect amount of parameters during call of function 'table'. Expected amount - 1, actual amount - 2.

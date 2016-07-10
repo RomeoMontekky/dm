@@ -1,3 +1,5 @@
+# tests of eval function (disjunction operation).
+
 disj1(x) := 0 | x
 call eval(disj1)
 disj2(x) := 1 | x

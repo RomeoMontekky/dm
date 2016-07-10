@@ -62,3 +62,4 @@ base6b(x, y) := ((x = y = 0) & (x + y + 1))
 base6b(x, y) := 0
 base6c(x, y, z) := ((x = y = z) & (z + x + y + 1))
 base6c(x, y, z) := 0
+Error: Parameter 'unknown' of function 'eval' must be an existing variable name.

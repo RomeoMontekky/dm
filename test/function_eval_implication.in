@@ -1,3 +1,5 @@
+# tests of eval function (implication operation).
+
 imp1(x) := (x + 1) -> 1 -> x 
 call eval(imp1)
 imp2(x) := 0 -> (x + 1) -> x

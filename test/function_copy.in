@@ -1,2 +1,9 @@
+# tests of copy function.
+
 f(x, y) := x | y -> (x + 1)
 call copy(g, f)
+
+test := 1
+call copy(test, f)      # error: cannot create 'test' as it is already exists.
+
+call copy(new, unknown) # error: variable dosn't exist.

@@ -4,3 +4,4 @@ f3(x) := (x + 1)
 f1(x) := (x + 1)
 f2(x) := (x + 0)
 f3(x) := (x + 1)
+Error: Incorrect amount of parameters during call of function 'display_all'. Expected amount - 0, actual amount - 1.

@@ -1,2 +1,4 @@
+# tests of normalization algorithm.
+
 f1(x, y, z) := (x + 1) + (y + 1) + (z + 1)
 f2(x, y, z) := (x -> 1) -> (y -> 1) -> (z -> 1)

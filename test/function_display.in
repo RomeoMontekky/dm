@@ -1,5 +1,10 @@
+# tests of display function.
+
 f1(x) :=    x  + 1
 f2(x) := f1(x) + 1
 f3(x) := f2(x) + 1
 
 call display(f1, f3)
+
+call display          # error: can't have empty list of parameters.
+call display(unknown) # error: uknown name of variable.

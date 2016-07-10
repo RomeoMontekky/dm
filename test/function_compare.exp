@@ -7,3 +7,5 @@ Variables 'f2' and 'g2' are not equal. Different results on parameter combinatio
 f3(x, y) := (x -> y -> x -> y)
 g3(x, y) := (x -> y)
 Variables 'f3' and 'g3' are equal.
+Error: Parameter 'unknown' of function 'compare' must be an existing variable name.
+Error: Parameter 'unknown' of function 'compare' must be an existing variable name.

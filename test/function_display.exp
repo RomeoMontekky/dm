@@ -3,3 +3,5 @@ f2(x) := (x + 0)
 f3(x) := (x + 1)
 f1(x) := (x + 1)
 f3(x) := (x + 1)
+Error: Function 'display' can't have empty list of parameters.
+Error: Parameter 'unknown' of function 'display' must be an existing variable name.

@@ -1,5 +1,9 @@
+# tests of display_all function.
+
 f1(x) :=    x  + 1
 f2(x) := f1(x) + 1
 f3(x) := f2(x) + 1
 
 call display_all
+
+call display_all(f1) # error: incorrect amount of parameters.
