@@ -779,7 +779,7 @@ bool ExpressionEvaluator::ApplyAbsorptionGluingLawsOnce(OperationExpression& exp
    //    2. (x | y) & (x | !y) = x
 
    // In all these laws x can be conjunction/disjunction of x1 ... xn.
-   // In absorption laws y can be conjunction/disjunction of y1 .. ym.
+   // In absorption laws y can be conjunction/disjunction of y1 ... ym.
 
    auto is_modified = false;
 
@@ -1375,8 +1375,8 @@ bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
    }
 
    // Aditionally we need to check complex case of the rule. We have 
-   // just two cases that would not be evaluated by sibling evaluations
-   // BOTH x and y must be implications:
+   // just two cases that would not be evaluated by sibling evaluations:
+   // BOTH x and y must be implications.
 
    //    1. (x1 -> .. -> xn -> (y1 -> .. -> ym -> 0)) =
    //       (y1 -> .. -> ym -> (x1 -> .. -> xn -> 0))
