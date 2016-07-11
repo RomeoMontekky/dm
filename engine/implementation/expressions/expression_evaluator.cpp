@@ -1254,7 +1254,7 @@ ExpressionEvaluator::MutuallyReverseStatus ExpressionEvaluator::GetMutuallyRever
    // Examples:
    //    1. (x + y)     <equal to>   (x = y = 0)
    //    2. (x + y)     <reverse to> (x = y)
-   //    3. (x = y = z) <equal to>   (x + y + z + 1)
+   //    3. (x = y = z) <equal to>   (x + y + z)
    //    4. (x = y = z) <reverse to> (x + y + z + 1)
 
    if (!AreOperationsMutuallyReverse(left.GetOperation(), right.GetOperation()))
