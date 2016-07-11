@@ -1374,16 +1374,15 @@ bool ExpressionEvaluator::AreFirstChildrenEqualAsReverseImplications(
               CheckNegNotNeg(left.GetChild(1), right.GetChild(0)));
    }
 
-   // Aditionally we need to check complex case of the rule, when x and y,
-   // in turn, are is another implications. We have just two cases that
-   // would not be evaluated by sibling evaluations - x and y are BOTH
-   // implications:
+   // Aditionally we need to check complex case of the rule. We have 
+   // just two cases that would not be evaluated by sibling evaluations
+   // BOTH x and y must be implications:
 
    //    1. (x1 -> .. -> xn -> (y1 -> .. -> ym -> 0)) =
    //       (y1 -> .. -> ym -> (x1 -> .. -> xn -> 0))
 
-   //    2. x1 -> .. -> xn -> 0 -> (y1 -> .. -> ym) =
-   //       y1 -> .. -> ym -> 0 -> (x1 -> .. -> xn)
+   //    2. (x1 -> .. -> xn -> 0 -> (y1 -> .. -> ym)) =
+   //       (y1 -> .. -> ym -> 0 -> (x1 -> .. -> xn))
 
    if (left_amount < 3 || right_amount < 3)
    {
