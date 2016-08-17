@@ -10,9 +10,9 @@ namespace dm
 namespace
 {
 
-const char g_char_br_opened = '(';
-const char g_char_br_closed = ')';
-const char g_char_comma     = ',';
+const auto g_char_br_opened = '(';
+const auto g_char_br_closed = ')';
+const auto g_char_comma     = ',';
 
 } // namespace
 
@@ -30,7 +30,6 @@ bool BracketsBalancer::ProcessChar(char ch)
       // First opened brackets will be ignored due to the first part of condition,
       // so the whole condition will trigger only when at least one closed bracket
       // is occured before.
-
       if (m_possible_trimmings >= 0 && m_balance < m_possible_trimmings)
       {
          m_possible_trimmings = m_balance;
@@ -42,7 +41,6 @@ bool BracketsBalancer::ProcessChar(char ch)
    {
       // Last closed brackets will be ignored due to -1 check, so the variable
       // will be initialized by bracket balance of the first closed bracked.
-
       if (-1 == m_possible_trimmings)
       {
          m_possible_trimmings = m_balance;
@@ -90,7 +88,8 @@ StringPtrLen BracketsContent::Parse(const StringPtrLen& str)
 {
    m_content.Reset();
 
-   const char* bracket_opened = str.Find(g_char_br_opened);
+   const auto bracket_opened = str.Find(g_char_br_opened);
+   
    // If opened bracket is absent, imply this fact as if
    // the whole obtained string is the name.
    if (nullptr == bracket_opened)
@@ -118,7 +117,7 @@ bool BracketsContent::GetPart(StringPtrLen& part)
       return false;
    }
 
-   const char* comma = FindWithZeroBalance(m_content, g_char_comma);
+   const auto comma = FindWithZeroBalance(m_content, g_char_comma);
    if (comma != nullptr)
    {
       part = m_content.Left(comma);
@@ -139,8 +138,8 @@ void CheckBracketBalance(const StringPtrLen& str)
 {
    BracketsBalancer balancer;
 
-   const char* curr = str.Begin();
-   const char* const end = str.End();
+   auto curr = str.Begin();
+   const auto end = str.End();
    for (; curr != end; ++curr)
    {
       balancer.ProcessChar(*curr);
@@ -153,8 +152,8 @@ static long CalculatePossibleTrimmings(const StringPtrLen& str)
 {
    BracketsBalancer balancer;
 
-   const char* curr = str.Begin();
-   const char* const end = str.End();
+   auto curr = str.Begin();
+   const auto end = str.End();
    for (; curr != end; ++curr)
    {
       balancer.ProcessChar(*curr);
@@ -167,7 +166,7 @@ void TrimBrackets(StringPtrLen& str)
 {
    str.Trim();
 
-   long possible_trimmings = CalculatePossibleTrimmings(str);
+   auto possible_trimmings = CalculatePossibleTrimmings(str);
    for (; possible_trimmings > 0; --possible_trimmings)
    {
       assert(str.Len() > 1);      
@@ -200,6 +199,7 @@ const char* FindWithZeroBalance(const StringPtrLen& str, const char* sub)
       }
       tail.RemoveLeft(1);
    }
+   
    return nullptr;
 }
 
@@ -209,8 +209,8 @@ const char* FindWithZeroBalance(const StringPtrLen& str, char ch)
 
    BracketsBalancer balancer;
 
-   const char* curr = str.Begin();
-   const char* const end = str.End();
+   auto curr = str.Begin();
+   const auto end = str.End();
    for (; curr != end; ++curr)
    {
       if (!balancer.ProcessChar(*curr) && balancer.GetBalance() == 0 && (*curr == ch))
@@ -218,6 +218,7 @@ const char* FindWithZeroBalance(const StringPtrLen& str, char ch)
          return curr;
       }
    }
+   
    return nullptr;
 }
 

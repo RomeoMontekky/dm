@@ -16,8 +16,8 @@ bool IsQualifier(const StringPtrLen& str)
 {
    assert(str.Len() > 0);
    
-   const char* curr = str.Begin();
-   const char* const end = str.End();
+   auto curr = str.Begin();
+   const auto end = str.End();
    
    // The first character can be alphabetic or '_'
    if (!std::isalpha(*curr) && *curr != '_')
