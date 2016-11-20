@@ -4,3 +4,4 @@ project(dm)
 
 add_subdirectory(engine)
 add_subdirectory(console)
+add_subdirectory(gui)
