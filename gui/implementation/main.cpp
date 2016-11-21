@@ -27,7 +27,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    GdiplusInitializer gdi_initializer;
 
    wc::MainWindow main_window;
-   main_window.Create("Main Window", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN, 0, 0, 300, 300);
+   main_window.Create("Main Window", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN, 800, 300, 300, 300);
    ::ShowWindow(main_window.GetHandle(), nCmdShow);
 
    Sticker sticker;

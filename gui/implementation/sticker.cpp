@@ -7,6 +7,11 @@ ISection::~ISection()
    // no code
 }
 
+IStickerCallback::~IStickerCallback()
+{
+   // no code
+}
+
 namespace
 {
 
@@ -15,7 +20,8 @@ class Section : public ISection
 public:
    Section(Sticker& sticker);
 
-   const std::string& GetName() const;
+   const std::string& GetTitle() const;
+   const std::string& GetOwnerName() const;
    const std::string& GetHeaderDescription() const;
    const std::string& GetFooterPrefex() const;
    const std::string& GetFooterDescription() const;
@@ -27,18 +33,20 @@ public:
       std::string m_description;
    };
 
-   long GetItemCount() const;
-   const Item& GetItem(long index) const;
+   unsigned long GetItemCount() const;
+   const Item& GetItem(unsigned long index) const;
 
    // ISection overrides
-   virtual void SetName(const char* name) override;
+   virtual void SetTitle(const char* title) override;
+   virtual void SetOwnerName(const char* owner_name) override;
    virtual void SetHeader(const char* description) override;
    virtual void SetFooter(const char* prefix, const char* description) override;
-   virtual void SetItemCount(long count) override;
-   virtual void SetItem(long index, const char* date, const char* time, const char* description) override;
+   virtual void SetItemCount(unsigned long count) override;
+   virtual void SetItem(unsigned long index, const char* date, const char* time, const char* description) override;
 
 private:
-   std::string m_name;
+   std::string m_title;
+   std::string m_owner_name;
    std::string m_header_description;
    std::string m_footer_prefix;
    std::string m_footer_description;
@@ -49,7 +57,8 @@ private:
 };
 
 Section::Section(Sticker& sticker) :
-   m_name(),
+   m_title(),
+   m_owner_name(),
    m_header_description(),
    m_footer_prefix(),
    m_footer_description(),
@@ -59,9 +68,14 @@ Section::Section(Sticker& sticker) :
    // no code
 }
 
-const std::string& Section::GetName() const
+const std::string& Section::GetTitle() const
 {
-   return m_name;
+   return m_title;
+}
+
+const std::string& Section::GetOwnerName() const
+{
+   return m_owner_name;
 }
 
 const std::string& Section::GetHeaderDescription() const
@@ -79,23 +93,35 @@ const std::string& Section::GetFooterDescription() const
    return m_footer_description;
 }
 
-long Section::GetItemCount() const
+unsigned long Section::GetItemCount() const
 {
-   return static_cast<long>(m_items.size());
+   return m_items.size();
 }
 
-const Section::Item& Section::GetItem(long index) const
+const Section::Item& Section::GetItem(unsigned long index) const
 {
    return m_items.at(index);
 }
 
-void Section::SetName(const char* name)
+void Section::SetTitle(const char* title)
 {
-   if (m_name != name)
+   if (m_title != title)
    {
-      m_name = name;
+      m_title = title;
       m_sticker.SetDirty();
    }
+   
+   m_sticker.Update();
+}
+
+void Section::SetOwnerName(const char* owner_name)
+{
+   if (m_owner_name != owner_name)
+   {
+      m_owner_name = owner_name;
+      m_sticker.SetDirty();
+   }
+   
    m_sticker.Update();
 }
 
@@ -106,6 +132,7 @@ void Section::SetHeader(const char* description)
       m_header_description = description;
       m_sticker.SetDirty();
    }
+   
    m_sticker.Update();
 }
 
@@ -116,25 +143,28 @@ void Section::SetFooter(const char* prefix, const char* description)
       m_footer_prefix = prefix;
       m_sticker.SetDirty();
    }
+   
    if (m_footer_description != description)
    {
       m_footer_description = description;
       m_sticker.SetDirty();
    }
+   
    m_sticker.Update();
 }
 
-void Section::SetItemCount(long count)
+void Section::SetItemCount(unsigned long count)
 {
-   if ((long)m_items.size() != count)
+   if (m_items.size() != count)
    {
       m_items.resize(count);
       m_sticker.SetDirty();
    }
+   
    m_sticker.Update();
 }
 
-void Section::SetItem(long index, const char* date, const char* time, const char* description)
+void Section::SetItem(unsigned long index, const char* date, const char* time, const char* description)
 {
    auto& item = m_items.at(index);
    if (item.m_date != date)
@@ -142,16 +172,19 @@ void Section::SetItem(long index, const char* date, const char* time, const char
       item.m_date = date;
       m_sticker.SetDirty();
    }
+   
    if (item.m_time != time)
    {
       item.m_time = time;
       m_sticker.SetDirty();
    }
+   
    if (item.m_description != description)
    {
       item.m_description = description;
       m_sticker.SetDirty();
    }
+   
    m_sticker.Update();
 }
 
@@ -162,7 +195,7 @@ void Section::SetItem(long index, const char* date, const char* time, const char
 Sticker::Sticker() :
    wc::Window(),
    m_state(StateType::Minimized),
-   m_is_dirty(false),
+   m_is_dirty(true),
    m_is_redraw(true),
    m_sections()
 {
@@ -185,6 +218,26 @@ void Sticker::Update()
    {
       ::InvalidateRect(GetHandle(), nullptr, FALSE);
    }
+}
+
+void Sticker::SetSectionCount(unsigned long count)
+{
+   m_sections.resize(count);
+}
+
+ISection& Sticker::GetSection(unsigned long index)
+{
+   auto& section = m_sections.at(index);
+   if (!section)
+   {
+      section.reset(new Section(*this));
+   }
+   return *section.get();
+}
+
+void Sticker::SetCallback(IStickerCallback* callback)
+{
+   m_callback.reset(callback);
 }
 
 LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -211,66 +264,23 @@ void Sticker::OnPaint(HDC hdc)
 {
    RECT rect;
    ::GetClientRect(GetHandle(), &rect);
+   
+   const auto rect_width = rect.right - rect.left;
+   const auto rect_height = rect.bottom - rect.top;
 
    Gdiplus::Graphics graphics(hdc);
 
-   if (m_is_dirty)
+   if (m_is_dirty || !m_memory_face ||
+       rect_width != m_memory_face->GetWidth() || rect_height != m_memory_face->GetHeight())
    {
-      m_bitmap.reset(new Gdiplus::Bitmap(rect.right - rect.left, rect.bottom - rect.top, &graphics));
-      std::unique_ptr<Gdiplus::Graphics> bitmap_graphics(Gdiplus::Graphics::FromImage(m_bitmap.get()));
+      m_memory_face.reset(new Gdiplus::Bitmap(rect_width, rect_height, &graphics));
+      std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_face.get()));
 
-      Gdiplus::Pen pen(Gdiplus::Color(0, 0, 0), 2);
-      bitmap_graphics->DrawEllipse(&pen, (INT)rect.left, rect.top, rect.right, rect.bottom);
+      Gdiplus::Pen pen(Gdiplus::Color(0, 0, 0), 1);
+      memory_graphics->DrawEllipse(&pen, (INT)rect.left + 1, rect.top + 1, rect.right - 5, rect.bottom - 5);
 
-      // Draw into bitmap using bitmap_graphics
       m_is_dirty = false;
    }
 
-   graphics.DrawImage(m_bitmap.get(), 0, 0);
+   graphics.DrawImage(m_memory_face.get(), 0, 0);
 }
-
-/*
-class DMMainWindow : public wc::MainWindow
-{
-protected:
-   LRESULT WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
-   {
-      switch (uMsg)
-      {
-         case WM_PAINT:
-         {
-            PAINTSTRUCT ps;
-            //HDC hdc = ::GetDC(GetHandle());
-            HDC hdc = ::BeginPaint(GetHandle(), &ps);
-            OnPaint(hdc);
-            ::EndPaint(GetHandle(), &ps);
-            //::ReleaseDC(GetHandle(), hdc);
-            return 0;
-         }
-      }
-      return MainWindow::WindowProc(uMsg, wParam, lParam);
-   }
-
-private:
-   void OnPaint(HDC dc);
-};
-
-void DMMainWindow::OnPaint(HDC hdc)
-{
-   Gdiplus::Graphics graphics(hdc);
-
-   RECT rect;
-   ::GetClientRect(GetHandle(), &rect);
-
-   Gdiplus::LinearGradientBrush brush(
-      Gdiplus::Point(0, 0),
-      Gdiplus::Point(400, 0),
-      Gdiplus::Color(255, 255, 0, 0),   // opaque red
-      Gdiplus::Color(255, 0, 0, 255));  // opaque blue
-
-   Gdiplus::Rect gdi_rect(rect.left, rect.top, rect.right, rect.bottom);
-   graphics.FillRectangle(&brush, gdi_rect);
-}
-
-*/
-
