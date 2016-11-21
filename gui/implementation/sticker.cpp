@@ -195,6 +195,7 @@ void Section::SetItem(unsigned long index, const char* date, const char* time, c
 Sticker::Sticker() :
    wc::Window(),
    m_state(StateType::Minimized),
+   m_memory_face(),
    m_is_dirty(true),
    m_is_redraw(true),
    m_sections()
