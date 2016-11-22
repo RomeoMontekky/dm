@@ -192,14 +192,17 @@ void Section::SetItem(unsigned long index, const char* date, const char* time, c
 
 /////////////// Sticker /////////////////
 
-Sticker::Sticker() :
-   wc::Window(),
+Sticker::Sticker() : wc::Window(),
    m_state(StateType::Minimized),
    m_memory_face(),
+   m_callback(),
    m_is_dirty(true),
    m_is_redraw(true),
    m_sections()
 {
+   memset(&m_minimized_window_rect, 0, sizeof(m_minimized_window_rect));
+   memset(&m_window_rect, 0, sizeof(m_window_rect));
+   memset(&m_window_rect, 0, sizeof(m_window_rect));
 }
 
 void Sticker::SetDirty()
@@ -245,6 +248,10 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
    switch (uMsg)
    {
+      case WM_LBUTTONUP:
+      {
+         OnMouseClick();
+      }
       case WM_ERASEBKGND:
       {
          return TRUE;
@@ -259,6 +266,24 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       }
    }
    return Window::WindowProc(uMsg, wParam, lParam);
+}
+
+void Sticker::OnMouseClick()
+{
+   switch (m_state)
+   {
+      case StateType::Minimized:
+      {
+         ::GetClientRect(GetHandle(), &m_minimized_window_rect);
+         m_minimized_window_rect.right += 6;
+         m_minimized_window_rect.bottom += 6;
+         
+         //m_state = StateType::Opened;
+         //Recalculate();
+         //::SetWindowPos(GetHandle(), GetHandle(),
+         //               )
+      }
+   }
 }
 
 void Sticker::OnPaint(HDC hdc)
@@ -276,12 +301,27 @@ void Sticker::OnPaint(HDC hdc)
    {
       m_memory_face.reset(new Gdiplus::Bitmap(rect_width, rect_height, &graphics));
       std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_face.get()));
-
-      Gdiplus::Pen pen(Gdiplus::Color(0, 0, 0), 1);
-      memory_graphics->DrawEllipse(&pen, (INT)rect.left + 1, rect.top + 1, rect.right - 5, rect.bottom - 5);
-
+      
+      memory_graphics->SetTextRenderingHint( Gdiplus::TextRenderingHintSingleBitPerPixelGridFit );
+      
+      //Gdiplus::Pen pen(Gdiplus::Color(0, 0, 0), 1);
+      //memory_graphics->DrawEllipse(&pen, (INT)rect.left + 1, rect.top + 1, rect.right - 5, rect.bottom - 5);
+      
+      //DrawString(const WCHAR*, INT, const Font*, const PointF, const StringFormat*, const Brush*)
+      
+      const Gdiplus::Font font(L"Tahoma", 10, Gdiplus::FontStyleBold);
+      const Gdiplus::PointF pt(0, 0);
+      const Gdiplus::SolidBrush brush(Gdiplus::Color(0, 0, 0));
+      
+      memory_graphics->DrawString(L"Test", -1, &font, pt, &brush);
+      
       m_is_dirty = false;
    }
 
    graphics.DrawImage(m_memory_face.get(), 0, 0);
+}
+
+void Sticker::RecalculateRects()
+{
+   
 }

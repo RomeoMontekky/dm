@@ -24,7 +24,7 @@ class IStickerCallback
 {
 public:
    virtual void OnHeaderClick(unsigned long section_index) = 0;
-   virtual void OnItemClick(unsigned long section_index) = 0;
+   virtual void OnItemClick(unsigned long section_index, unsigned long item_index) = 0;
    virtual void OnFooterClick(unsigned long section_index) = 0;
    
    virtual ~IStickerCallback();
@@ -46,17 +46,22 @@ public:
 
 protected:
    virtual LRESULT WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
-
+   
+private:
+   void OnMouseClick();
    void OnPaint(HDC hdc);
+   void RecalculateRects();
 
 private:
    enum class StateType { Minimized, Opened, Expanded } m_state;
-
+   RECT m_minimized_window_rect;
+   RECT m_window_rect;
+   RECT footer_rect;
+   
    std::unique_ptr<Gdiplus::Bitmap> m_memory_face;
-
+   std::unique_ptr<IStickerCallback> m_callback;
+   
    bool m_is_dirty;
    bool m_is_redraw;
    std::vector< std::unique_ptr<ISection> > m_sections;
-   
-   std::unique_ptr<IStickerCallback> m_callback;
 };
