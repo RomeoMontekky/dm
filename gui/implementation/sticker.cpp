@@ -275,8 +275,7 @@ void Sticker::OnMouseClick()
       case StateType::Minimized:
       {
          ::GetClientRect(GetHandle(), &m_minimized_window_rect);
-         m_minimized_window_rect.right += 6;
-         m_minimized_window_rect.bottom += 6;
+         ::InflateRect(&m_minimized_window_rect, -3, -3);
          
          //m_state = StateType::Opened;
          //Recalculate();
