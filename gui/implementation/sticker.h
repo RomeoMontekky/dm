@@ -50,10 +50,14 @@ protected:
 private:
    void OnMouseClick();
    void OnPaint(HDC hdc);
-   void RecalculateRects();
+
+   enum class StateType { Minimized, Opened, Expanded };
+
+   void SetState(StateType state);
 
 private:
-   enum class StateType { Minimized, Opened, Expanded } m_state;
+   StateType m_state;
+
    RECT m_minimized_window_rect;
    RECT m_window_rect;
    RECT footer_rect;

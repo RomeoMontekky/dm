@@ -213,7 +213,7 @@ Sticker::Sticker() : wc::Window(),
 {
    memset(&m_minimized_window_rect, 0, sizeof(m_minimized_window_rect));
    memset(&m_window_rect, 0, sizeof(m_window_rect));
-   memset(&m_window_rect, 0, sizeof(m_window_rect));
+   memset(&footer_rect, 0, sizeof(footer_rect));
 }
 
 void Sticker::SetDirty()
@@ -288,8 +288,8 @@ void Sticker::OnMouseClick()
          ::GetWindowRect(GetHandle(), &m_minimized_window_rect);
          ::MapWindowPoints(nullptr, ::GetParent(GetHandle()), (LPPOINT)&m_minimized_window_rect, 2);
          
-         //m_state = StateType::Opened;
-         //Recalculate();
+         SetState(StateType::Opened);
+
          //::SetWindowPos(GetHandle(), GetHandle(),  )
          
          break;
@@ -345,7 +345,15 @@ void Sticker::OnPaint(HDC hdc)
    graphics.DrawImage(m_memory_face.get(), 0, 0);
 }
 
-void Sticker::RecalculateRects()
+void Sticker::SetState(StateType state)
 {
-   
+   m_state = state;
+
+   // Recalculate all rectangles
+
+   for (auto& isection : m_sections)
+   {
+      auto* section = static_cast<Section*>(isection.get());
+      // TODO:
+   }
 }
