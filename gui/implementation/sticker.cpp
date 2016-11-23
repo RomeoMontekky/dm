@@ -1,6 +1,7 @@
 #include "sticker.h"
 
 #include <string>
+#include <cassert>
 
 ISection::~ISection()
 {
@@ -188,6 +189,16 @@ void Section::SetItem(unsigned long index, const char* date, const char* time, c
    m_sticker.Update();
 }
 
+std::wstring AsciiToWide(const std::string& input)
+{
+   auto output_buffer_size = ::MultiByteToWideChar(CP_ACP, 0, input.c_str(), input.size(), nullptr, 0);
+   assert(output_buffer_size > 0);
+   std::unique_ptr<wchar_t[]> output_buffer(new wchar_t[output_buffer_size]);
+   auto ret = ::MultiByteToWideChar(CP_ACP, 0, input.c_str(), input.size(), output_buffer.get(), output_buffer_size);
+   assert(ret != 0);
+   return std::wstring(output_buffer.get(), output_buffer.get() + output_buffer_size);
+}
+
 } // namespace
 
 /////////////// Sticker /////////////////
@@ -274,19 +285,25 @@ void Sticker::OnMouseClick()
    {
       case StateType::Minimized:
       {
-         ::GetClientRect(GetHandle(), &m_minimized_window_rect);
-         ::InflateRect(&m_minimized_window_rect, -3, -3);
+         ::GetWindowRect(GetHandle(), &m_minimized_window_rect);
+         ::MapWindowPoints(nullptr, ::GetParent(GetHandle()), (LPPOINT)&m_minimized_window_rect, 2);
          
          //m_state = StateType::Opened;
          //Recalculate();
-         //::SetWindowPos(GetHandle(), GetHandle(),
-         //               )
+         //::SetWindowPos(GetHandle(), GetHandle(),  )
+         
+         break;
       }
    }
 }
 
 void Sticker::OnPaint(HDC hdc)
 {
+   if (m_sections.empty())
+   {
+      return;
+   }
+   
    RECT rect;
    ::GetClientRect(GetHandle(), &rect);
    
@@ -301,21 +318,29 @@ void Sticker::OnPaint(HDC hdc)
       m_memory_face.reset(new Gdiplus::Bitmap(rect_width, rect_height, &graphics));
       std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_face.get()));
       
-      memory_graphics->SetTextRenderingHint( Gdiplus::TextRenderingHintSingleBitPerPixelGridFit );
+      memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
       
-      //Gdiplus::Pen pen(Gdiplus::Color(0, 0, 0), 1);
-      //memory_graphics->DrawEllipse(&pen, (INT)rect.left + 1, rect.top + 1, rect.right - 5, rect.bottom - 5);
-      
-      //DrawString(const WCHAR*, INT, const Font*, const PointF, const StringFormat*, const Brush*)
-      
-      const Gdiplus::Font font(L"Tahoma", 10, Gdiplus::FontStyleBold);
-      const Gdiplus::PointF pt(0, 0);
-      const Gdiplus::SolidBrush brush(Gdiplus::Color(0, 0, 0));
-      
-      memory_graphics->DrawString(L"Test", -1, &font, pt, &brush);
-      
-      m_is_dirty = false;
+      switch (m_state)
+      {
+         case StateType::Minimized:
+         {      
+            const Gdiplus::Font font(L"Tahoma", 9, Gdiplus::FontStyleBold);
+            const Gdiplus::RectF rectf(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+            const Gdiplus::SolidBrush brush(Gdiplus::Color(0x72, 0xBE, 0x44));
+            
+            Gdiplus::StringFormat format;
+            format.SetAlignment(Gdiplus::StringAlignmentCenter);
+            
+            memory_graphics->DrawString(
+               AsciiToWide(static_cast<Section*>(m_sections[0].get())->GetTitle()).c_str(), 
+               -1, &font, rectf, &format, &brush);
+            
+            break;
+         }
+      }
    }
+            
+   m_is_dirty = false;
 
    graphics.DrawImage(m_memory_face.get(), 0, 0);
 }

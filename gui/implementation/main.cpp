@@ -32,6 +32,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
    Sticker sticker;
    sticker.Create(nullptr, WS_CHILD|WS_VISIBLE|WS_DLGFRAME, 0, 0, 100, 35, main_window.GetHandle());
+   
+   sticker.SetSectionCount(1);
+   auto& section = sticker.GetSection(0);
+   section.SetTitle("Test string");
 
    MSG msg;
    // Main message loop.
