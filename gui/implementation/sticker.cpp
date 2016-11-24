@@ -17,18 +17,18 @@ IStickerCallback::~IStickerCallback()
 namespace
 {
    
+const wchar_t g_tahoma_name[] = L"Tahoma";
+
 namespace Brushes
 {
    const Gdiplus::SolidBrush black(Gdiplus::Color(0x00, 0x00, 0x00));
    const Gdiplus::SolidBrush light_grey(Gdiplus::Color(0xCC, 0xCC, 0xCC));
    const Gdiplus::SolidBrush dark_grey(Gdiplus::Color(0x99, 0x99, 0x99)); 
-   const Gdiplus::SolidBrush dark_grey_with_blue(Gdiplus::Color(0x89, 0x91, 0xA9));   
+   const Gdiplus::SolidBrush dark_grey_with_blue(Gdiplus::Color(0x89, 0x91, 0xA9));
    const Gdiplus::SolidBrush dark_green(Gdiplus::Color(0x72, 0xBE, 0x44));
-   const Gdiplus::SolidBrush dark_blue(Gdiplus::Color(0x72, 0xBE, 0x44)); // 0, 85, 187
+   const Gdiplus::SolidBrush dark_blue(Gdiplus::Color(0x00, 0x55, 0xBB));
    const Gdiplus::SolidBrush dark_red(Gdiplus::Color(0xD9, 0x47, 0x00));
 }
-
-const wchar_t g_tahoma_name[] = L"Tahoma";
 
 namespace Fonts
 {
@@ -54,6 +54,8 @@ std::wstring AsciiToWide(const char* input)
    
    return std::wstring(output.get(), output.get() + output_size);
 }
+
+///////////// class TextInfo /////////////
    
 class TextInfo
 {
@@ -100,6 +102,8 @@ void TextInfo::RecalculateBoundary(int x, int y, Gdiplus::Graphics* graphics)
    graphics->MeasureString(m_text.c_str(), m_text.size(), &m_font, origin_rect, &m_boundary);
 }
 
+///////////// class Section ////////////////
+
 class Section : public ISection
 {
 public:
@@ -113,6 +117,8 @@ public:
 
    struct Item
    {
+      Item();
+
       TextInfo m_date;
       TextInfo m_time;
       TextInfo m_description;
@@ -145,12 +151,19 @@ private:
    Sticker& m_sticker;
 };
 
+Section::Item::Item() :
+   m_date(Fonts::tahoma_9_regular, Brushes::dark_grey_with_blue),
+   m_time(Fonts::tahoma_8_regular, Brushes::dark_grey_with_blue),
+   m_description(Fonts::tahoma_9_regular, Brushes::dark_grey_with_blue)
+{
+}
+
 Section::Section(Sticker& sticker) :
-   m_title(),
-   m_owner_name(),
-   m_header_description(),
-   m_footer_prefix(),
-   m_footer_description(),
+   m_title(Fonts::tahoma_9_bold, Brushes::dark_red),
+   m_owner_name(Fonts::tahoma_9_regular, Brushes::black),
+   m_header_description(Fonts::tahoma_9_bold, Brushes::dark_red),
+   m_footer_prefix(Fonts::tahoma_9_bold, Brushes::dark_red),
+   m_footer_description(Fonts::tahoma_9_bold, Brushes::dark_red),
    m_items(),
    m_boundary(),
    m_sticker(sticker)
@@ -195,8 +208,11 @@ const Section::Item& Section::GetItem(unsigned long index) const
 
 void Section::RecalculateBoundary(int x, int y, Gdiplus::Graphics* graphics)
 {
+   // TODO: Init boundary to {x, y, 0, 0}
+
    m_title.RecalculateBoundary(x, y, graphics);
-   // TODO: Recalculate another items and unite boundaries
+
+   // TODO: Recalculate another items and unite boundaries.
 }
 
 void Section::SetTitle(const char* title)
@@ -279,7 +295,7 @@ void Section::SetItem(unsigned long index, const char* date, const char* time, c
 
 } // namespace
 
-/////////////// Sticker /////////////////
+/////////////// class Sticker /////////////////
 
 Sticker::Sticker() : wc::Window(),
    m_state(StateType::Minimized),
