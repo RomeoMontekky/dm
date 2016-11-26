@@ -23,15 +23,15 @@ const auto g_indent_vert = 3;
 const auto g_indent_horz = 3;
 const wchar_t g_tahoma_name[] = L"Tahoma";
 
-namespace Brushes
+namespace Colors
 {
-   const Gdiplus::SolidBrush black(Gdiplus::Color(0x00, 0x00, 0x00));
-   const Gdiplus::SolidBrush grey_light(Gdiplus::Color(0xCC, 0xCC, 0xCC));
-   const Gdiplus::SolidBrush grey_dark(Gdiplus::Color(0x99, 0x99, 0x99)); 
-   const Gdiplus::SolidBrush grey_dark_with_blue(Gdiplus::Color(0x89, 0x91, 0xA9));
-   const Gdiplus::SolidBrush green_dark(Gdiplus::Color(0x72, 0xBE, 0x44));
-   const Gdiplus::SolidBrush blue_dark(Gdiplus::Color(0x00, 0x55, 0xBB));
-   const Gdiplus::SolidBrush red_dark(Gdiplus::Color(0xD9, 0x47, 0x00));
+   const Gdiplus::Color black(0x00, 0x00, 0x00);
+   const Gdiplus::Color grey_light(0xCC, 0xCC, 0xCC);
+   const Gdiplus::Color grey_dark(0x99, 0x99, 0x99);
+   const Gdiplus::Color grey_dark_with_blue(0x89, 0x91, 0xA9);
+   const Gdiplus::Color green_dark(0x72, 0xBE, 0x44);
+   const Gdiplus::Color blue_dark(0x00, 0x55, 0xBB);
+   const Gdiplus::Color red_dark(0xD9, 0x47, 0x00);
 }
 
 namespace Fonts
@@ -59,39 +59,30 @@ std::wstring AsciiToWide(const char* input)
    return std::wstring(output.get(), output.get() + output_size);
 }
 
-void UnionRectWithRectF(RECT& rect, const Gdiplus::RectF& rectf)
-{
-   RECT converted_rectf = { static_cast<LONG>(rectf.GetLeft() - 0.5),
-                            static_cast<LONG>(rectf.GetTop() - 0.5),
-                            static_cast<LONG>(rectf.GetRight() + 0.5),
-                            static_cast<LONG>(rectf.GetBottom() + 0.5) };
-   RECT target_rect;
-   ::UnionRect(&target_rect, &rect, &converted_rectf);
-   rect = target_rect;
-}
-
 ///////////// class TextInfo /////////////
    
 class TextInfo
 {
 public:
-   TextInfo(const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush);
+   TextInfo(/*const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush*/);
    
    bool SetText(const char* text);
    const std::wstring& GetText() const;
    
-   void RecalculateBoundary(int x, int y, Gdiplus::Graphics* graphics);
+   void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics);
    const Gdiplus::RectF& GetBoundary() const;
+
+   void Draw(Gdiplus::Graphics* graphics) const;
    
 private:
    std::wstring m_text;
    Gdiplus::RectF m_boundary;
-   const Gdiplus::Font& m_font;
-   const Gdiplus::Brush& m_brush;
+   //const Gdiplus::Font& m_font;
+   //const Gdiplus::Brush& m_brush;
 };
 
-TextInfo::TextInfo(const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush) : 
-   m_text(), m_boundary(), m_font(font), m_brush(brush)
+TextInfo::TextInfo(/*const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush*/) :
+   m_text(), m_boundary()/*, m_font(font), m_brush(brush)*/
 {
    // no code
 }
@@ -112,15 +103,25 @@ const std::wstring& TextInfo::GetText() const
    return m_text;
 }
 
-void TextInfo::RecalculateBoundary(int x, int y, Gdiplus::Graphics* graphics)
+void TextInfo::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
 {
-   Gdiplus::RectF origin_rect(x, y, 10, 10);
-   auto status = graphics->MeasureString(m_text.c_str(), m_text.size(), &m_font, origin_rect, &m_boundary);
+   const Gdiplus::Font font(g_tahoma_name, 9, Gdiplus::FontStyleRegular);
+   //const Gdiplus::SolidBrush black(Gdiplus::Color(0x00, 0x00, 0x00));
+   Gdiplus::RectF origin_rect(x, y, 0, 0);
+   //auto status = graphics->MeasureString(m_text.c_str(), m_text.size(), &m_font, origin_rect, &m_boundary);
+   auto status = graphics->MeasureString(m_text.c_str(), m_text.size(), &font, origin_rect, &m_boundary);
 }
 
 const Gdiplus::RectF& TextInfo::GetBoundary() const
 {
    return m_boundary;
+}
+
+void TextInfo::Draw(Gdiplus::Graphics* graphics) const
+{
+   const Gdiplus::Font font(g_tahoma_name, 9, Gdiplus::FontStyleRegular);
+   const Gdiplus::SolidBrush black(Gdiplus::Color(0x00, 0x00, 0x00));
+   auto status = graphics->DrawString(m_text.c_str(), m_text.size(), &font, m_boundary, nullptr, &black);
 }
 
 ///////////// class Section ////////////////
@@ -131,24 +132,11 @@ public:
    Section(Sticker& sticker);
 
    const std::wstring& GetTitle() const;
-   const std::wstring& GetOwnerName() const;
-   const std::wstring& GetHeaderDescription() const;
-   const std::wstring& GetFooterPrefex() const;
-   const std::wstring& GetFooterDescription() const;
 
-   struct Item
-   {
-      Item();
+   void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics);
+   const Gdiplus::RectF& GetBoundary() const;
 
-      TextInfo m_date;
-      TextInfo m_time;
-      TextInfo m_description;
-   };
-
-   unsigned long GetItemCount() const;
-   const Item& GetItem(unsigned long index) const;
-   
-   void RecalculateBoundary(int x, int y, Gdiplus::Graphics* graphics);
+   void Draw(Gdiplus::Graphics* graphics) const;
 
    // ISection overrides
    virtual void SetTitle(const char* title) override;
@@ -165,31 +153,75 @@ private:
    TextInfo m_footer_prefix;
    TextInfo m_footer_description;
 
-   std::vector<Item> m_items;
-   
-   RECT m_boundary;
+   struct Item
+   {
+      Item();
 
+      void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics);
+      const Gdiplus::RectF& GetBoundary() const;
+
+      void Draw(Gdiplus::Graphics* graphics) const;
+
+      TextInfo m_date;
+      TextInfo m_time;
+      TextInfo m_description;
+      Gdiplus::RectF m_boundary;
+   };
+
+   std::vector<Item> m_items;
+   Gdiplus::RectF m_boundary;
    Sticker& m_sticker;
 };
 
 Section::Item::Item() :
+/*
    m_date(Fonts::tahoma_9_regular, Brushes::grey_dark_with_blue),
    m_time(Fonts::tahoma_8_regular, Brushes::grey_light),
-   m_description(Fonts::tahoma_9_regular, Brushes::grey_dark_with_blue)
+   m_description(Fonts::tahoma_9_regular, Brushes::grey_dark_with_blue),*/
+   m_boundary()
 {
 }
 
+void Section::Item::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
+{
+   m_boundary.X = x;
+   m_boundary.Y = y;
+   m_boundary.Width = 0;
+   m_boundary.Height = 0;
+
+   m_date.RecalculateBoundary(m_boundary.GetRight(), m_boundary.GetTop(), graphics);
+   Gdiplus::RectF::Union(m_boundary, m_boundary, m_date.GetBoundary());
+
+   m_time.RecalculateBoundary(m_boundary.GetRight() + g_indent_horz, m_boundary.GetTop(), graphics);
+   Gdiplus::RectF::Union(m_boundary, m_boundary, m_time.GetBoundary());
+
+   m_description.RecalculateBoundary(m_boundary.GetRight() + g_indent_horz, m_boundary.GetTop(), graphics);
+   Gdiplus::RectF::Union(m_boundary, m_boundary, m_description.GetBoundary());
+}
+
+const Gdiplus::RectF& Section::Item::GetBoundary() const
+{
+   return m_boundary;
+}
+
+void Section::Item::Draw(Gdiplus::Graphics* graphics) const
+{
+   m_date.Draw(graphics);
+   m_time.Draw(graphics);
+   m_description.Draw(graphics);
+}
+
 Section::Section(Sticker& sticker) :
+/*
    m_title(Fonts::tahoma_9_bold, Brushes::red_dark),
    m_owner_name(Fonts::tahoma_9_regular, Brushes::black),
    m_header_description(Fonts::tahoma_9_regular, Brushes::grey_dark),
    m_footer_prefix(Fonts::tahoma_9_regular, Brushes::grey_dark),
    m_footer_description(Fonts::tahoma_9_regular, Brushes::black),
    m_items(),
-   m_boundary(),
+   m_boundary(),*/
    m_sticker(sticker)
 {
-   ::SetRectEmpty(&m_boundary);
 }
 
 const std::wstring& Section::GetTitle() const
@@ -197,49 +229,47 @@ const std::wstring& Section::GetTitle() const
    return m_title.GetText();
 }
 
-const std::wstring& Section::GetOwnerName() const
+void Section::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
 {
-   return m_owner_name.GetText();
+   m_boundary.X = x;
+   m_boundary.Y = y;
+   m_boundary.Width = 0;
+   m_boundary.Height = 0;
+
+   m_title.RecalculateBoundary(m_boundary.GetLeft(), m_boundary.GetBottom() + g_indent_vert, graphics);
+   Gdiplus::RectF::Union(m_boundary, m_boundary, m_title.GetBoundary());
+
+   m_header_description.RecalculateBoundary(m_boundary.GetLeft(), m_boundary.GetBottom() + g_indent_vert, graphics);
+   Gdiplus::RectF::Union(m_boundary, m_boundary, m_header_description.GetBoundary());
+
+   for (auto& item : m_items)
+   {
+      item.RecalculateBoundary(m_boundary.GetLeft(), m_boundary.GetBottom() + g_indent_vert, graphics);
+      Gdiplus::RectF::Union(m_boundary, m_boundary, item.GetBoundary());
+   }
+
+   m_footer_prefix.RecalculateBoundary(m_boundary.GetLeft(), m_boundary.GetBottom() + g_indent_vert, graphics);
+   m_footer_description.RecalculateBoundary(m_boundary.GetLeft() + m_footer_prefix.GetBoundary().GetRight() + g_indent_horz,
+                                            m_boundary.GetBottom() + g_indent_vert, graphics);
+   Gdiplus::RectF::Union(m_boundary, m_boundary, m_footer_prefix.GetBoundary());
+   Gdiplus::RectF::Union(m_boundary, m_boundary, m_footer_description.GetBoundary());
 }
 
-const std::wstring& Section::GetHeaderDescription() const
+const Gdiplus::RectF& Section::GetBoundary() const
 {
-   return m_header_description.GetText();
+   return m_boundary;
 }
 
-const std::wstring& Section::GetFooterPrefex() const
+void Section::Draw(Gdiplus::Graphics* graphics) const
 {
-   return m_footer_prefix.GetText();
-}
-
-const std::wstring& Section::GetFooterDescription() const
-{
-   return m_footer_description.GetText();
-}
-
-unsigned long Section::GetItemCount() const
-{
-   return m_items.size();
-}
-
-const Section::Item& Section::GetItem(unsigned long index) const
-{
-   return m_items.at(index);
-}
-
-void Section::RecalculateBoundary(int x, int y, Gdiplus::Graphics* graphics)
-{
-   ::SetRect(&m_boundary, x, y, x, y);
-
-   m_title.RecalculateBoundary(
-      m_boundary.left, m_boundary.bottom + g_indent_vert, graphics);
-   UnionRectWithRectF(m_boundary, m_title.GetBoundary());
-   
-   m_header_description.RecalculateBoundary(
-      m_boundary.left, m_boundary.bottom + g_indent_vert, graphics);
-   UnionRectWithRectF(m_boundary, m_header_description.GetBoundary());
-   
-   // TODO: Recalculate another items and unite boundaries.
+   m_title.Draw(graphics);
+   m_header_description.Draw(graphics);
+   for (auto& item : m_items)
+   {
+      item.Draw(graphics);
+   }
+   m_footer_prefix.Draw(graphics);
+   m_footer_description.Draw(graphics);
 }
 
 void Section::SetTitle(const char* title)
@@ -411,7 +441,14 @@ void Sticker::OnMouseClick()
          
          SetState(StateType::Opened);
 
-         //::SetWindowPos(GetHandle(), GetHandle(),  )
+         ::SetWindowPos(GetHandle(), nullptr,
+                        m_window_rect.left,
+                        m_window_rect.top,
+                        m_window_rect.right - m_window_rect.left,
+                        m_window_rect.bottom - m_window_rect.top,
+                        SWP_NOZORDER);
+
+         ::InvalidateRect(GetHandle(), nullptr, TRUE);
          
          break;
       }
@@ -440,24 +477,37 @@ void Sticker::OnPaint(HDC hdc)
       
       std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_face.get()));
       memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
+
+      memory_graphics->Clear(Gdiplus::Color(230, 230, 230));
       
-      switch (m_state)
+      if (StateType::Minimized == m_state)
       {
-         case StateType::Minimized:
-         {      
-            const Gdiplus::Font font(L"Tahoma", 9, Gdiplus::FontStyleBold);
-            const Gdiplus::RectF rectf(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
-            const Gdiplus::SolidBrush brush(Gdiplus::Color(0x72, 0xBE, 0x44));
-            
-            Gdiplus::StringFormat format;
-            format.SetAlignment(Gdiplus::StringAlignmentCenter);
-            
-            memory_graphics->DrawString(
-               static_cast<Section*>(m_sections[0].get())->GetTitle().c_str(), 
-               -1, &font, rectf, &format, &brush);
-            
-            break;
+         // TODO: Rework
+         const Gdiplus::Font font(L"Tahoma", 9, Gdiplus::FontStyleBold);
+         const Gdiplus::RectF rectf(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+         const Gdiplus::SolidBrush brush(Gdiplus::Color(0x72, 0xBE, 0x44));
+
+         Gdiplus::StringFormat format;
+         format.SetAlignment(Gdiplus::StringAlignmentCenter);
+
+         memory_graphics->DrawString(
+            static_cast<Section*>(m_sections[0].get())->GetTitle().c_str(),
+            -1, &font, rectf, &format, &brush);
+      }
+      else
+      {
+         for (unsigned long index = 0; index < m_sections.size(); ++index)
+         {
+            // Show only first 3 sections in opened state
+            if (StateType::Opened == m_state && index > 2)
+            {
+               break;
+            }
+            auto* section = static_cast<Section*>(m_sections[index].get());
+            section->Draw(memory_graphics.get());
          }
+
+         // TODO: Draw "next" footer.
       }
    }
             
@@ -468,35 +518,43 @@ void Sticker::OnPaint(HDC hdc)
 
 void Sticker::SetState(StateType state)
 {
+   assert(!m_sections.empty());
+
    m_state = state;
 
    // Recalculate all rectangles
-   if (StateType::Minimized == state)
+   if (StateType::Minimized == m_state)
    {
       m_window_rect = m_minimized_window_rect;
       return;
    }
    
-   assert(!m_sections.empty());
-   
-   int x = 0;
-   int y = 0;
-   
    assert(m_memory_face != nullptr);
    std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_face.get()));
    memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
    
+   Gdiplus::RectF boundary(0, 0, 0, 0);
    for (unsigned long index = 0; index < m_sections.size(); ++index)
    {
       // Show only first 3 sections in opened state
-      if (StateType::Opened == state && index > 2)
+      if (StateType::Opened == m_state && index > 2)
       {
          break;
       }
       
       auto* section = static_cast<Section*>(m_sections[index].get());
-      section->RecalculateBoundary(x, y, memory_graphics.get());
-      
-      // TODO:
+      section->RecalculateBoundary(boundary.GetLeft(), boundary.GetBottom(), memory_graphics.get());
+      Gdiplus::RectF::Union(boundary, boundary, section->GetBoundary());
    }
+
+   // TODO: Draw "next" footer.
+
+   // Take into account client edge
+   boundary.Inflate(3, 3);
+
+   ::SetRect(&m_window_rect,
+             m_minimized_window_rect.left,
+             m_minimized_window_rect.top,
+             m_minimized_window_rect.left + static_cast<LONG>(boundary.Width + 0.5),
+             m_minimized_window_rect.top + static_cast<LONG>(boundary.Height + 0.5));
 }
