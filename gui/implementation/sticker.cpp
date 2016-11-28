@@ -254,14 +254,16 @@ class Sticker::StickerObject : public GraphicObjects::Group
 {
 public:
    StickerObject(Sticker& sticker);
+
+   enum class StateType { Minimized, Opened, Expanded };
+   void SetState(StateType state);
+   StateType GetState() const;
    
    bool SetSectionCount(unsigned long count);
    GraphicObjects::Section& GetSection(unsigned long index);
    
 private:
    enum Indexes { idxSections, idxEtc, idxLast };
-   
-   enum class StateType { Minimized, Opened, Expanded };
    StateType m_state;
    Sticker& m_sticker;
 };
@@ -270,8 +272,20 @@ Sticker::StickerObject::StickerObject(Sticker& sticker) :
    Group(), m_state(StateType::Minimized), m_sticker(sticker)
 {
    Group::SetObjectCount(idxLast);
-   Group::SetObject(idxSections, std::make_unique<GraphicObjects::Group>(), GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
-   Group::SetObject(idxEtc, std::make_unique<GraphicObjects::Text>(), GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
+   Group::SetObject(idxSections, std::make_unique<GraphicObjects::Group>(),
+                    GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
+   Group::SetObject(idxEtc, std::make_unique<GraphicObjects::Text>(),
+                    GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
+}
+
+void Sticker::StickerObject::SetState(StateType state)
+{
+
+}
+
+StateType Sticker::StickerObject::GetState() const
+{
+
 }
 
 bool Sticker::StickerObject::SetSectionCount(unsigned long count)
@@ -361,7 +375,7 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    {
       case WM_LBUTTONUP:
       {
-         OnMouseClick();
+         OnMouseClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
       }
       case WM_ERASEBKGND:
       {
@@ -379,7 +393,7 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    return Window::WindowProc(uMsg, wParam, lParam);
 }
 
-void Sticker::OnMouseClick()
+void Sticker::OnMouseClick(long x, long y)
 {
    switch (m_state)
    {

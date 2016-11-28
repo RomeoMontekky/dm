@@ -49,7 +49,7 @@ protected:
    virtual LRESULT WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
    
 private:
-   void OnMouseClick();
+   void OnMouseClick(long x, long y);
    void OnPaint(HDC hdc);
 
 private:
