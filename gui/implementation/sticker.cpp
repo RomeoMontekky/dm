@@ -1,6 +1,8 @@
 #include "sticker.h"
 
+#include <vector>
 #include <string>
+#include <memory>
 #include <cstring>
 #include <cassert>
 
@@ -59,35 +61,72 @@ std::wstring AsciiToWide(const char* input)
    return std::wstring(output.get(), output.get() + output_size);
 }
 
-///////////// class TextInfo /////////////
-   
-class TextInfo
+} // namespace
+
+namespace GraphicObjects
 {
+
+///////////// class GraphicObject ////////
+
+class Base
+{
+   Base(const Base& rhs) = delete;
+
 public:
-   TextInfo(/*const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush*/);
-   
-   bool SetText(const char* text);
-   const std::wstring& GetText() const;
-   
-   void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics);
+   Base();
+   virtual ~Base();
+
    const Gdiplus::RectF& GetBoundary() const;
 
-   void Draw(Gdiplus::Graphics* graphics) const;
-   
-private:
-   std::wstring m_text;
+   virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) = 0;
+   virtual void Draw(Gdiplus::Graphics* graphics) const = 0;
+
+protected:
    Gdiplus::RectF m_boundary;
-   //const Gdiplus::Font& m_font;
-   //const Gdiplus::Brush& m_brush;
 };
 
-TextInfo::TextInfo(/*const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush*/) :
-   m_text(), m_boundary()/*, m_font(font), m_brush(brush)*/
+Base::Base() : m_boundary()
 {
    // no code
 }
 
-bool TextInfo::SetText(const char* text)
+Base::~Base()
+{
+   // no code
+}
+
+const Gdiplus::RectF& Base::GetBoundary() const
+{
+   return m_boundary;
+}
+
+///////////// class TextInfo /////////////
+   
+class Text : public Base
+{
+public:
+   Text(/*const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush*/);
+   
+   bool SetText(const char* text);
+   const std::wstring& GetText() const;
+   
+   // GraphicObject overrides
+   virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
+   virtual void Draw(Gdiplus::Graphics* graphics) const override;
+   
+private:
+   std::wstring m_text;
+   //const Gdiplus::Font& m_font;
+   //const Gdiplus::Brush& m_brush;
+};
+
+Text::Text(/*const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush*/) :
+   m_text() /*, m_font(font), m_brush(brush)*/
+{
+   // no code
+}
+
+bool Text::SetText(const char* text)
 {
    const auto wide_text = ::AsciiToWide(text);
    if (m_text != wide_text)
@@ -98,12 +137,12 @@ bool TextInfo::SetText(const char* text)
    return false;
 }
 
-const std::wstring& TextInfo::GetText() const
+const std::wstring& Text::GetText() const
 {
    return m_text;
 }
 
-void TextInfo::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
+void Text::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
 {
    const Gdiplus::Font font(g_tahoma_name, 9, Gdiplus::FontStyleRegular);
    //const Gdiplus::SolidBrush black(Gdiplus::Color(0x00, 0x00, 0x00));
@@ -112,31 +151,202 @@ void TextInfo::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Gr
    auto status = graphics->MeasureString(m_text.c_str(), m_text.size(), &font, origin_rect, &m_boundary);
 }
 
-const Gdiplus::RectF& TextInfo::GetBoundary() const
-{
-   return m_boundary;
-}
-
-void TextInfo::Draw(Gdiplus::Graphics* graphics) const
+void Text::Draw(Gdiplus::Graphics* graphics) const
 {
    const Gdiplus::Font font(g_tahoma_name, 9, Gdiplus::FontStyleRegular);
    const Gdiplus::SolidBrush black(Gdiplus::Color(0x00, 0x00, 0x00));
    auto status = graphics->DrawString(m_text.c_str(), m_text.size(), &font, m_boundary, nullptr, &black);
 }
 
+///////////// class Group ////////////////
+
+class Group : public Base
+{
+public:
+   Group(Gdiplus::REAL indent_before_x = 0, Gdiplus::REAL indent_before_y = 0);
+
+   enum class GluingType { Right, Bottom };
+
+   bool SetObjectCount(unsigned long count);
+   void SetObject(unsigned long index, std::unique_ptr<Base>&& object,
+                  GluingType gluing_type, Gdiplus::REAL indent_after = 0);
+   Base* GetObject(unsigned long index);
+   const Base* GetObject(unsigned long index) const;
+
+   // Base overrides
+   virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
+   virtual void Draw(Gdiplus::Graphics* graphics) const override;
+
+private:
+   Gdiplus::REAL m_indent_before_x;
+   Gdiplus::REAL m_indent_before_y;
+
+   struct ObjectInfo
+   {
+      std::unique_ptr<Base> m_object;
+      GluingType m_gluing_type;
+      Gdiplus::REAL m_indent_after;
+   };
+
+   std::vector<ObjectInfo> m_object_infos;
+};
+
+Group::Group(Gdiplus::REAL indent_before_x, Gdiplus::REAL indent_before_y) :
+   m_indent_before_x(indent_before_x), m_indent_before_y(indent_before_y), m_object_infos()
+{
+   m_object_infos.reserve(10);
+}
+
+bool Group::SetObjectCount(unsigned long count)
+{
+   if (m_object_infos.size() == count)
+   {
+      return false;
+   }
+   m_object_infos.resize(count);
+   return true;
+}
+
+void Group::SetObject(unsigned long index, std::unique_ptr<Base>&& object,
+                      GluingType gluing_type, Gdiplus::REAL indent_after)
+{
+   auto& object_info = m_object_infos.at(index);
+   object_info.m_object = std::move(object);
+   object_info.m_gluing_type = gluing_type;
+   object_info.m_indent_after = indent_after;
+}
+
+Base* Group::GetObject(unsigned long index)
+{
+   return m_object_infos.at(index).m_object.get();
+}
+
+const Base* Group::GetObject(unsigned long index) const
+{
+   return m_object_infos.at(index).m_object.get();
+}
+
+void Group::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
+{
+   m_boundary.X = x;
+   m_boundary.Y = y;
+   m_boundary.Width = 0;
+   m_boundary.Height = 0;
+
+   Gdiplus::REAL indent_x = m_indent_before_x;
+   Gdiplus::REAL indent_y = m_indent_before_y;
+
+   for (auto& object_info : m_object_infos)
+   {
+      assert(object_info.m_object);
+
+      object_info.m_object->RecalculateBoundary
+      (
+         indent_x + (GluingType::Right == object_info.m_gluing_type) ? m_boundary.GetRight() : m_boundary.GetLeft(),
+         indent_y + (GluingType::Bottom == object_info.m_gluing_type) ? m_boundary.GetBottom() : m_boundary.GetTop(),
+         graphics
+      );
+
+      if (GluingType::Right == object_info.m_gluing_type)
+      {
+         indent_x = object_info.m_indent_after;
+         indent_y = 0;
+      }
+      else
+      {
+         indent_x = 0;
+         indent_y = object_info.m_indent_after;
+      }
+
+      Gdiplus::RectF::Union(m_boundary, m_boundary, object_info.m_object->GetBoundary());
+   }
+
+}
+
+void Group::Draw(Gdiplus::Graphics* graphics) const
+{
+   for (auto& object_info : m_object_infos)
+   {
+      object_info.m_object->Draw(graphics);
+   }
+}
+
+/////////// class Header //////////
+
+// TODO: Create class and change text filling
+using Header = Text;
+
+/////////// class Item //////////
+
+class Item : public Group
+{
+public:
+   Item();
+
+   bool SetDate(const char* text);
+   bool SetTime(const char* text);
+   bool SetDescription(const char* text);
+};
+
+Item::Item() : Group()
+{
+   Group::SetObjectCount(3);
+   Group::SetObject(0, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
+   Group::SetObject(1, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
+   Group::SetObject(2, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
+}
+
+bool Item::SetDate(const char* text)
+{
+   return static_cast<Text*>(Group::GetObject(0))->SetText(text);
+}
+
+bool Item::SetTime(const char* text)
+{
+   return static_cast<Text*>(Group::GetObject(1))->SetText(text);
+}
+
+bool Item::SetDescription(const char* text)
+{
+   return static_cast<Text*>(Group::GetObject(2))->SetText(text);
+}
+
+///////////// class Footer ////////////////
+
+class Footer : public Group
+{
+public:
+   Footer();
+
+   bool SetPrefix(const char* text);
+   bool SetDescription(const char* text);
+};
+
+Footer::Footer()
+{
+   Group::SetObjectCount(2);
+   Group::SetObject(0, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
+   Group::SetObject(1, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
+}
+
+bool Footer::SetPrefix(const char* text)
+{
+   return static_cast<Text*>(Group::GetObject(0))->SetText(text);
+}
+
+bool Footer::SetDescription(const char* text)
+{
+   return static_cast<Text*>(Group::GetObject(1))->SetText(text);
+}
+
 ///////////// class Section ////////////////
 
-class Section : public ISection
+class Section : public ISection, public Group
 {
 public:
    Section(Sticker& sticker);
 
    const std::wstring& GetTitle() const;
-
-   void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics);
-   const Gdiplus::RectF& GetBoundary() const;
-
-   void Draw(Gdiplus::Graphics* graphics) const;
 
    // ISection overrides
    virtual void SetTitle(const char* title) override;
@@ -147,69 +357,20 @@ public:
    virtual void SetItem(unsigned long index, const char* date, const char* time, const char* description) override;
 
 private:
-   TextInfo m_title;
-   TextInfo m_owner_name;
-   TextInfo m_header_description;
-   TextInfo m_footer_prefix;
-   TextInfo m_footer_description;
+/*
+   GraphicObjects::Text m_title;
+   GraphicObjects::Text m_owner_name;
+   GraphicObjects::Text m_header_description;
+   GraphicObjects::Text m_footer_prefix;
+   GraphicObjects::Text m_footer_description;
 
-   struct Item
-   {
-      Item();
+   GraphicObjects::Group m_items;
 
-      void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics);
-      const Gdiplus::RectF& GetBoundary() const;
-
-      void Draw(Gdiplus::Graphics* graphics) const;
-
-      TextInfo m_date;
-      TextInfo m_time;
-      TextInfo m_description;
-      Gdiplus::RectF m_boundary;
-   };
-
-   std::vector<Item> m_items;
    Gdiplus::RectF m_boundary;
+*/
+
    Sticker& m_sticker;
 };
-
-Section::Item::Item() :
-/*
-   m_date(Fonts::tahoma_9_regular, Brushes::grey_dark_with_blue),
-   m_time(Fonts::tahoma_8_regular, Brushes::grey_light),
-   m_description(Fonts::tahoma_9_regular, Brushes::grey_dark_with_blue),*/
-   m_boundary()
-{
-}
-
-void Section::Item::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
-{
-   m_boundary.X = x;
-   m_boundary.Y = y;
-   m_boundary.Width = 0;
-   m_boundary.Height = 0;
-
-   m_date.RecalculateBoundary(m_boundary.GetRight(), m_boundary.GetTop(), graphics);
-   Gdiplus::RectF::Union(m_boundary, m_boundary, m_date.GetBoundary());
-
-   m_time.RecalculateBoundary(m_boundary.GetRight() + g_indent_horz, m_boundary.GetTop(), graphics);
-   Gdiplus::RectF::Union(m_boundary, m_boundary, m_time.GetBoundary());
-
-   m_description.RecalculateBoundary(m_boundary.GetRight() + g_indent_horz, m_boundary.GetTop(), graphics);
-   Gdiplus::RectF::Union(m_boundary, m_boundary, m_description.GetBoundary());
-}
-
-const Gdiplus::RectF& Section::Item::GetBoundary() const
-{
-   return m_boundary;
-}
-
-void Section::Item::Draw(Gdiplus::Graphics* graphics) const
-{
-   m_date.Draw(graphics);
-   m_time.Draw(graphics);
-   m_description.Draw(graphics);
-}
 
 Section::Section(Sticker& sticker) :
 /*
@@ -219,16 +380,23 @@ Section::Section(Sticker& sticker) :
    m_footer_prefix(Fonts::tahoma_9_regular, Brushes::grey_dark),
    m_footer_description(Fonts::tahoma_9_regular, Brushes::black),
    m_items(),
-   m_boundary(),*/
+   m_boundary(),
+   m_items(),*/
    m_sticker(sticker)
 {
+   Group::SetObjectCount(4);
+   Group::SetObject(0, std::make_unique<Text>(), Group::GluingType::Bottom, g_indent_vert);
+   Group::SetObject(1, std::make_unique<Header>(), Group::GluingType::Bottom, g_indent_vert);
+   Group::SetObject(2, std::make_unique<Group>(), Group::GluingType::Bottom, g_indent_vert);
+   Group::SetObject(3, std::make_unique<Footer>(), Group::GluingType::Bottom, g_indent_vert);
 }
 
 const std::wstring& Section::GetTitle() const
 {
-   return m_title.GetText();
+   return static_cast<const Text*>(Group::GetObject(0))->GetText();
 }
 
+/*
 void Section::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
 {
    m_boundary.X = x;
@@ -254,12 +422,8 @@ void Section::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Gra
    Gdiplus::RectF::Union(m_boundary, m_boundary, m_footer_prefix.GetBoundary());
    Gdiplus::RectF::Union(m_boundary, m_boundary, m_footer_description.GetBoundary());
 }
-
-const Gdiplus::RectF& Section::GetBoundary() const
-{
-   return m_boundary;
-}
-
+*/
+/*
 void Section::Draw(Gdiplus::Graphics* graphics) const
 {
    m_title.Draw(graphics);
@@ -271,10 +435,11 @@ void Section::Draw(Gdiplus::Graphics* graphics) const
    m_footer_prefix.Draw(graphics);
    m_footer_description.Draw(graphics);
 }
+*/
 
 void Section::SetTitle(const char* title)
 {
-   if (m_title.SetText(title))
+   if (static_cast<Text*>(Group::GetObject(0))->SetText(title))
    {
       m_sticker.SetDirty();
    }
@@ -284,17 +449,18 @@ void Section::SetTitle(const char* title)
 
 void Section::SetOwnerName(const char* owner_name)
 {
+/*
    if (m_owner_name.SetText(owner_name))
    {
       m_sticker.SetDirty();
    }
    
-   m_sticker.Update();
+   m_sticker.Update();*/
 }
 
 void Section::SetHeader(const char* description)
 {
-   if (m_header_description.SetText(description))
+   if (static_cast<Header*>(Group::GetObject(1))->SetText(description))
    {
       m_sticker.SetDirty();
    }
@@ -304,12 +470,14 @@ void Section::SetHeader(const char* description)
 
 void Section::SetFooter(const char* prefix, const char* description)
 {
-   if (m_footer_prefix.SetText(prefix))
+   auto footer = static_cast<Footer*>(Group::GetObject(3));
+
+   if (footer->SetPrefix(prefix))
    {
       m_sticker.SetDirty();
    }
    
-   if (m_footer_description.SetText(description))
+   if (footer->SetDescription(description))
    {
       m_sticker.SetDirty();
    }
@@ -319,9 +487,10 @@ void Section::SetFooter(const char* prefix, const char* description)
 
 void Section::SetItemCount(unsigned long count)
 {
-   if (m_items.size() != count)
+   auto items = static_cast<Group*>(Group::GetObject(2));
+
+   if (items->SetObjectCount(count))
    {
-      m_items.resize(count);
       m_sticker.SetDirty();
    }
    
@@ -330,19 +499,27 @@ void Section::SetItemCount(unsigned long count)
 
 void Section::SetItem(unsigned long index, const char* date, const char* time, const char* description)
 {
-   auto& item = m_items.at(index);
-   
-   if (item.m_date.SetText(date))
+   auto items = static_cast<Group*>(Group::GetObject(2));
+
+   auto item = static_cast<Item*>(items->GetObject(index));
+   if (nullptr == item)
+   {
+      auto item_ptr = std::make_unique<Item>();
+      item = item_ptr.get();
+      items->SetObject(index, std::move(item_ptr), Group::GluingType::Bottom, g_indent_vert);
+   }
+
+   if (item->SetDate(date))
    {
       m_sticker.SetDirty();
    }
    
-   if (item.m_time.SetText(time))
+   if (item->SetTime(time))
    {
       m_sticker.SetDirty();
    }
    
-   if (item.m_description.SetText(description))
+   if (item->SetDescription(description))
    {
       m_sticker.SetDirty();
    }
@@ -350,7 +527,7 @@ void Section::SetItem(unsigned long index, const char* date, const char* time, c
    m_sticker.Update();
 }
 
-} // namespace
+} // namespace GraphicObjects
 
 /////////////// class Sticker /////////////////
 
@@ -396,7 +573,7 @@ ISection& Sticker::GetSection(unsigned long index)
    auto& section = m_sections.at(index);
    if (!section)
    {
-      section.reset(new Section(*this));
+      section.reset(new GraphicObjects::Section(*this));
    }
    return *section.get();
 }
@@ -491,7 +668,7 @@ void Sticker::OnPaint(HDC hdc)
          format.SetAlignment(Gdiplus::StringAlignmentCenter);
 
          memory_graphics->DrawString(
-            static_cast<Section*>(m_sections[0].get())->GetTitle().c_str(),
+            static_cast<GraphicObjects::Section*>(m_sections[0].get())->GetTitle().c_str(),
             -1, &font, rectf, &format, &brush);
       }
       else
@@ -503,7 +680,7 @@ void Sticker::OnPaint(HDC hdc)
             {
                break;
             }
-            auto* section = static_cast<Section*>(m_sections[index].get());
+            auto* section = static_cast<GraphicObjects::Section*>(m_sections[index].get());
             section->Draw(memory_graphics.get());
          }
 
@@ -542,7 +719,7 @@ void Sticker::SetState(StateType state)
          break;
       }
       
-      auto* section = static_cast<Section*>(m_sections[index].get());
+      auto* section = static_cast<GraphicObjects::Section*>(m_sections[index].get());
       section->RecalculateBoundary(boundary.GetLeft(), boundary.GetBottom(), memory_graphics.get());
       Gdiplus::RectF::Union(boundary, boundary, section->GetBoundary());
    }
