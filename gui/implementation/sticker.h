@@ -34,6 +34,7 @@ class Sticker : public wc::Window
 {
 public:
    Sticker();
+   ~Sticker();
 
    void SetDirty();
    void SetRedraw(bool is_redraw);
@@ -51,17 +52,12 @@ private:
    void OnMouseClick();
    void OnPaint(HDC hdc);
 
-   enum class StateType { Minimized, Opened, Expanded };
-
-   void SetState(StateType state);
-
 private:
-   StateType m_state;
-
    RECT m_minimized_window_rect;
    RECT m_window_rect;
-   RECT footer_rect;
    
+   class StickerObject;
+   std::unique_ptr<StickerObject> m_object;
    std::unique_ptr<Gdiplus::Bitmap> m_memory_face;
    std::unique_ptr<IStickerCallback> m_callback;
    

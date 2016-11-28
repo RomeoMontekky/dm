@@ -5,6 +5,7 @@ include("../common.cmake")
 set(BINARY_NAME "gui")
 
 set(CPP_FILES 
+   "implementation/graphic_objects.cpp"
    "implementation/main.cpp"
    "implementation/sticker.cpp"
    "implementation/window.cpp"
@@ -12,6 +13,7 @@ set(CPP_FILES
 )
 
 set(HEADER_FILES
+   "implementation/graphic_objects.h"
    "implementation/window.h"
    "implementation/sticker.h"
    "implementation/window_class.h"
