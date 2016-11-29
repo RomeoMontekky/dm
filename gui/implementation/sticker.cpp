@@ -259,8 +259,9 @@ class Sticker::GraphicObject : public GraphicObjects::Group
 public:
    GraphicObject(Sticker& sticker);
 
+   void SetMinimizedBoundary(const RECT& boundary);
+
    enum class StateType { Minimized, Opened, Expanded };
-   void SetState(StateType state);
    StateType GetState() const;
    
    void ProcessMouseClick(long x, long y, Gdiplus::Graphics* graphics);
@@ -270,12 +271,14 @@ public:
    
 private:
    enum Indexes { idxSections, idxEtc, idxLast };
+
+   Gdiplus::RectF m_minimized_boundary;
    StateType m_state;
    Sticker& m_sticker;
 };
 
-Sticker::GraphicObject::GraphicObject(Sticker& sticker) : 
-   Group(), m_state(StateType::Minimized), m_sticker(sticker)
+Sticker::GraphicObject::GraphicObject(Sticker& sticker) : Group(),
+   m_minimized_boundary(), m_state(StateType::Minimized), m_sticker(sticker)
 {
    Group::SetObjectCount(idxLast);
    Group::SetObject(idxSections, std::make_unique<GraphicObjects::Group>(),
@@ -284,9 +287,12 @@ Sticker::GraphicObject::GraphicObject(Sticker& sticker) :
                     GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
 }
 
-void Sticker::GraphicObject::SetState(StateType state)
+void Sticker::GraphicObject::SetMinimizedBoundary(const RECT& boundary)
 {
-   m_state = state;
+   m_minimized_boundary.X = boundary.left;
+   m_minimized_boundary.Y = boundary.top;
+   m_minimized_boundary.Width = boundary.right - boundary.left;
+   m_minimized_boundary.Height = boundary.bottom - boundary.top;
 }
 
 Sticker::GraphicObject::StateType Sticker::GraphicObject::GetState() const
@@ -296,7 +302,22 @@ Sticker::GraphicObject::StateType Sticker::GraphicObject::GetState() const
 
 void Sticker::GraphicObject::ProcessMouseClick(long x, long y, Gdiplus::Graphics* graphics)
 {
-   
+   const auto old_state = m_state;
+
+   switch (old_state)
+   {
+      case StateType::Minimized:
+      {
+         m_state = StateType::Opened;
+         m_boundary = m_minimized_boundary;
+         break;
+      }
+   }
+
+   if (old_state != m_state)
+   {
+      RecalculateBoundary(0, 0, graphics);
+   }
 }
 
 bool Sticker::GraphicObject::SetSectionCount(unsigned long count)
@@ -325,15 +346,13 @@ GraphicObjects::Section& Sticker::GraphicObject::GetSection(unsigned long index)
 /////////////// class Sticker /////////////////
 
 Sticker::Sticker() : wc::Window(),
-   m_object(new GraphicObject(*this)),
-   m_memory_image(),
-   m_callback(),
    m_is_dirty(true),
    m_is_redraw(true),
-   m_sections()
+   m_object(new GraphicObject(*this)),
+   m_memory_image(),
+   m_callback()
 {
-   ::SetRectEmpty(&m_minimized_window_rect);
-   ::SetRectEmpty(&m_window_rect);
+   // no code
 }
 
 Sticker::~Sticker()
@@ -362,17 +381,12 @@ void Sticker::Update()
 
 void Sticker::SetSectionCount(unsigned long count)
 {
-   m_sections.resize(count);
+   m_object->SetSectionCount(count);
 }
 
 ISection& Sticker::GetSection(unsigned long index)
 {
-   auto& section = m_sections.at(index);
-   if (!section)
-   {
-      section.reset(new GraphicObjects::Section(*this));
-   }
-   return *section.get();
+   return m_object->GetSection(index);
 }
 
 void Sticker::SetCallback(IStickerCallback* callback)
@@ -386,9 +400,10 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    {
       case WM_CREATE:
       {
+         RECT client_rect;
+         ::GetClientRect(GetHandle(), &client_rect);
          // Save initilial window rect into the variable to have ability to restore it at any time.
-         ::GetWindowRect(GetHandle(), &m_minimized_window_rect);
-         ::MapWindowPoints(nullptr, ::GetParent(GetHandle()), (LPPOINT)&m_minimized_window_rect, 2);
+         m_object->SetMinimizedBoundary(client_rect);
       }
       case WM_LBUTTONUP:
       {
@@ -412,36 +427,30 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void Sticker::OnMouseClick(long x, long y)
 {
-   assert(m_memory_image);
+   if (!m_memory_image)
+   {
+      return;
+   }
+
    std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_image.get()));
    memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
    
    const auto old_state = m_object->GetState();
-   m_object->ProcessMouseClick(x, y, memory_graphics);
+   m_object->ProcessMouseClick(x, y, memory_graphics.get());
    const auto new_state = m_object->GetState();
    
    if (new_state != old_state)
    {
+      const auto& object_boundary = m_object->GetBoundary();
+
       RECT window_rect;
-      if (GraphicObject::StateType::Minimized == new_state)
-      {
-         ::CopyRect(&window_rect, &m_minimized_window_rect);
-      }
-      else
-      {
-         const auto& object_boundary = m_object->GetBoundary();
-         ::SetRect(&window_rect,
-                   m_minimized_window_rect.left,
-                   m_minimized_window_rect.top,
-                   m_minimized_window_rect.left + static_cast<LONG>(object_boundary.Width + 6.5),
-                   m_minimized_window_rect.top + static_cast<LONG>(object_boundary.Height + 6.5));
-      }
-      
+      ::GetWindowRect(GetHandle(), &window_rect);
+
       ::SetWindowPos(GetHandle(), nullptr,
-                     m_window_rect.left,
-                     m_window_rect.top,
-                     m_window_rect.right - m_window_rect.left,
-                     m_window_rect.bottom - m_window_rect.top,
+                     window_rect.left,
+                     window_rect.top,
+                     static_cast<int>(object_boundary.Width + 6.5),
+                     static_cast<int>(object_boundary.Height + 6.5),
                      SWP_NOZORDER);
       
       ::InvalidateRect(GetHandle(), nullptr, TRUE);   
@@ -450,12 +459,7 @@ void Sticker::OnMouseClick(long x, long y)
 
 void Sticker::OnPaint(HDC hdc)
 {
-   if (m_sections.empty())
-   {
-      return;
-   }
-   
-   RECT client;
+   RECT client_rect;
    ::GetClientRect(GetHandle(), &client_rect);
    
    const auto client_width = client_rect.right - client_rect.left;
@@ -470,94 +474,12 @@ void Sticker::OnPaint(HDC hdc)
       
       std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_image.get()));
       memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
-
       // TODO: Set actual background color
       // Probably it should be done in sticker's graphic object.
       memory_graphics->Clear(Gdiplus::Color(230, 230, 230));
-      
-      if (StateType::Minimized == m_state)
-      {
-         // TODO: Rework
-         const Gdiplus::Font font(L"Tahoma", 9, Gdiplus::FontStyleBold);
-         const Gdiplus::RectF rectf(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
-         const Gdiplus::SolidBrush brush(Gdiplus::Color(0x72, 0xBE, 0x44));
-
-         Gdiplus::StringFormat format;
-         format.SetAlignment(Gdiplus::StringAlignmentCenter);
-
-         memory_graphics->DrawString(
-            static_cast<GraphicObjects::Section*>(m_sections[0].get())->GetTitle().c_str(),
-            -1, &font, rectf, &format, &brush);
-      }
-      else
-      {
-         for (unsigned long index = 0; index < m_sections.size(); ++index)
-         {
-            // Show only first 3 sections in opened state
-            if (StateType::Opened == m_state && index > 2)
-            {
-               break;
-            }
-            auto* section = static_cast<GraphicObjects::Section*>(m_sections[index].get());
-            section->Draw(memory_graphics.get());
-         }
-
-         // TODO: Draw "next" footer.
-      }
+      m_object->Draw(memory_graphics.get());
+      m_is_dirty = false;
    }
             
-   m_is_dirty = false;
-
    graphics.DrawImage(m_memory_image.get(), 0, 0);
-}
-
-void Sticker::SetState(StateType state)
-{
-   assert(!m_sections.empty());
-
-   m_state = state;
-
-   // Recalculate all rectangles
-   if (StateType::Minimized == m_state)
-   {
-      m_window_rect = m_minimized_window_rect;
-      return;
-   }
-   
-   assert(m_memory_image != nullptr);
-   std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_image.get()));
-   memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
-   
-   Gdiplus::RectF boundary(0, 0, 0, 0);
-   for (unsigned long index = 0; index < m_sections.size(); ++index)
-   {
-      // Show only first 3 sections in opened state
-      if (StateType::Opened == m_state && index > 2)
-      {
-         break;
-      }
-      
-      auto* section = static_cast<GraphicObjects::Section*>(m_sections[index].get());
-      section->RecalculateBoundary(boundary.GetLeft(), boundary.GetBottom(), memory_graphics.get());
-      Gdiplus::RectF::Union(boundary, boundary, section->GetBoundary());
-   }
-
-   // TODO: Draw "next" footer.
-
-   // Take into account client edge
-   boundary.Inflate(3, 3);
-
-   ::SetRect(&m_window_rect,
-             m_minimized_window_rect.left,
-             m_minimized_window_rect.top,
-             m_minimized_window_rect.left + static_cast<LONG>(boundary.Width + 0.5),
-             m_minimized_window_rect.top + static_cast<LONG>(boundary.Height + 0.5));
-}
-
-void RecalculateObjectBoundary()
-{
-   assert(m_memory_face);
-   std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_face.get()));
-   memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
-   m_object->RecalculateBoundary(memory_graphics.get());
 }

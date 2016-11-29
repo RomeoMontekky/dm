@@ -55,15 +55,11 @@ private:
    void RecalculateObjectBoundary();
 
 private:
-   RECT m_minimized_window_rect;
-   RECT m_window_rect;
+   bool m_is_dirty;
+   bool m_is_redraw;
    
    class GraphicObject;
    std::unique_ptr<GraphicObject> m_object;
    std::unique_ptr<Gdiplus::Bitmap> m_memory_image;
    std::unique_ptr<IStickerCallback> m_callback;
-   
-   bool m_is_dirty;
-   bool m_is_redraw;
-   std::vector< std::unique_ptr<ISection> > m_sections;
 };
