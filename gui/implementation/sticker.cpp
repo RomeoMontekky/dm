@@ -1,7 +1,11 @@
 #include "sticker.h"
 #include "graphic_objects.h"
 
+// For GET_X_LPARAM
+#include <windowsx.h>
+
 #include <cassert>
+
 ISection::~ISection()
 {
    // no code
@@ -248,16 +252,18 @@ void Section::SetItem(unsigned long index, const char* date, const char* time, c
 
 } // namespace GraphicObjects
 
-////////// class StickerObject /////////////
+////////// class StickerGraphicObject /////////////
 
-class Sticker::StickerObject : public GraphicObjects::Group
+class Sticker::GraphicObject : public GraphicObjects::Group
 {
 public:
-   StickerObject(Sticker& sticker);
+   GraphicObject(Sticker& sticker);
 
    enum class StateType { Minimized, Opened, Expanded };
    void SetState(StateType state);
    StateType GetState() const;
+   
+   void ProcessMouseClick(long x, long y, Gdiplus::Graphics* graphics);
    
    bool SetSectionCount(unsigned long count);
    GraphicObjects::Section& GetSection(unsigned long index);
@@ -268,7 +274,7 @@ private:
    Sticker& m_sticker;
 };
 
-Sticker::StickerObject::StickerObject(Sticker& sticker) : 
+Sticker::GraphicObject::GraphicObject(Sticker& sticker) : 
    Group(), m_state(StateType::Minimized), m_sticker(sticker)
 {
    Group::SetObjectCount(idxLast);
@@ -278,17 +284,22 @@ Sticker::StickerObject::StickerObject(Sticker& sticker) :
                     GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
 }
 
-void Sticker::StickerObject::SetState(StateType state)
+void Sticker::GraphicObject::SetState(StateType state)
 {
-
+   m_state = state;
 }
 
-StateType Sticker::StickerObject::GetState() const
+Sticker::GraphicObject::StateType Sticker::GraphicObject::GetState() const
 {
-
+   return m_state;
 }
 
-bool Sticker::StickerObject::SetSectionCount(unsigned long count)
+void Sticker::GraphicObject::ProcessMouseClick(long x, long y, Gdiplus::Graphics* graphics)
+{
+   
+}
+
+bool Sticker::GraphicObject::SetSectionCount(unsigned long count)
 {
    auto sections = static_cast<Group*>(Group::GetObject(idxSections));
    if (sections->SetObjectCount(count))
@@ -298,7 +309,7 @@ bool Sticker::StickerObject::SetSectionCount(unsigned long count)
    m_sticker.Update();
 }
 
-GraphicObjects::Section& Sticker::StickerObject::GetSection(unsigned long index)
+GraphicObjects::Section& Sticker::GraphicObject::GetSection(unsigned long index)
 {
    auto sections = static_cast<Group*>(Group::GetObject(idxSections));
    auto section = static_cast<GraphicObjects::Section*>(sections->GetObject(index));
@@ -314,8 +325,8 @@ GraphicObjects::Section& Sticker::StickerObject::GetSection(unsigned long index)
 /////////////// class Sticker /////////////////
 
 Sticker::Sticker() : wc::Window(),
-   m_object(new StickerObject()),
-   m_memory_face(),
+   m_object(new GraphicObject(*this)),
+   m_memory_image(),
    m_callback(),
    m_is_dirty(true),
    m_is_redraw(true),
@@ -373,6 +384,12 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
    switch (uMsg)
    {
+      case WM_CREATE:
+      {
+         // Save initilial window rect into the variable to have ability to restore it at any time.
+         ::GetWindowRect(GetHandle(), &m_minimized_window_rect);
+         ::MapWindowPoints(nullptr, ::GetParent(GetHandle()), (LPPOINT)&m_minimized_window_rect, 2);
+      }
       case WM_LBUTTONUP:
       {
          OnMouseClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
@@ -395,26 +412,39 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void Sticker::OnMouseClick(long x, long y)
 {
-   switch (m_state)
+   assert(m_memory_image);
+   std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_image.get()));
+   memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
+   
+   const auto old_state = m_object->GetState();
+   m_object->ProcessMouseClick(x, y, memory_graphics);
+   const auto new_state = m_object->GetState();
+   
+   if (new_state != old_state)
    {
-      case StateType::Minimized:
+      RECT window_rect;
+      if (GraphicObject::StateType::Minimized == new_state)
       {
-         ::GetWindowRect(GetHandle(), &m_minimized_window_rect);
-         ::MapWindowPoints(nullptr, ::GetParent(GetHandle()), (LPPOINT)&m_minimized_window_rect, 2);
-         
-         SetState(StateType::Opened);
-
-         ::SetWindowPos(GetHandle(), nullptr,
-                        m_window_rect.left,
-                        m_window_rect.top,
-                        m_window_rect.right - m_window_rect.left,
-                        m_window_rect.bottom - m_window_rect.top,
-                        SWP_NOZORDER);
-
-         ::InvalidateRect(GetHandle(), nullptr, TRUE);
-         
-         break;
+         ::CopyRect(&window_rect, &m_minimized_window_rect);
       }
+      else
+      {
+         const auto& object_boundary = m_object->GetBoundary();
+         ::SetRect(&window_rect,
+                   m_minimized_window_rect.left,
+                   m_minimized_window_rect.top,
+                   m_minimized_window_rect.left + static_cast<LONG>(object_boundary.Width + 6.5),
+                   m_minimized_window_rect.top + static_cast<LONG>(object_boundary.Height + 6.5));
+      }
+      
+      ::SetWindowPos(GetHandle(), nullptr,
+                     m_window_rect.left,
+                     m_window_rect.top,
+                     m_window_rect.right - m_window_rect.left,
+                     m_window_rect.bottom - m_window_rect.top,
+                     SWP_NOZORDER);
+      
+      ::InvalidateRect(GetHandle(), nullptr, TRUE);   
    }
 }
 
@@ -425,22 +455,24 @@ void Sticker::OnPaint(HDC hdc)
       return;
    }
    
-   RECT rect;
-   ::GetClientRect(GetHandle(), &rect);
+   RECT client;
+   ::GetClientRect(GetHandle(), &client_rect);
    
-   const auto rect_width = rect.right - rect.left;
-   const auto rect_height = rect.bottom - rect.top;
+   const auto client_width = client_rect.right - client_rect.left;
+   const auto client_height = client_rect.bottom - client_rect.top;
 
    Gdiplus::Graphics graphics(hdc);
 
-   if (m_is_dirty || !m_memory_face ||
-       rect_width != m_memory_face->GetWidth() || rect_height != m_memory_face->GetHeight())
+   if (m_is_dirty || !m_memory_image ||
+       client_width != m_memory_image->GetWidth() || client_height != m_memory_image->GetHeight())
    {
-      m_memory_face.reset(new Gdiplus::Bitmap(rect_width, rect_height, &graphics));
+      m_memory_image.reset(new Gdiplus::Bitmap(client_width, client_height, &graphics));
       
-      std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_face.get()));
+      std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_image.get()));
       memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
 
+      // TODO: Set actual background color
+      // Probably it should be done in sticker's graphic object.
       memory_graphics->Clear(Gdiplus::Color(230, 230, 230));
       
       if (StateType::Minimized == m_state)
@@ -476,7 +508,7 @@ void Sticker::OnPaint(HDC hdc)
             
    m_is_dirty = false;
 
-   graphics.DrawImage(m_memory_face.get(), 0, 0);
+   graphics.DrawImage(m_memory_image.get(), 0, 0);
 }
 
 void Sticker::SetState(StateType state)
@@ -492,8 +524,8 @@ void Sticker::SetState(StateType state)
       return;
    }
    
-   assert(m_memory_face != nullptr);
-   std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_face.get()));
+   assert(m_memory_image != nullptr);
+   std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_image.get()));
    memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
    
    Gdiplus::RectF boundary(0, 0, 0, 0);
@@ -520,4 +552,12 @@ void Sticker::SetState(StateType state)
              m_minimized_window_rect.top,
              m_minimized_window_rect.left + static_cast<LONG>(boundary.Width + 0.5),
              m_minimized_window_rect.top + static_cast<LONG>(boundary.Height + 0.5));
+}
+
+void RecalculateObjectBoundary()
+{
+   assert(m_memory_face);
+   std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_face.get()));
+   memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
+   m_object->RecalculateBoundary(memory_graphics.get());
 }

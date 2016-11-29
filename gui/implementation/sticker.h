@@ -51,14 +51,16 @@ protected:
 private:
    void OnMouseClick(long x, long y);
    void OnPaint(HDC hdc);
+   
+   void RecalculateObjectBoundary();
 
 private:
    RECT m_minimized_window_rect;
    RECT m_window_rect;
    
-   class StickerObject;
-   std::unique_ptr<StickerObject> m_object;
-   std::unique_ptr<Gdiplus::Bitmap> m_memory_face;
+   class GraphicObject;
+   std::unique_ptr<GraphicObject> m_object;
+   std::unique_ptr<Gdiplus::Bitmap> m_memory_image;
    std::unique_ptr<IStickerCallback> m_callback;
    
    bool m_is_dirty;
