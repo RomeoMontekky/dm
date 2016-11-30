@@ -29,7 +29,8 @@ protected:
 class Text : public Base
 {
 public:
-   Text(const wchar_t* font_name = L"Tahoma", unsigned long font_size = 9, COLORREF color = 0);
+   Text(const wchar_t* font_name, unsigned long font_size,
+        unsigned long font_style, Gdiplus::Color font_color);
    
    bool SetText(const char* text);
    const std::wstring& GetText() const;
@@ -37,11 +38,19 @@ public:
    // GraphicObject overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
+
+   // Text virtual methods
+   virtual const wchar_t* GetFontName() const;
+   virtual unsigned long GetFontSize() const;
+   virtual unsigned long GetFontStyle() const;
+   virtual Gdiplus::Color GetFontColor() const;
    
 private:
    std::wstring m_text;
-   Gdiplus::Font m_font;
-   Gdiplus::SolidBrush m_brush;
+   const wchar_t* m_font_name;
+   unsigned long m_font_size;
+   unsigned long m_font_style;
+   Gdiplus::Color m_font_color;
 };
 
 class Group : public Base

@@ -21,9 +21,9 @@ namespace
    
 ////////////////// Constants //////////////////
    
+const wchar_t g_tahoma_name[] = L"Tahoma";
 const auto g_indent_vert = 3;
 const auto g_indent_horz = 3;
-const wchar_t g_tahoma_name[] = L"Tahoma";
 
 namespace Colors
 {
@@ -43,23 +43,68 @@ namespace Fonts
    const Gdiplus::Font tahoma_8_regular(g_tahoma_name, 8, Gdiplus::FontStyleRegular);
 }
 
+/*
+---
+m_date(Fonts::tahoma_9_regular, Brushes::grey_dark_with_blue),
+m_time(Fonts::tahoma_8_regular, Brushes::grey_light),
+m_description(Fonts::tahoma_9_regular, Brushes::grey_dark_with_blue),
+---
+m_title(Fonts::tahoma_9_bold, Brushes::red_dark),
+m_owner_name(Fonts::tahoma_9_regular, Brushes::black),
+m_header_description(Fonts::tahoma_9_regular, Brushes::grey_dark),
+m_footer_prefix(Fonts::tahoma_9_regular, Brushes::grey_dark),
+m_footer_description(Fonts::tahoma_9_regular, Brushes::black),
+---
+*/
+
 } // namespace
 
 // Sticker graphic objects
 namespace GraphicObjects
 {
 
-/////////// class Header //////////
+/////////// class ItemDate //////////
 
-// TODO: Create class and change text filling
-using Header = Text;
-
-/////////// class Item //////////
-
-class Item : public Group
+class ItemDate : public Text
 {
 public:
-   Item();
+   ItemDate();
+};
+
+ItemDate::ItemDate() :
+   Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark_with_blue)
+{}
+
+/////////// class ItemTime //////////
+
+class ItemTime : public Text
+{
+public:
+   ItemTime();
+};
+
+ItemTime::ItemTime() :
+   Text(g_tahoma_name, 8, Gdiplus::FontStyleRegular, Colors::grey_light)
+{}
+
+/////////// class ItemDesctiption //////////
+
+class ItemDesctiption : public Text
+{
+public:
+   ItemDesctiption();
+};
+
+ItemDesctiption::ItemDesctiption() :
+   Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark_with_blue)
+{}
+
+/////////// class SectionItem //////////
+
+class SectionItem : public Group
+{
+public:
+   SectionItem();
 
    bool SetDate(const char* text);
    bool SetTime(const char* text);
@@ -69,35 +114,72 @@ private:
    enum Indexes { idxDate, idxTime, idxDesc, idxLast };
 };
 
-Item::Item() : Group()
+SectionItem::SectionItem() : Group()
 {
    Group::SetObjectCount(idxLast);
-   Group::SetObject(idxDate, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
-   Group::SetObject(idxTime, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
-   Group::SetObject(idxDesc, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
+   Group::SetObject(idxDate, std::make_unique<ItemDate>(), Group::GluingType::Right, g_indent_horz);
+   Group::SetObject(idxTime, std::make_unique<ItemTime>(), Group::GluingType::Right, g_indent_horz);
+   Group::SetObject(idxDesc, std::make_unique<ItemDesctiption>(), Group::GluingType::Right, g_indent_horz);
 }
 
-bool Item::SetDate(const char* text)
+bool SectionItem::SetDate(const char* text)
 {
    return static_cast<Text*>(Group::GetObject(idxDate))->SetText(text);
 }
 
-bool Item::SetTime(const char* text)
+bool SectionItem::SetTime(const char* text)
 {
    return static_cast<Text*>(Group::GetObject(idxTime))->SetText(text);
 }
 
-bool Item::SetDescription(const char* text)
+bool SectionItem::SetDescription(const char* text)
 {
    return static_cast<Text*>(Group::GetObject(idxDesc))->SetText(text);
 }
 
-///////////// class Footer ////////////////
+/////////// class SectionHeader //////////
 
-class Footer : public Group
+// TODO: Change text filling
+class SectionHeader : public Text
 {
 public:
-   Footer();
+   SectionHeader();
+};
+
+SectionHeader::SectionHeader() :
+   Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark)
+{}
+
+/////////// class FooterPrefix //////////
+
+class FooterPrefix : public Text
+{
+public:
+   FooterPrefix();
+};
+
+FooterPrefix::FooterPrefix() :
+   Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark)
+{}
+
+/////////// class FooterDescription //////////
+
+class FooterDescription : public Text
+{
+public:
+   FooterDescription();
+};
+
+FooterDescription::FooterDescription() :
+   Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::black)
+{}
+
+///////////// class SectionFooter ////////////////
+
+class SectionFooter : public Group
+{
+public:
+   SectionFooter();
 
    bool SetPrefix(const char* text);
    bool SetDescription(const char* text);
@@ -106,22 +188,35 @@ private:
    enum Indexes { idxPrefix, idxDesc, idxLast };
 };
 
-Footer::Footer() : Group()
+SectionFooter::SectionFooter() : Group()
 {
    Group::SetObjectCount(idxLast);
-   Group::SetObject(idxPrefix, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
-   Group::SetObject(idxDesc, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
+   Group::SetObject(idxPrefix, std::make_unique<FooterPrefix>(), Group::GluingType::Right, g_indent_horz);
+   Group::SetObject(idxDesc, std::make_unique<FooterDescription>(), Group::GluingType::Right, g_indent_horz);
 }
 
-bool Footer::SetPrefix(const char* text)
+bool SectionFooter::SetPrefix(const char* text)
 {
    return static_cast<Text*>(Group::GetObject(idxPrefix))->SetText(text);
 }
 
-bool Footer::SetDescription(const char* text)
+bool SectionFooter::SetDescription(const char* text)
 {
    return static_cast<Text*>(Group::GetObject(idxDesc))->SetText(text);
 }
+
+/////////// class SectionTitle //////////
+
+// TODO: Finish behavior implementation
+class SectionTitle : public Text
+{
+public:
+   SectionTitle();
+};
+
+SectionTitle::SectionTitle() :
+   Text(g_tahoma_name, 9, Gdiplus::FontStyleBold, Colors::red_dark)
+{}
 
 ///////////// class Section ////////////////
 
@@ -148,10 +243,10 @@ private:
 Section::Section(Sticker& sticker) : Group(), m_sticker(sticker)
 {
    Group::SetObjectCount(idxLast);
-   Group::SetObject(idxTitle, std::make_unique<Text>(), Group::GluingType::Bottom, g_indent_vert);
-   Group::SetObject(idxHeader, std::make_unique<Header>(), Group::GluingType::Bottom, g_indent_vert);
+   Group::SetObject(idxTitle, std::make_unique<SectionTitle>(), Group::GluingType::Bottom, g_indent_vert);
+   Group::SetObject(idxHeader, std::make_unique<SectionHeader>(), Group::GluingType::Bottom, g_indent_vert);
    Group::SetObject(idxItems, std::make_unique<Group>(), Group::GluingType::Bottom, g_indent_vert);
-   Group::SetObject(idxFooter, std::make_unique<Footer>(), Group::GluingType::Bottom, g_indent_vert);
+   Group::SetObject(idxFooter, std::make_unique<SectionFooter>(), Group::GluingType::Bottom, g_indent_vert);
 }
 
 void Section::DrawTitle(Gdiplus::Graphics* graphics) const
@@ -180,7 +275,7 @@ void Section::SetOwnerName(const char* owner_name)
 
 void Section::SetHeader(const char* description)
 {
-   if (static_cast<Header*>(Group::GetObject(idxHeader))->SetText(description))
+   if (static_cast<SectionHeader*>(Group::GetObject(idxHeader))->SetText(description))
    {
       m_sticker.SetDirty();
    }
@@ -189,7 +284,7 @@ void Section::SetHeader(const char* description)
 
 void Section::SetFooter(const char* prefix, const char* description)
 {
-   auto footer = static_cast<Footer*>(Group::GetObject(idxFooter));
+   auto footer = static_cast<SectionFooter*>(Group::GetObject(idxFooter));
    if (footer->SetPrefix(prefix))
    {
       m_sticker.SetDirty();
@@ -215,10 +310,10 @@ void Section::SetItem(unsigned long index, const char* date, const char* time, c
 {
    auto items = static_cast<Group*>(Group::GetObject(idxItems));
 
-   auto item = static_cast<Item*>(items->GetObject(index));
+   auto item = static_cast<SectionItem*>(items->GetObject(index));
    if (nullptr == item)
    {
-      auto item_ptr = std::make_unique<Item>();
+      auto item_ptr = std::make_unique<SectionItem>();
       item = item_ptr.get();
       items->SetObject(index, std::move(item_ptr), Group::GluingType::Bottom, g_indent_vert);
    }
@@ -264,21 +359,21 @@ public:
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
    
 private:
-   enum Indexes { idxSections, idxEtc, idxLast };
+   enum Indexes { idxSections, /*idxEtc,*/ idxLast };
 
    Gdiplus::RectF m_minimized_boundary;
    StateType m_state;
    Sticker& m_sticker;
 };
 
-Sticker::GraphicObject::GraphicObject(Sticker& sticker) : Group(),
-   m_minimized_boundary(), m_state(StateType::Minimized), m_sticker(sticker)
+Sticker::GraphicObject::GraphicObject(Sticker& sticker) :
+   Group(), m_minimized_boundary(), m_state(StateType::Minimized), m_sticker(sticker)
 {
    Group::SetObjectCount(idxLast);
    Group::SetObject(idxSections, std::make_unique<GraphicObjects::Group>(),
                     GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
-   Group::SetObject(idxEtc, std::make_unique<GraphicObjects::Text>(),
-                    GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
+   //Group::SetObject(idxEtc, std::make_unique<GraphicObjects::Text>(),
+   //                 GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
 }
 
 void Sticker::GraphicObject::SetMinimizedBoundary(const RECT& boundary)
@@ -352,7 +447,7 @@ void Sticker::GraphicObject::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL 
 void Sticker::GraphicObject::Draw(Gdiplus::Graphics* graphics) const
 {
    // Probably it should be done in sticker's graphic object.
-   graphics->Clear(Gdiplus::Color(230, 230, 230));
+   graphics->Clear(Gdiplus::Color(245, 245, 245));
    if (StateType::Minimized == m_state)
    {
       GetSection(0).DrawTitle(graphics);

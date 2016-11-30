@@ -48,10 +48,10 @@ const Gdiplus::RectF& Base::GetBoundary() const
 
 ///////////// class Text /////////////
    
-Text::Text(const wchar_t* font_name, unsigned long font_size, COLORREF color) :
-   m_text(), 
-   m_font(font_name, font_size, Gdiplus::FontStyleRegular),
-   m_brush(Gdiplus::Color(0, 0, 0))
+Text::Text(const wchar_t* font_name, unsigned long font_size,
+           unsigned long font_style, Gdiplus::Color font_color) :
+   Base(), m_font_name(font_name), m_font_size(font_size),
+   m_font_style(font_style), m_font_color(font_color)
 {
    // no code
 }
@@ -75,12 +75,35 @@ const std::wstring& Text::GetText() const
 void Text::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
 {
    Gdiplus::RectF origin_rect(x, y, 0, 0);
-   graphics->MeasureString(m_text.c_str(), m_text.size(), &m_font, origin_rect, &m_boundary);
+   Gdiplus::Font font(GetFontName(), GetFontSize(), GetFontStyle());
+   graphics->MeasureString(m_text.c_str(), m_text.size(), &font, origin_rect, &m_boundary);
 }
 
 void Text::Draw(Gdiplus::Graphics* graphics) const
 {
-   auto status = graphics->DrawString(m_text.c_str(), m_text.size(), &m_font, m_boundary, nullptr, &m_brush);
+   Gdiplus::Font font(GetFontName(), GetFontSize(), GetFontStyle());
+   Gdiplus::SolidBrush brush(GetFontColor());
+   graphics->DrawString(m_text.c_str(), m_text.size(), &font, m_boundary, nullptr, &brush);
+}
+
+const wchar_t* Text::GetFontName() const
+{
+   return m_font_name;
+}
+
+unsigned long Text::GetFontSize() const
+{
+   return m_font_size;
+}
+
+unsigned long Text::GetFontStyle() const
+{
+   return m_font_style;
+}
+
+Gdiplus::Color Text::GetFontColor() const
+{
+   return m_font_color;
 }
 
 ///////////// class Group ////////////////
