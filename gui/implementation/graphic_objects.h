@@ -54,8 +54,8 @@ public:
    bool SetObjectCount(unsigned long count);
    void SetObject(unsigned long index, std::unique_ptr<Base>&& object,
                   GluingType gluing_type, Gdiplus::REAL indent_after = 0);
-   Base* GetObject(unsigned long index);
    const Base* GetObject(unsigned long index) const;
+   Base* GetObject(unsigned long index);
 
    // Base overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;

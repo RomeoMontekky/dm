@@ -43,7 +43,7 @@ public:
    void SetSectionCount(unsigned long count);
    ISection& GetSection(unsigned long index);
    
-   void SetCallback(IStickerCallback* callback);
+   void SetCallback(std::unique_ptr<IStickerCallback>&& callback);
 
 protected:
    virtual LRESULT WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam) override;

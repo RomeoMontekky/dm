@@ -113,12 +113,12 @@ void Group::SetObject(unsigned long index, std::unique_ptr<Base>&& object,
    object_info.m_indent_after = indent_after;
 }
 
-Base* Group::GetObject(unsigned long index)
+const Base* Group::GetObject(unsigned long index) const
 {
    return m_object_infos.at(index).m_object.get();
 }
 
-const Base* Group::GetObject(unsigned long index) const
+Base* Group::GetObject(unsigned long index)
 {
    return m_object_infos.at(index).m_object.get();
 }

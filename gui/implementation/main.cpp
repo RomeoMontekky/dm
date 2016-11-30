@@ -35,12 +35,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    
    sticker.SetRedraw(false);
    {
-      sticker.SetSectionCount(1);
-      auto& section = sticker.GetSection(0);
-      section.SetTitle("Test string");
-      section.SetItemCount(2);
-      section.SetItem(0, "21.09", "12:45", "Send");
-      section.SetItem(1, "21.09", "13:00", "Received");
+      sticker.SetSectionCount(2);
+      {
+         auto& section = sticker.GetSection(0);
+         section.SetTitle("Section 1");
+         section.SetItemCount(2);
+         section.SetItem(0, "21.09", "12:45", "Send");
+         section.SetItem(1, "21.09", "13:00", "Received");
+      }
+      {
+         auto& section = sticker.GetSection(1);
+         section.SetTitle("Section 2");
+         section.SetItemCount(2);
+         section.SetItem(0, "22.09", "09:00", "Send");
+         section.SetItem(1, "22.09", "09:15", "Received");
+      }
    }
    sticker.SetRedraw(true);
 

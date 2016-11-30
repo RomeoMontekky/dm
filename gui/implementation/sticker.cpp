@@ -106,7 +106,7 @@ private:
    enum Indexes { idxPrefix, idxDesc, idxLast };
 };
 
-Footer::Footer()
+Footer::Footer() : Group()
 {
    Group::SetObjectCount(idxLast);
    Group::SetObject(idxPrefix, std::make_unique<Text>(), Group::GluingType::Right, g_indent_horz);
@@ -130,7 +130,7 @@ class Section : public ISection, public Group
 public:
    Section(Sticker& sticker);
 
-   const std::wstring& GetTitle() const;
+   void DrawTitle(Gdiplus::Graphics* graphics) const;
 
    // ISection overrides
    virtual void SetTitle(const char* title) override;
@@ -145,8 +145,7 @@ private:
    Sticker& m_sticker;
 };
 
-Section::Section(Sticker& sticker) :
-   m_sticker(sticker)
+Section::Section(Sticker& sticker) : Group(), m_sticker(sticker)
 {
    Group::SetObjectCount(idxLast);
    Group::SetObject(idxTitle, std::make_unique<Text>(), Group::GluingType::Bottom, g_indent_vert);
@@ -155,9 +154,9 @@ Section::Section(Sticker& sticker) :
    Group::SetObject(idxFooter, std::make_unique<Footer>(), Group::GluingType::Bottom, g_indent_vert);
 }
 
-const std::wstring& Section::GetTitle() const
+void Section::DrawTitle(Gdiplus::Graphics* graphics) const
 {
-   return static_cast<const Text*>(Group::GetObject(idxTitle))->GetText();
+   static_cast<const Text*>(Group::GetObject(idxTitle))->Draw(graphics);
 }
 
 void Section::SetTitle(const char* title)
@@ -166,7 +165,6 @@ void Section::SetTitle(const char* title)
    {
       m_sticker.SetDirty();
    }
-   
    m_sticker.Update();
 }
 
@@ -177,7 +175,6 @@ void Section::SetOwnerName(const char* owner_name)
    {
       m_sticker.SetDirty();
    }
-   
    m_sticker.Update();*/
 }
 
@@ -187,36 +184,30 @@ void Section::SetHeader(const char* description)
    {
       m_sticker.SetDirty();
    }
-   
    m_sticker.Update();
 }
 
 void Section::SetFooter(const char* prefix, const char* description)
 {
    auto footer = static_cast<Footer*>(Group::GetObject(idxFooter));
-
    if (footer->SetPrefix(prefix))
    {
       m_sticker.SetDirty();
    }
-   
    if (footer->SetDescription(description))
    {
       m_sticker.SetDirty();
    }
-   
    m_sticker.Update();
 }
 
 void Section::SetItemCount(unsigned long count)
 {
    auto items = static_cast<Group*>(Group::GetObject(idxItems));
-
    if (items->SetObjectCount(count))
    {
       m_sticker.SetDirty();
    }
-   
    m_sticker.Update();
 }
 
@@ -236,12 +227,10 @@ void Section::SetItem(unsigned long index, const char* date, const char* time, c
    {
       m_sticker.SetDirty();
    }
-   
    if (item->SetTime(time))
    {
       m_sticker.SetDirty();
    }
-   
    if (item->SetDescription(description))
    {
       m_sticker.SetDirty();
@@ -264,10 +253,15 @@ public:
    enum class StateType { Minimized, Opened, Expanded };
    StateType GetState() const;
    
-   void ProcessMouseClick(long x, long y, Gdiplus::Graphics* graphics);
+   void ProcessMouseClick(long x, long y);
    
    bool SetSectionCount(unsigned long count);
+   const GraphicObjects::Section& GetSection(unsigned long index) const;
    GraphicObjects::Section& GetSection(unsigned long index);
+   
+   // Group overrides
+   virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
+   virtual void Draw(Gdiplus::Graphics* graphics) const override;
    
 private:
    enum Indexes { idxSections, idxEtc, idxLast };
@@ -300,23 +294,15 @@ Sticker::GraphicObject::StateType Sticker::GraphicObject::GetState() const
    return m_state;
 }
 
-void Sticker::GraphicObject::ProcessMouseClick(long x, long y, Gdiplus::Graphics* graphics)
+void Sticker::GraphicObject::ProcessMouseClick(long x, long y)
 {
-   const auto old_state = m_state;
-
-   switch (old_state)
+   switch (m_state)
    {
       case StateType::Minimized:
       {
          m_state = StateType::Opened;
-         m_boundary = m_minimized_boundary;
          break;
       }
-   }
-
-   if (old_state != m_state)
-   {
-      RecalculateBoundary(0, 0, graphics);
    }
 }
 
@@ -330,6 +316,14 @@ bool Sticker::GraphicObject::SetSectionCount(unsigned long count)
    m_sticker.Update();
 }
 
+const GraphicObjects::Section& Sticker::GraphicObject::GetSection(unsigned long index) const
+{
+   auto sections = static_cast<const Group*>(Group::GetObject(idxSections));
+   auto section = static_cast<const GraphicObjects::Section*>(sections->GetObject(index));
+   assert(section != nullptr);
+   return *section;
+}
+
 GraphicObjects::Section& Sticker::GraphicObject::GetSection(unsigned long index)
 {
    auto sections = static_cast<Group*>(Group::GetObject(idxSections));
@@ -341,6 +335,32 @@ GraphicObjects::Section& Sticker::GraphicObject::GetSection(unsigned long index)
       sections->SetObject(index, std::move(section_ptr), Group::GluingType::Bottom, g_indent_vert);
    }
    return *section;
+}
+
+void Sticker::GraphicObject::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
+{
+   if (StateType::Minimized == m_state)
+   {
+      m_boundary = m_minimized_boundary;
+   }
+   else
+   {
+      Group::RecalculateBoundary(x, y, graphics);
+   }
+}
+
+void Sticker::GraphicObject::Draw(Gdiplus::Graphics* graphics) const
+{
+   // Probably it should be done in sticker's graphic object.
+   graphics->Clear(Gdiplus::Color(230, 230, 230));
+   if (StateType::Minimized == m_state)
+   {
+      GetSection(0).DrawTitle(graphics);
+   }
+   else
+   {
+      Group::Draw(graphics);
+   }   
 }
 
 /////////////// class Sticker /////////////////
@@ -389,9 +409,9 @@ ISection& Sticker::GetSection(unsigned long index)
    return m_object->GetSection(index);
 }
 
-void Sticker::SetCallback(IStickerCallback* callback)
+void Sticker::SetCallback(std::unique_ptr<IStickerCallback>&& callback)
 {
-   m_callback.reset(callback);
+   m_callback = std::move(callback);
 }
 
 LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -432,19 +452,21 @@ void Sticker::OnMouseClick(long x, long y)
       return;
    }
 
-   std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_image.get()));
-   memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
-   
    const auto old_state = m_object->GetState();
-   m_object->ProcessMouseClick(x, y, memory_graphics.get());
+   m_object->ProcessMouseClick(x, y);
    const auto new_state = m_object->GetState();
    
    if (new_state != old_state)
    {
+      std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_image.get()));
+      memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
+      
+      m_object->RecalculateBoundary(0, 0, memory_graphics.get());
       const auto& object_boundary = m_object->GetBoundary();
 
       RECT window_rect;
       ::GetWindowRect(GetHandle(), &window_rect);
+      ::MapWindowPoints(nullptr, ::GetParent(GetHandle()), (LPPOINT)(&window_rect), 2);
 
       ::SetWindowPos(GetHandle(), nullptr,
                      window_rect.left,
@@ -474,9 +496,7 @@ void Sticker::OnPaint(HDC hdc)
       
       std::unique_ptr<Gdiplus::Graphics> memory_graphics(Gdiplus::Graphics::FromImage(m_memory_image.get()));
       memory_graphics->SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
-      // TODO: Set actual background color
-      // Probably it should be done in sticker's graphic object.
-      memory_graphics->Clear(Gdiplus::Color(230, 230, 230));
+      
       m_object->Draw(memory_graphics.get());
       m_is_dirty = false;
    }
