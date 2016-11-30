@@ -29,7 +29,7 @@ protected:
 class Text : public Base
 {
 public:
-   Text(/*const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush*/);
+   Text(const wchar_t* font_name = L"Tahoma", unsigned long font_size = 9, COLORREF color = 0);
    
    bool SetText(const char* text);
    const std::wstring& GetText() const;
@@ -40,8 +40,8 @@ public:
    
 private:
    std::wstring m_text;
-   //const Gdiplus::Font& m_font;
-   //const Gdiplus::Brush& m_brush;
+   Gdiplus::Font m_font;
+   Gdiplus::SolidBrush m_brush;
 };
 
 class Group : public Base

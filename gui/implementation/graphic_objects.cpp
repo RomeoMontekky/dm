@@ -48,8 +48,10 @@ const Gdiplus::RectF& Base::GetBoundary() const
 
 ///////////// class Text /////////////
    
-Text::Text(/*const Gdiplus::Font& font, const Gdiplus::SolidBrush& brush*/) :
-   m_text() /*, m_font(font), m_brush(brush)*/
+Text::Text(const wchar_t* font_name, unsigned long font_size, COLORREF color) :
+   m_text(), 
+   m_font(font_name, font_size, Gdiplus::FontStyleRegular),
+   m_brush(Gdiplus::Color(0, 0, 0))
 {
    // no code
 }
@@ -72,18 +74,13 @@ const std::wstring& Text::GetText() const
 
 void Text::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
 {
-   const Gdiplus::Font font(L"Tahoma", 9, Gdiplus::FontStyleRegular);
-   //const Gdiplus::SolidBrush black(Gdiplus::Color(0x00, 0x00, 0x00));
    Gdiplus::RectF origin_rect(x, y, 0, 0);
-   //auto status = graphics->MeasureString(m_text.c_str(), m_text.size(), &m_font, origin_rect, &m_boundary);
-   auto status = graphics->MeasureString(m_text.c_str(), m_text.size(), &font, origin_rect, &m_boundary);
+   graphics->MeasureString(m_text.c_str(), m_text.size(), &m_font, origin_rect, &m_boundary);
 }
 
 void Text::Draw(Gdiplus::Graphics* graphics) const
 {
-   const Gdiplus::Font font(L"Tahoma", 9, Gdiplus::FontStyleRegular);
-   const Gdiplus::SolidBrush black(Gdiplus::Color(0x00, 0x00, 0x00));
-   auto status = graphics->DrawString(m_text.c_str(), m_text.size(), &font, m_boundary, nullptr, &black);
+   auto status = graphics->DrawString(m_text.c_str(), m_text.size(), &m_font, m_boundary, nullptr, &m_brush);
 }
 
 ///////////// class Group ////////////////
