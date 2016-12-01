@@ -116,6 +116,55 @@ Gdiplus::Color Text::GetFontColor() const
    return m_font_color;
 }
 
+
+/////////// class ClickableText ////////////
+
+ClickableText::ClickableText(
+   const wchar_t* font_name, unsigned long font_size,
+   unsigned long font_style, Gdiplus::Color font_color, bool is_clickable) :
+      Text(font_name, font_size, font_style, font_color),
+      m_is_clickable(is_clickable), m_is_clickable_view(false)
+{
+   // no code
+}
+
+bool ClickableText::SetClickable(bool is_clickable)
+{
+   if (is_clickable != m_is_clickable)
+   {
+      m_is_clickable = is_clickable;
+      return true;
+   }
+   return false;
+}
+
+// Overrides
+bool ClickableText::ProcessMouseClick(long x, long y)
+{
+   return (GetBoundary().Contains(x, y) == TRUE);
+}
+
+
+bool ClickableText::ProcessMouseMove(long x, long y)
+{
+   if (m_is_clickable)
+   {
+      const auto does_contain = (GetBoundary().Contains(x, y) == TRUE);
+      if (does_contain != m_is_clickable_view)
+      {
+         m_is_clickable_view = does_contain;
+         return true;
+      }
+   }
+   return false;
+}
+
+unsigned long ClickableText::GetFontStyle() const
+{
+   const auto font_style = Text::GetFontSize();
+   return m_is_clickable_view ? (font_style & Gdiplus::FontStyleUnderline) : font_style;
+}
+
 ///////////// class Group ////////////////
 
 Group::Group(Gdiplus::REAL indent_before_x, Gdiplus::REAL indent_before_y) :
@@ -201,5 +250,36 @@ void Group::Draw(Gdiplus::Graphics* graphics) const
       object_info.m_object->Draw(graphics);
    }
 }
+
+bool Group::ProcessMouseClick(long x, long y)
+{
+   if (GetBoundary().Contains(x, y) == FALSE)
+   {
+      return false;
+   }
+   for (auto& object_info : m_object_infos)
+   {
+      if (object_info.m_object->ProcessMouseClick(x, y))
+      {
+         return true;
+      }
+   }
+}
+
+bool Group::ProcessMouseMove(long x, long y)
+{
+   if (GetBoundary().Contains(x, y) == FALSE)
+   {
+      return false;
+   }
+   for (auto& object_info : m_object_infos)
+   {
+      if (object_info.m_object->ProcessMouseMove(x, y))
+      {
+         return true;
+      }
+   }
+}
+
 
 } // namespace GraphicObjects

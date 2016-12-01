@@ -41,7 +41,7 @@ public:
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
 
-   // Text virtual methods
+   // Own virtual methods
    virtual const wchar_t* GetFontName() const;
    virtual unsigned long GetFontSize() const;
    virtual unsigned long GetFontStyle() const;
@@ -53,6 +53,24 @@ private:
    unsigned long m_font_size;
    unsigned long m_font_style;
    Gdiplus::Color m_font_color;
+};
+
+class ClickableText : public Text
+{
+public:
+   ClickableText(const wchar_t* font_name, unsigned long font_size,
+                 unsigned long font_style, Gdiplus::Color font_color, bool is_clickable = true);
+
+   bool SetClickable(bool is_clickable);
+
+   // Base and Text overrides
+   virtual bool ProcessMouseClick(long x, long y) override;
+   virtual bool ProcessMouseMove(long x, long y) override;
+   virtual unsigned long GetFontStyle() const override;
+
+private:
+   bool m_is_clickable;
+   bool m_is_clickable_view;
 };
 
 class Group : public Base
@@ -73,6 +91,8 @@ public:
    // Base overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
+   virtual bool ProcessMouseClick(long x, long y) override;
+   virtual bool ProcessMouseMove(long x, long y) override;
 
 protected:
    Gdiplus::REAL m_indent_before_x;

@@ -43,20 +43,6 @@ namespace Fonts
    const Gdiplus::Font tahoma_8_regular(g_tahoma_name, 8, Gdiplus::FontStyleRegular);
 }
 
-/*
----
-m_date(Fonts::tahoma_9_regular, Brushes::grey_dark_with_blue),
-m_time(Fonts::tahoma_8_regular, Brushes::grey_light),
-m_description(Fonts::tahoma_9_regular, Brushes::grey_dark_with_blue),
----
-m_title(Fonts::tahoma_9_bold, Brushes::red_dark),
-m_owner_name(Fonts::tahoma_9_regular, Brushes::black),
-m_header_description(Fonts::tahoma_9_regular, Brushes::grey_dark),
-m_footer_prefix(Fonts::tahoma_9_regular, Brushes::grey_dark),
-m_footer_description(Fonts::tahoma_9_regular, Brushes::black),
----
-*/
-
 } // namespace
 
 // Sticker graphic objects
@@ -348,8 +334,6 @@ public:
    enum class StateType { Minimized, Opened, Expanded };
    StateType GetState() const;
    
-   bool ProcessMouseClick(long x, long y);
-   
    bool SetSectionCount(unsigned long count);
    unsigned long GetSectionCount() const;
    
@@ -359,6 +343,7 @@ public:
    // Group overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
+   virtual bool ProcessMouseClick(long x, long y) override;
    
 private:
    enum Indexes { idxSections, /*idxEtc,*/ idxLast };
