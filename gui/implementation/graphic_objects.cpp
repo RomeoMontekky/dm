@@ -46,6 +46,16 @@ const Gdiplus::RectF& Base::GetBoundary() const
    return m_boundary;
 }
 
+bool Base::ProcessMouseClick(long x, long y)
+{
+   return false;
+}
+
+bool Base::ProcessMouseMove(long x, long y)
+{
+   return false;
+}
+
 ///////////// class Text /////////////
    
 Text::Text(const wchar_t* font_name, unsigned long font_size,
@@ -122,6 +132,11 @@ bool Group::SetObjectCount(unsigned long count)
    }
    m_object_infos.resize(count);
    return true;
+}
+
+unsigned long Group::GetObjectCount() const
+{
+   return m_object_infos.size();
 }
 
 void Group::SetObject(unsigned long index, std::unique_ptr<Base>&& object,

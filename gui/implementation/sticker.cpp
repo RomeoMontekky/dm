@@ -348,9 +348,11 @@ public:
    enum class StateType { Minimized, Opened, Expanded };
    StateType GetState() const;
    
-   void ProcessMouseClick(long x, long y);
+   bool ProcessMouseClick(long x, long y);
    
    bool SetSectionCount(unsigned long count);
+   unsigned long GetSectionCount() const;
+   
    const GraphicObjects::Section& GetSection(unsigned long index) const;
    GraphicObjects::Section& GetSection(unsigned long index);
    
@@ -389,16 +391,25 @@ Sticker::GraphicObject::StateType Sticker::GraphicObject::GetState() const
    return m_state;
 }
 
-void Sticker::GraphicObject::ProcessMouseClick(long x, long y)
+bool Sticker::GraphicObject::ProcessMouseClick(long x, long y)
 {
-   switch (m_state)
+   if (StateType::Minimized == m_state)
    {
-      case StateType::Minimized:
-      {
-         m_state = StateType::Opened;
-         break;
-      }
+      m_state = StateType::Opened;
    }
+   /*
+   else
+   {
+      const auto section_count = GetSectionCount();
+      for (unsigned long index = 0; i < section_count; ++index)
+      {
+         GetSection(index).ProcessMouseClick(x)
+         if (section->IsPointInside(x, y))
+         {
+            
+         }
+      }
+   }*/
 }
 
 bool Sticker::GraphicObject::SetSectionCount(unsigned long count)
@@ -409,6 +420,11 @@ bool Sticker::GraphicObject::SetSectionCount(unsigned long count)
       m_sticker.SetDirty();
    }
    m_sticker.Update();
+}
+
+unsigned long Sticker::GraphicObject::GetSectionCount() const
+{
+   return static_cast<const Group*>(Group::GetObject(idxSections))->GetObjectCount();
 }
 
 const GraphicObjects::Section& Sticker::GraphicObject::GetSection(unsigned long index) const

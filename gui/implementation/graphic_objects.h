@@ -21,6 +21,8 @@ public:
 
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) = 0;
    virtual void Draw(Gdiplus::Graphics* graphics) const = 0;
+   virtual bool ProcessMouseClick(long x, long y);
+   virtual bool ProcessMouseMove(long x, long y);
 
 protected:
    Gdiplus::RectF m_boundary;
@@ -61,6 +63,8 @@ public:
    enum class GluingType { Right, Bottom };
 
    bool SetObjectCount(unsigned long count);
+   unsigned long GetObjectCount() const;
+   
    void SetObject(unsigned long index, std::unique_ptr<Base>&& object,
                   GluingType gluing_type, Gdiplus::REAL indent_after = 0);
    const Base* GetObject(unsigned long index) const;
@@ -70,7 +74,7 @@ public:
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
 
-private:
+protected:
    Gdiplus::REAL m_indent_before_x;
    Gdiplus::REAL m_indent_before_y;
 
