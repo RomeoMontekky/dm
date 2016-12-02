@@ -46,14 +46,14 @@ const Gdiplus::RectF& Base::GetBoundary() const
    return m_boundary;
 }
 
-bool Base::ProcessMouseClick(long x, long y)
+const Base* Base::ProcessMouseClick(long x, long y)
 {
-   return false;
+   return nullptr;
 }
 
-bool Base::ProcessMouseMove(long x, long y)
+const Base* Base::ProcessMouseMove(long x, long y)
 {
-   return false;
+   return nullptr;
 }
 
 ///////////// class Text /////////////
@@ -139,13 +139,12 @@ bool ClickableText::SetClickable(bool is_clickable)
 }
 
 // Overrides
-bool ClickableText::ProcessMouseClick(long x, long y)
+const Base* ClickableText::ProcessMouseClick(long x, long y)
 {
-   return (GetBoundary().Contains(x, y) == TRUE);
+   return (GetBoundary().Contains(x, y) == TRUE) ? this : nullptr;
 }
 
-
-bool ClickableText::ProcessMouseMove(long x, long y)
+const Base* ClickableText::ProcessMouseMove(long x, long y)
 {
    if (m_is_clickable)
    {
@@ -153,10 +152,10 @@ bool ClickableText::ProcessMouseMove(long x, long y)
       if (does_contain != m_is_clickable_view)
       {
          m_is_clickable_view = does_contain;
-         return true;
+         return this;
       }
    }
-   return false;
+   return nullptr;
 }
 
 unsigned long ClickableText::GetFontStyle() const
@@ -251,34 +250,40 @@ void Group::Draw(Gdiplus::Graphics* graphics) const
    }
 }
 
-bool Group::ProcessMouseClick(long x, long y)
+const Base* Group::ProcessMouseClick(long x, long y)
 {
    if (GetBoundary().Contains(x, y) == FALSE)
    {
-      return false;
+      return nullptr;
    }
+   
    for (auto& object_info : m_object_infos)
    {
-      if (object_info.m_object->ProcessMouseClick(x, y))
+      if (auto ret = object_info.m_object->ProcessMouseClick(x, y))
       {
-         return true;
+         return ret;
       }
    }
+   
+   return nullptr;
 }
 
-bool Group::ProcessMouseMove(long x, long y)
+const Base* Group::ProcessMouseMove(long x, long y)
 {
    if (GetBoundary().Contains(x, y) == FALSE)
    {
-      return false;
+      return nullptr;
    }
+   
    for (auto& object_info : m_object_infos)
    {
-      if (object_info.m_object->ProcessMouseMove(x, y))
+      if (auto ret = object_info.m_object->ProcessMouseMove(x, y))
       {
-         return true;
+         return ret;
       }
    }
+   
+   return nullptr;
 }
 
 

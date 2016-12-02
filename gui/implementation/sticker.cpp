@@ -343,7 +343,7 @@ public:
    // Group overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
-   virtual bool ProcessMouseClick(long x, long y) override;
+   virtual const Base* ProcessMouseClick(long x, long y) override;
    
 private:
    enum Indexes { idxSections, /*idxEtc,*/ idxLast };
@@ -376,11 +376,12 @@ Sticker::GraphicObject::StateType Sticker::GraphicObject::GetState() const
    return m_state;
 }
 
-bool Sticker::GraphicObject::ProcessMouseClick(long x, long y)
+const GraphicObjects::Base* Sticker::GraphicObject::ProcessMouseClick(long x, long y)
 {
    if (StateType::Minimized == m_state)
    {
       m_state = StateType::Opened;
+      return this;
    }
    /*
    else

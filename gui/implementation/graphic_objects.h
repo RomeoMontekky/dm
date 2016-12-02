@@ -21,8 +21,8 @@ public:
 
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) = 0;
    virtual void Draw(Gdiplus::Graphics* graphics) const = 0;
-   virtual bool ProcessMouseClick(long x, long y);
-   virtual bool ProcessMouseMove(long x, long y);
+   virtual const Base* ProcessMouseClick(long x, long y);
+   virtual const Base* ProcessMouseMove(long x, long y);
 
 protected:
    Gdiplus::RectF m_boundary;
@@ -64,8 +64,8 @@ public:
    bool SetClickable(bool is_clickable);
 
    // Base and Text overrides
-   virtual bool ProcessMouseClick(long x, long y) override;
-   virtual bool ProcessMouseMove(long x, long y) override;
+   virtual const Base* ProcessMouseClick(long x, long y) override;
+   virtual const Base* ProcessMouseMove(long x, long y) override;
    virtual unsigned long GetFontStyle() const override;
 
 private:
@@ -91,8 +91,8 @@ public:
    // Base overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
-   virtual bool ProcessMouseClick(long x, long y) override;
-   virtual bool ProcessMouseMove(long x, long y) override;
+   virtual const Base* ProcessMouseClick(long x, long y) override;
+   virtual const Base* ProcessMouseMove(long x, long y) override; 
 
 protected:
    Gdiplus::REAL m_indent_before_x;
