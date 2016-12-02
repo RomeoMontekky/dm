@@ -6,7 +6,7 @@
 #include <vector>
 #include <string>
 
-namespace GraphicObjects
+namespace BGO
 {
 
 class Base
@@ -108,4 +108,4 @@ protected:
    std::vector<ObjectInfo> m_object_infos;
 };
 
-} // namespace GraphicObjects
+} // namespace BGO

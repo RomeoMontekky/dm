@@ -31,7 +31,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    ::ShowWindow(main_window.GetHandle(), nCmdShow);
 
    Sticker sticker;
-   sticker.Create(nullptr, WS_CHILD|WS_VISIBLE|WS_DLGFRAME, 0, 0, 100, 35, main_window.GetHandle());
+   sticker.Create(nullptr, WS_CHILD|WS_VISIBLE|WS_DLGFRAME, 0, 0, 70, 22, main_window.GetHandle());
    
    sticker.SetRedraw(false);
    {

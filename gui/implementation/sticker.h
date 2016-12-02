@@ -30,6 +30,12 @@ public:
    virtual ~IStickerCallback();
 };
 
+namespace SGO
+{
+   // Forward declaration to use in PIMPL.
+   class StickerObject;
+}
+
 class Sticker : public wc::Window
 {
 public:
@@ -58,8 +64,7 @@ private:
    bool m_is_dirty;
    bool m_is_redraw;
    
-   class GraphicObject;
-   std::unique_ptr<GraphicObject> m_object;
    std::unique_ptr<Gdiplus::Bitmap> m_memory_image;
    std::unique_ptr<IStickerCallback> m_callback;
+   std::unique_ptr<SGO::StickerObject> m_object;
 };

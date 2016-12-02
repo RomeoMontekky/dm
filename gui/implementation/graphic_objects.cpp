@@ -12,24 +12,24 @@ std::wstring AsciiToWide(const char* input)
    {
       return std::wstring();
    }
-   
+
    const auto input_size = std::strlen(input);
    auto output_size = ::MultiByteToWideChar(CP_ACP, 0, input, input_size, nullptr, 0);
    assert(output_size > 0);
-   
+
    std::unique_ptr<wchar_t[]> output(new wchar_t[output_size]);
    auto ret = ::MultiByteToWideChar(CP_ACP, 0, input, input_size, output.get(), output_size);
    assert(ret != 0);
-   
+
    return std::wstring(output.get(), output.get() + output_size);
 }
 
 } // namespace
 
-namespace GraphicObjects
+namespace BGO
 {
 
-///////////// class GraphicObject ////////
+///////////// class Base ////////
 
 Base::Base() : m_boundary()
 {
@@ -91,9 +91,12 @@ void Text::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphi
 
 void Text::Draw(Gdiplus::Graphics* graphics) const
 {
-   Gdiplus::Font font(GetFontName(), GetFontSize(), GetFontStyle());
-   Gdiplus::SolidBrush brush(GetFontColor());
-   graphics->DrawString(m_text.c_str(), m_text.size(), &font, m_boundary, nullptr, &brush);
+   if (GetBoundary().IsEmptyArea() == FALSE)
+   {
+      Gdiplus::Font font(GetFontName(), GetFontSize(), GetFontStyle());
+      Gdiplus::SolidBrush brush(GetFontColor());
+      graphics->DrawString(m_text.c_str(), m_text.size(), &font, m_boundary, nullptr, &brush);
+   }
 }
 
 const wchar_t* Text::GetFontName() const
@@ -286,5 +289,4 @@ const Base* Group::ProcessMouseMove(long x, long y)
    return nullptr;
 }
 
-
-} // namespace GraphicObjects
+} // namespace BGO
