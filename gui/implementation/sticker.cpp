@@ -19,6 +19,18 @@ inline std::unique_ptr<Gdiplus::Graphics> GetGraphics(
    return graphics;
 }
 
+inline void InvalidateRectF(HWND wnd, const Gdiplus::RectF& rectf)
+{
+   const RECT rect =
+   {
+      static_cast<LONG>(rectf.X - 0.5),
+      static_cast<LONG>(rectf.Y - 0.5),
+      static_cast<LONG>(rectf.GetRight() + 0.5),
+      static_cast<LONG>(rectf.GetBottom() + 0.5)
+   };
+   ::InvalidateRect(wnd, &rect, FALSE);
+}
+
 } // namespace
 
 ISection::~ISection()
@@ -92,10 +104,17 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          ::GetClientRect(GetHandle(), &client_rect);
          // Save initilial window rect into the variable to have ability to restore it at any time.
          m_object->SetMinimizedBoundary(client_rect);
+         break;
       }
       case WM_LBUTTONUP:
       {
          OnMouseClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+         return TRUE;
+      }
+      case WM_MOUSEMOVE:
+      {
+         OnMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+         return TRUE;
       }
       case WM_ERASEBKGND:
       {
@@ -143,6 +162,40 @@ void Sticker::OnMouseClick(long x, long y)
                      SWP_NOZORDER);
       
       ::InvalidateRect(GetHandle(), nullptr, TRUE);   
+   }
+}
+
+void Sticker::OnMouseMove(long x, long y)
+{
+   if (!m_memory_image)
+   {
+      return;
+   }
+
+   BGO::TObjectPtrVector invalidated_objects;
+   m_object->ProcessMouseMove(x, y, invalidated_objects);
+
+   if (!invalidated_objects.empty())
+   {
+      auto graphics = GetGraphics(m_memory_image);
+
+      Gdiplus::RectF invalidated_rect;
+      for (unsigned long index = 0; index < invalidated_objects.size(); ++index)
+      {
+         const auto object = invalidated_objects[index];
+         const auto& boundary = object->GetBoundary();
+         if (0 == index)
+         {
+            invalidated_rect = boundary;
+         }
+         else
+         {
+            Gdiplus::RectF::Union(invalidated_rect, invalidated_rect, boundary);
+         }
+         object->Draw(graphics.get());
+      }
+
+      ::InvalidateRectF(GetHandle(), invalidated_rect);
    }
 }
 

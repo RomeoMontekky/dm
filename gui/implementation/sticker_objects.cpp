@@ -19,6 +19,7 @@ namespace Colors
 {
    const Gdiplus::Color black(0x00, 0x00, 0x00);
    const Gdiplus::Color grey_light(0xCC, 0xCC, 0xCC);
+   const Gdiplus::Color grey_very_light(0xF5, 0xF5, 0xF5);
    const Gdiplus::Color grey_dark(0x99, 0x99, 0x99);
    const Gdiplus::Color grey_dark_with_blue(0x89, 0x91, 0xA9);
    const Gdiplus::Color green_dark(0x72, 0xBE, 0x44);
@@ -38,29 +39,29 @@ namespace Fonts
 /////////// class ItemDate //////////
 
 ItemDate::ItemDate() :
-   BGO::Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark_with_blue)
+   BGO::Text(Colors::grey_very_light, g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark_with_blue)
 {}
 
 /////////// class ItemTime //////////
 
 ItemTime::ItemTime() :
-   BGO::Text(g_tahoma_name, 8, Gdiplus::FontStyleRegular, Colors::grey_light)
+   BGO::Text(Colors::grey_very_light, g_tahoma_name, 8, Gdiplus::FontStyleRegular, Colors::grey_light)
 {}
 
 /////////// class ItemDesctiption //////////
 
-ItemDesctiption::ItemDesctiption() :
-   BGO::Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark_with_blue)
+ItemDescription::ItemDescription() :
+   BGO::ClickableText(Colors::grey_very_light, g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark_with_blue)
 {}
 
 /////////// class SectionItem //////////
 
-SectionItem::SectionItem() : Group()
+SectionItem::SectionItem() : BGO::Group()
 {
    BGO::Group::SetObjectCount(idxLast);
    BGO::Group::SetObject(idxDate, std::make_unique<ItemDate>(), BGO::Group::GluingType::Right, g_indent_horz);
    BGO::Group::SetObject(idxTime, std::make_unique<ItemTime>(), BGO::Group::GluingType::Right, g_indent_horz);
-   BGO::Group::SetObject(idxDesc, std::make_unique<ItemDesctiption>(), BGO::Group::GluingType::Right, g_indent_horz);
+   BGO::Group::SetObject(idxDesc, std::make_unique<ItemDescription>(), BGO::Group::GluingType::Right, g_indent_horz);
 }
 
 bool SectionItem::SetDate(const char* text)
@@ -70,35 +71,35 @@ bool SectionItem::SetDate(const char* text)
 
 bool SectionItem::SetTime(const char* text)
 {
-   return static_cast<BGO::Text*>(Group::GetObject(idxTime))->SetText(text);
+   return static_cast<BGO::Text*>(BGO::Group::GetObject(idxTime))->SetText(text);
 }
 
 bool SectionItem::SetDescription(const char* text)
 {
-   return static_cast<BGO::Text*>(Group::GetObject(idxDesc))->SetText(text);
+   return static_cast<BGO::Text*>(BGO::Group::GetObject(idxDesc))->SetText(text);
 }
 
 /////////// class SectionHeader //////////
 
 SectionHeader::SectionHeader() :
-   BGO::Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark)
+   BGO::Text(Colors::grey_very_light, g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark)
 {}
 
 /////////// class FooterPrefix //////////
 
 FooterPrefix::FooterPrefix() :
-   BGO::Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark)
+   BGO::Text(Colors::grey_very_light, g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::grey_dark)
 {}
 
 /////////// class FooterDescription //////////
 
 FooterDescription::FooterDescription() :
-   BGO::Text(g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::black)
+   BGO::Text(Colors::grey_very_light, g_tahoma_name, 9, Gdiplus::FontStyleRegular, Colors::black)
 {}
 
 ///////////// class SectionFooter ////////////////
 
-SectionFooter::SectionFooter() : Group()
+SectionFooter::SectionFooter() : BGO::Group()
 {
    BGO::Group::SetObjectCount(idxLast);
    BGO::Group::SetObject(idxPrefix, std::make_unique<FooterPrefix>(), BGO::Group::GluingType::Right, g_indent_horz);
@@ -118,33 +119,33 @@ bool SectionFooter::SetDescription(const char* text)
 /////////// class SectionTitle //////////
 
 SectionTitle::SectionTitle() :
-   BGO::Text(g_tahoma_name, 9, Gdiplus::FontStyleBold, Colors::red_dark)
+   BGO::Text(Colors::grey_very_light, g_tahoma_name, 9, Gdiplus::FontStyleBold, Colors::red_dark)
 {}
 
 ///////////// class Section ////////////////
 
-Section::Section(Sticker& sticker) : Group(), m_sticker(sticker)
+Section::Section(Sticker& sticker) : BGO::Group(), m_sticker(sticker)
 {
    BGO::Group::SetObjectCount(idxLast);
    BGO::Group::SetObject(idxTitle, std::make_unique<SectionTitle>(), BGO::Group::GluingType::Bottom, g_indent_vert);
    BGO::Group::SetObject(idxHeader, std::make_unique<SectionHeader>(), BGO::Group::GluingType::Bottom, g_indent_vert);
-   BGO::Group::SetObject(idxItems, std::make_unique<Group>(), BGO::Group::GluingType::Bottom, g_indent_vert);
+   BGO::Group::SetObject(idxItems, std::make_unique<BGO::Group>(), BGO::Group::GluingType::Bottom, g_indent_vert);
    BGO::Group::SetObject(idxFooter, std::make_unique<SectionFooter>(), BGO::Group::GluingType::Bottom, g_indent_vert);
 }
 
 void Section::RecalculateTitleBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
 {
-   static_cast<BGO::Text*>(Group::GetObject(idxTitle))->RecalculateBoundary(x, y, graphics);
+   static_cast<BGO::Text*>(BGO::Group::GetObject(idxTitle))->RecalculateBoundary(x, y, graphics);
 }
 
 void Section::DrawTitle(Gdiplus::Graphics* graphics) const
 {
-   static_cast<const BGO::Text*>(Group::GetObject(idxTitle))->Draw(graphics);
+   static_cast<const BGO::Text*>(BGO::Group::GetObject(idxTitle))->Draw(graphics);
 }
 
 void Section::SetTitle(const char* title)
 {
-   if (static_cast<BGO::Text*>(Group::GetObject(idxTitle))->SetText(title))
+   if (static_cast<BGO::Text*>(BGO::Group::GetObject(idxTitle))->SetText(title))
    {
       m_sticker.SetDirty();
    }
@@ -227,11 +228,9 @@ void Section::SetItem(unsigned long index, const char* date, const char* time, c
 StickerObject::StickerObject(Sticker& sticker) :
    BGO::Group(), m_minimized_boundary(), m_state(StateType::Minimized), m_sticker(sticker)
 {
-   Group::SetObjectCount(idxLast);
-   Group::SetObject(idxSections, std::make_unique<BGO::Group>(),
-                    BGO::Group::GluingType::Bottom, g_indent_vert);
-   //Group::SetObject(idxEtc, std::make_unique<GraphicObjects::Text>(),
-   //                 GraphicObjects::Group::GluingType::Bottom, g_indent_vert);
+   BGO::Group::SetObjectCount(idxLast);
+   BGO::Group::SetObject(idxSections, std::make_unique<BGO::Group>(), BGO::Group::GluingType::Bottom, g_indent_vert);
+   //Group::SetObject(idxEtc, std::make_unique<BGO::Text>(), BGO::Group::GluingType::Bottom, g_indent_vert);
 }
 
 void StickerObject::SetMinimizedBoundary(const RECT& boundary)
@@ -298,8 +297,9 @@ void StickerObject::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplu
 
 void StickerObject::Draw(Gdiplus::Graphics* graphics) const
 {
-   // Probably it should be done in sticker's graphic object.
-   graphics->Clear(Gdiplus::Color(245, 245, 245));
+   Gdiplus::SolidBrush back_brush(Colors::grey_very_light);
+   graphics->FillRectangle(&back_brush, GetBoundary());
+
    if (StateType::Minimized == m_state)
    {
       GetSection(0).DrawTitle(graphics);
@@ -310,7 +310,7 @@ void StickerObject::Draw(Gdiplus::Graphics* graphics) const
    }
 }
 
-const BGO::Base* StickerObject::ProcessMouseClick(long x, long y)
+const BGO::Object* StickerObject::ProcessMouseClick(long x, long y)
 {
    if (StateType::Minimized == m_state)
    {

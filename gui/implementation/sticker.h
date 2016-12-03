@@ -56,6 +56,7 @@ protected:
    
 private:
    void OnMouseClick(long x, long y);
+   void OnMouseMove(long x, long y);
    void OnPaint(HDC hdc);
    
    void RecalculateObjectBoundary();

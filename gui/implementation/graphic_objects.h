@@ -9,29 +9,45 @@
 namespace BGO
 {
 
-class Base
+class Object;
+using TObjectPtrVector = std::vector<Object*>;
+
+class Object
 {
-   Base(const Base& rhs) = delete;
+   Object(const Object& rhs) = delete;
 
 public:
-   Base();
-   virtual ~Base();
+   Object();
+   virtual ~Object();
 
    const Gdiplus::RectF& GetBoundary() const;
 
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) = 0;
    virtual void Draw(Gdiplus::Graphics* graphics) const = 0;
-   virtual const Base* ProcessMouseClick(long x, long y);
-   virtual const Base* ProcessMouseMove(long x, long y);
+   virtual const Object* ProcessMouseClick(long x, long y);
+   virtual void ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects);
 
 protected:
    Gdiplus::RectF m_boundary;
 };
 
-class Text : public Base
+class ObjectWithBackground : public Object
 {
 public:
-   Text(const wchar_t* font_name, unsigned long font_size,
+   ObjectWithBackground(const Gdiplus::Color& back_color);
+
+   // Object overrides
+   virtual void Draw(Gdiplus::Graphics* graphics) const override;
+
+private:
+   Gdiplus::Color m_back_color;
+};
+
+class Text : public ObjectWithBackground
+{
+public:
+   Text(const Gdiplus::Color& back_color,
+        const wchar_t* font_name, unsigned long font_size,
         unsigned long font_style, Gdiplus::Color font_color);
    
    bool SetText(const char* text);
@@ -58,14 +74,15 @@ private:
 class ClickableText : public Text
 {
 public:
-   ClickableText(const wchar_t* font_name, unsigned long font_size,
+   ClickableText(const Gdiplus::Color& back_color,
+                 const wchar_t* font_name, unsigned long font_size,
                  unsigned long font_style, Gdiplus::Color font_color, bool is_clickable = true);
 
    bool SetClickable(bool is_clickable);
 
    // Base and Text overrides
-   virtual const Base* ProcessMouseClick(long x, long y) override;
-   virtual const Base* ProcessMouseMove(long x, long y) override;
+   virtual const Object* ProcessMouseClick(long x, long y) override;
+   virtual void ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects) override;
    virtual unsigned long GetFontStyle() const override;
 
 private:
@@ -73,7 +90,7 @@ private:
    bool m_is_clickable_view;
 };
 
-class Group : public Base
+class Group : public Object
 {
 public:
    Group(Gdiplus::REAL indent_before_x = 0, Gdiplus::REAL indent_before_y = 0);
@@ -83,16 +100,16 @@ public:
    bool SetObjectCount(unsigned long count);
    unsigned long GetObjectCount() const;
    
-   void SetObject(unsigned long index, std::unique_ptr<Base>&& object,
+   void SetObject(unsigned long index, std::unique_ptr<Object>&& object,
                   GluingType gluing_type, Gdiplus::REAL indent_after = 0);
-   const Base* GetObject(unsigned long index) const;
-   Base* GetObject(unsigned long index);
+   const Object* GetObject(unsigned long index) const;
+   Object* GetObject(unsigned long index);
 
    // Base overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
-   virtual const Base* ProcessMouseClick(long x, long y) override;
-   virtual const Base* ProcessMouseMove(long x, long y) override; 
+   virtual const Object* ProcessMouseClick(long x, long y) override;
+   virtual void ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects) override;
 
 protected:
    Gdiplus::REAL m_indent_before_x;
@@ -100,7 +117,7 @@ protected:
 
    struct ObjectInfo
    {
-      std::unique_ptr<Base> m_object;
+      std::unique_ptr<Object> m_object;
       GluingType m_gluing_type;
       Gdiplus::REAL m_indent_after;
    };

@@ -31,36 +31,55 @@ namespace BGO
 
 ///////////// class Base ////////
 
-Base::Base() : m_boundary()
+Object::Object() : m_boundary()
 {
    // no code
 }
 
-Base::~Base()
+Object::~Object()
 {
    // no code
 }
 
-const Gdiplus::RectF& Base::GetBoundary() const
+const Gdiplus::RectF& Object::GetBoundary() const
 {
    return m_boundary;
 }
 
-const Base* Base::ProcessMouseClick(long x, long y)
+const Object* Object::ProcessMouseClick(long x, long y)
 {
    return nullptr;
 }
 
-const Base* Base::ProcessMouseMove(long x, long y)
+void Object::ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects)
 {
-   return nullptr;
+   // no code
+}
+
+//////// class ObjectWithBackground ////////
+
+ObjectWithBackground::ObjectWithBackground(const Gdiplus::Color& back_color) :
+   Object(), m_back_color(back_color)
+{
+   // no code
+}
+
+void ObjectWithBackground::Draw(Gdiplus::Graphics* graphics) const
+{
+   if (GetBoundary().IsEmptyArea() == FALSE)
+   {
+      Gdiplus::SolidBrush back_brush(m_back_color);
+      graphics->FillRectangle(&back_brush, GetBoundary());
+   }
 }
 
 ///////////// class Text /////////////
    
-Text::Text(const wchar_t* font_name, unsigned long font_size,
+Text::Text(const Gdiplus::Color& back_color,
+           const wchar_t* font_name, unsigned long font_size,
            unsigned long font_style, Gdiplus::Color font_color) :
-   Base(), m_font_name(font_name), m_font_size(font_size),
+   ObjectWithBackground(back_color),
+   m_font_name(font_name), m_font_size(font_size),
    m_font_style(font_style), m_font_color(font_color)
 {
    // no code
@@ -91,6 +110,8 @@ void Text::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphi
 
 void Text::Draw(Gdiplus::Graphics* graphics) const
 {
+   ObjectWithBackground::Draw(graphics);
+
    if (GetBoundary().IsEmptyArea() == FALSE)
    {
       Gdiplus::Font font(GetFontName(), GetFontSize(), GetFontStyle());
@@ -123,9 +144,10 @@ Gdiplus::Color Text::GetFontColor() const
 /////////// class ClickableText ////////////
 
 ClickableText::ClickableText(
+   const Gdiplus::Color& back_color,
    const wchar_t* font_name, unsigned long font_size,
    unsigned long font_style, Gdiplus::Color font_color, bool is_clickable) :
-      Text(font_name, font_size, font_style, font_color),
+      Text(back_color, font_name, font_size, font_style, font_color),
       m_is_clickable(is_clickable), m_is_clickable_view(false)
 {
    // no code
@@ -142,29 +164,28 @@ bool ClickableText::SetClickable(bool is_clickable)
 }
 
 // Overrides
-const Base* ClickableText::ProcessMouseClick(long x, long y)
+const Object* ClickableText::ProcessMouseClick(long x, long y)
 {
    return (GetBoundary().Contains(x, y) == TRUE) ? this : nullptr;
 }
 
-const Base* ClickableText::ProcessMouseMove(long x, long y)
+void ClickableText::ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects)
 {
    if (m_is_clickable)
    {
-      const auto does_contain = (GetBoundary().Contains(x, y) == TRUE);
-      if (does_contain != m_is_clickable_view)
+      const auto does_contain_cursor = (GetBoundary().Contains(x, y) == TRUE);
+      if (does_contain_cursor != m_is_clickable_view)
       {
-         m_is_clickable_view = does_contain;
-         return this;
+         m_is_clickable_view = does_contain_cursor;
+         invalidated_objects.push_back(this);
       }
    }
-   return nullptr;
 }
 
 unsigned long ClickableText::GetFontStyle() const
 {
-   const auto font_style = Text::GetFontSize();
-   return m_is_clickable_view ? (font_style & Gdiplus::FontStyleUnderline) : font_style;
+   const auto font_style = Text::GetFontStyle();
+   return m_is_clickable_view ? (font_style | Gdiplus::FontStyleUnderline) : font_style;
 }
 
 ///////////// class Group ////////////////
@@ -190,7 +211,7 @@ unsigned long Group::GetObjectCount() const
    return m_object_infos.size();
 }
 
-void Group::SetObject(unsigned long index, std::unique_ptr<Base>&& object,
+void Group::SetObject(unsigned long index, std::unique_ptr<Object>&& object,
                       GluingType gluing_type, Gdiplus::REAL indent_after)
 {
    auto& object_info = m_object_infos.at(index);
@@ -199,12 +220,12 @@ void Group::SetObject(unsigned long index, std::unique_ptr<Base>&& object,
    object_info.m_indent_after = indent_after;
 }
 
-const Base* Group::GetObject(unsigned long index) const
+const Object* Group::GetObject(unsigned long index) const
 {
    return m_object_infos.at(index).m_object.get();
 }
 
-Base* Group::GetObject(unsigned long index)
+Object* Group::GetObject(unsigned long index)
 {
    return m_object_infos.at(index).m_object.get();
 }
@@ -253,13 +274,8 @@ void Group::Draw(Gdiplus::Graphics* graphics) const
    }
 }
 
-const Base* Group::ProcessMouseClick(long x, long y)
+const Object* Group::ProcessMouseClick(long x, long y)
 {
-   if (GetBoundary().Contains(x, y) == FALSE)
-   {
-      return nullptr;
-   }
-   
    for (auto& object_info : m_object_infos)
    {
       if (auto ret = object_info.m_object->ProcessMouseClick(x, y))
@@ -271,22 +287,12 @@ const Base* Group::ProcessMouseClick(long x, long y)
    return nullptr;
 }
 
-const Base* Group::ProcessMouseMove(long x, long y)
+void Group::ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects)
 {
-   if (GetBoundary().Contains(x, y) == FALSE)
-   {
-      return nullptr;
-   }
-   
    for (auto& object_info : m_object_infos)
    {
-      if (auto ret = object_info.m_object->ProcessMouseMove(x, y))
-      {
-         return ret;
-      }
+      object_info.m_object->ProcessMouseMove(x, y, invalidated_objects);
    }
-   
-   return nullptr;
 }
 
 } // namespace BGO

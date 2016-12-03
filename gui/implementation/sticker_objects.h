@@ -19,10 +19,10 @@ public:
    ItemTime();
 };
 
-class ItemDesctiption : public BGO::Text
+class ItemDescription : public BGO::ClickableText
 {
 public:
-   ItemDesctiption();
+   ItemDescription();
 };
 
 class SectionItem : public BGO::Group
@@ -76,7 +76,7 @@ public:
    SectionTitle();
 };
 
-class Section : public ISection, public BGO::Group
+class Section : public BGO::Group, public ISection
 {
 public:
    Section(Sticker& sticker);
@@ -116,7 +116,7 @@ public:
    // Group overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
-   virtual const Base* ProcessMouseClick(long x, long y) override;
+   virtual const Object* ProcessMouseClick(long x, long y) override;
 
 private:
    enum Indexes { idxSections, /*idxEtc,*/ idxLast };
