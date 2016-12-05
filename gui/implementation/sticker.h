@@ -57,13 +57,16 @@ protected:
 private:
    void OnMouseClick(long x, long y);
    void OnMouseMove(long x, long y);
+   void OnMouseHover(long x, long y);
+   void OnMouseLeave();
    void OnPaint(HDC hdc);
    
-   void RecalculateObjectBoundary();
+   void ProcessMouseReposition(long x, long y);
 
 private:
    bool m_is_dirty;
    bool m_is_redraw;
+   bool m_is_mouse_tracking;
    
    std::unique_ptr<Gdiplus::Bitmap> m_memory_image;
    std::unique_ptr<IStickerCallback> m_callback;

@@ -48,6 +48,7 @@ IStickerCallback::~IStickerCallback()
 Sticker::Sticker() : wc::Window(),
    m_is_dirty(true),
    m_is_redraw(true),
+   m_is_mouse_tracking(false),
    m_memory_image(),
    m_callback(),
    m_object(new SGO::StickerObject(*this))
@@ -114,7 +115,17 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       case WM_MOUSEMOVE:
       {
          OnMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-         return TRUE;
+         return FALSE;
+      }
+      case WM_MOUSEHOVER:
+      {
+         OnMouseHover(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+         return FALSE;
+      }
+      case WM_MOUSELEAVE:
+      {
+         OnMouseLeave();
+         return FALSE;
       }
       case WM_ERASEBKGND:
       {
@@ -167,6 +178,62 @@ void Sticker::OnMouseClick(long x, long y)
 
 void Sticker::OnMouseMove(long x, long y)
 {
+   if (!m_is_mouse_tracking)
+   {
+      TRACKMOUSEEVENT tracking_data;
+      tracking_data.cbSize = sizeof(tracking_data);
+      tracking_data.dwFlags = TME_HOVER | TME_LEAVE;
+      tracking_data.hwndTrack = GetHandle();
+      tracking_data.dwHoverTime = 1; 
+      
+      ::TrackMouseEvent(&tracking_data);
+      
+      m_is_mouse_tracking = true;
+   }
+}
+
+void Sticker::OnMouseHover(long x, long y)
+{
+   ProcessMouseReposition(x, y);
+   m_is_mouse_tracking = false;
+}
+
+void Sticker::OnMouseLeave()
+{
+   ProcessMouseReposition(-1, -1);
+   m_is_mouse_tracking = false;
+}
+
+void Sticker::OnPaint(HDC hdc)
+{
+   RECT client_rect;
+   ::GetClientRect(GetHandle(), &client_rect);
+   
+   const auto client_width = client_rect.right - client_rect.left;
+   const auto client_height = client_rect.bottom - client_rect.top;
+
+   Gdiplus::Graphics graphics(hdc);
+
+   if (m_is_dirty || !m_memory_image ||
+       client_width != m_memory_image->GetWidth() || client_height != m_memory_image->GetHeight())
+   {
+      m_memory_image.reset(new Gdiplus::Bitmap(client_width, client_height, &graphics));
+      auto memory_graphics = GetGraphics(m_memory_image);
+
+      if (m_is_dirty)
+      {
+         m_object->RecalculateBoundary(0, 0, memory_graphics.get());
+         m_is_dirty = false;
+      }
+
+      m_object->Draw(memory_graphics.get());
+   }
+            
+   graphics.DrawImage(m_memory_image.get(), 0, 0);
+}
+
+void Sticker::ProcessMouseReposition(long x, long y)
+{
    if (!m_memory_image)
    {
       return;
@@ -197,32 +264,4 @@ void Sticker::OnMouseMove(long x, long y)
 
       ::InvalidateRectF(GetHandle(), invalidated_rect);
    }
-}
-
-void Sticker::OnPaint(HDC hdc)
-{
-   RECT client_rect;
-   ::GetClientRect(GetHandle(), &client_rect);
-   
-   const auto client_width = client_rect.right - client_rect.left;
-   const auto client_height = client_rect.bottom - client_rect.top;
-
-   Gdiplus::Graphics graphics(hdc);
-
-   if (m_is_dirty || !m_memory_image ||
-       client_width != m_memory_image->GetWidth() || client_height != m_memory_image->GetHeight())
-   {
-      m_memory_image.reset(new Gdiplus::Bitmap(client_width, client_height, &graphics));
-      auto memory_graphics = GetGraphics(m_memory_image);
-
-      if (m_is_dirty)
-      {
-         m_object->RecalculateBoundary(0, 0, memory_graphics.get());
-         m_is_dirty = false;
-      }
-
-      m_object->Draw(memory_graphics.get());
-   }
-            
-   graphics.DrawImage(m_memory_image.get(), 0, 0);
 }
