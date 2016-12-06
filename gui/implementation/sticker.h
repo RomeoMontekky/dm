@@ -55,13 +55,13 @@ protected:
    virtual LRESULT WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
    
 private:
-   void OnMouseClick(long x, long y);
+   void OnLButtonUp(long x, long y);
    void OnMouseMove(long x, long y);
    void OnMouseHover(long x, long y);
    void OnMouseLeave();
    void OnPaint(HDC hdc);
    
-   void ProcessMouseHover(long x, long y);
+   void ProcessHover(long x, long y);
 
 private:
    bool m_is_dirty;

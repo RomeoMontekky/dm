@@ -310,26 +310,17 @@ void StickerObject::Draw(Gdiplus::Graphics* graphics) const
    }
 }
 
-const BGO::Object* StickerObject::ProcessMouseClick(long x, long y)
+bool StickerObject::ProcessClick(long x, long y, BGO::TULongVector& group_indexes)
 {
    if (StateType::Minimized == m_state)
    {
       m_state = StateType::Opened;
-      return this;
+      return false;
    }
-   /*
    else
    {
-      const auto section_count = GetSectionCount();
-      for (unsigned long index = 0; i < section_count; ++index)
-      {
-         GetSection(index).ProcessMouseClick(x)
-         if (section->IsPointInside(x, y))
-         {
-
-         }
-      }
-   }*/
+      return BGO::Group::ProcessClick(x, y, group_indexes);
+   }
 }
 
 } // namespace SGO

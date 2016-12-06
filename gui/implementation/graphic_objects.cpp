@@ -46,12 +46,12 @@ const Gdiplus::RectF& Object::GetBoundary() const
    return m_boundary;
 }
 
-const Object* Object::ProcessMouseClick(long x, long y)
+bool Object::ProcessClick(long x, long y, TULongVector& group_indexes)
 {
-   return nullptr;
+   return false;
 }
 
-void Object::ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects)
+void Object::ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects)
 {
    // no code
 }
@@ -164,12 +164,12 @@ bool ClickableText::SetClickable(bool is_clickable)
 }
 
 // Overrides
-const Object* ClickableText::ProcessMouseClick(long x, long y)
+bool ClickableText::ProcessClick(long x, long y, TULongVector& group_indexes)
 {
-   return (GetBoundary().Contains(x, y) == TRUE) ? this : nullptr;
+   return (GetBoundary().Contains(x, y) == TRUE);
 }
 
-void ClickableText::ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects)
+void ClickableText::ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects)
 {
    if (m_is_clickable)
    {
@@ -274,24 +274,25 @@ void Group::Draw(Gdiplus::Graphics* graphics) const
    }
 }
 
-const Object* Group::ProcessMouseClick(long x, long y)
+bool Group::ProcessClick(long x, long y, TULongVector& group_indexes)
 {
-   for (auto& object_info : m_object_infos)
+   for (auto index = 0UL; index < m_object_infos.size(); ++index)
    {
-      if (auto ret = object_info.m_object->ProcessMouseClick(x, y))
+      if (m_object_infos[index].m_object->ProcessClick(x, y, group_indexes))
       {
-         return ret;
+         group_indexes.push_back(index);
+         return true;
       }
    }
    
-   return nullptr;
+   return false;
 }
 
-void Group::ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects)
+void Group::ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects)
 {
    for (auto& object_info : m_object_infos)
    {
-      object_info.m_object->ProcessMouseHover(x, y, invalidated_objects);
+      object_info.m_object->ProcessHover(x, y, invalidated_objects);
    }
 }
 

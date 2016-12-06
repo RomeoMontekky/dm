@@ -109,7 +109,7 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       }
       case WM_LBUTTONUP:
       {
-         OnMouseClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+         OnLButtonUp(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
          return TRUE;
       }
       case WM_MOUSEMOVE:
@@ -143,7 +143,7 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    return Window::WindowProc(uMsg, wParam, lParam);
 }
 
-void Sticker::OnMouseClick(long x, long y)
+void Sticker::OnLButtonUp(long x, long y)
 {
    if (!m_memory_image)
    {
@@ -151,7 +151,10 @@ void Sticker::OnMouseClick(long x, long y)
    }
 
    const auto old_state = m_object->GetState();
-   m_object->ProcessMouseClick(x, y);
+   {
+      BGO::TULongVector fake;
+      m_object->ProcessClick(x, y, fake);
+   }
    const auto new_state = m_object->GetState();
    
    if (new_state != old_state)
@@ -194,13 +197,13 @@ void Sticker::OnMouseMove(long x, long y)
 
 void Sticker::OnMouseHover(long x, long y)
 {
-   ProcessMouseHover(x, y);
+   ProcessHover(x, y);
    m_is_mouse_tracking = false;
 }
 
 void Sticker::OnMouseLeave()
 {
-   ProcessMouseHover(-1, -1);
+   ProcessHover(-1, -1);
    m_is_mouse_tracking = false;
 }
 
@@ -232,7 +235,7 @@ void Sticker::OnPaint(HDC hdc)
    graphics.DrawImage(m_memory_image.get(), 0, 0);
 }
 
-void Sticker::ProcessMouseHover(long x, long y)
+void Sticker::ProcessHover(long x, long y)
 {
    if (!m_memory_image)
    {
@@ -240,18 +243,18 @@ void Sticker::ProcessMouseHover(long x, long y)
    }
 
    BGO::TObjectPtrVector invalidated_objects;
-   m_object->ProcessMouseHover(x, y, invalidated_objects);
+   m_object->ProcessHover(x, y, invalidated_objects);
 
    if (!invalidated_objects.empty())
    {
       auto graphics = GetGraphics(m_memory_image);
 
       Gdiplus::RectF invalidated_rect;
-      for (unsigned long index = 0; index < invalidated_objects.size(); ++index)
+      for (auto index = 0UL; index < invalidated_objects.size(); ++index)
       {
          const auto object = invalidated_objects[index];
          const auto& boundary = object->GetBoundary();
-         if (0 == index)
+         if (0UL == index)
          {
             invalidated_rect = boundary;
          }

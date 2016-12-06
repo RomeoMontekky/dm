@@ -116,7 +116,7 @@ public:
    // Group overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
-   virtual const Object* ProcessMouseClick(long x, long y) override;
+   virtual bool ProcessClick(long x, long y, BGO::TULongVector& group_indexes) override;
 
 private:
    enum Indexes { idxSections, /*idxEtc,*/ idxLast };

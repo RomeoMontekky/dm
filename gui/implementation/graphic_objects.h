@@ -11,6 +11,7 @@ namespace BGO
 
 class Object;
 using TObjectPtrVector = std::vector<Object*>;
+using TULongVector = std::vector<unsigned long>;
 
 class Object
 {
@@ -24,8 +25,8 @@ public:
 
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) = 0;
    virtual void Draw(Gdiplus::Graphics* graphics) const = 0;
-   virtual const Object* ProcessMouseClick(long x, long y);
-   virtual void ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects);
+   virtual bool ProcessClick(long x, long y, TULongVector& group_indexes);
+   virtual void ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects);
 
 protected:
    Gdiplus::RectF m_boundary;
@@ -81,8 +82,8 @@ public:
    bool SetClickable(bool is_clickable);
 
    // Base and Text overrides
-   virtual const Object* ProcessMouseClick(long x, long y) override;
-   virtual void ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects) override;
+   virtual bool ProcessClick(long x, long y, TULongVector& group_indexes) override;
+   virtual void ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects) override;
    virtual unsigned long GetFontStyle() const override;
 
 private:
@@ -108,8 +109,8 @@ public:
    // Base overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
-   virtual const Object* ProcessMouseClick(long x, long y) override;
-   virtual void ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects) override;
+   virtual bool ProcessClick(long x, long y, TULongVector& group_indexes) override;
+   virtual void ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects) override;
 
 protected:
    Gdiplus::REAL m_indent_before_x;
