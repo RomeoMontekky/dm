@@ -51,7 +51,7 @@ const Object* Object::ProcessMouseClick(long x, long y)
    return nullptr;
 }
 
-void Object::ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects)
+void Object::ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects)
 {
    // no code
 }
@@ -169,7 +169,7 @@ const Object* ClickableText::ProcessMouseClick(long x, long y)
    return (GetBoundary().Contains(x, y) == TRUE) ? this : nullptr;
 }
 
-void ClickableText::ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects)
+void ClickableText::ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects)
 {
    if (m_is_clickable)
    {
@@ -287,11 +287,11 @@ const Object* Group::ProcessMouseClick(long x, long y)
    return nullptr;
 }
 
-void Group::ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects)
+void Group::ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects)
 {
    for (auto& object_info : m_object_infos)
    {
-      object_info.m_object->ProcessMouseMove(x, y, invalidated_objects);
+      object_info.m_object->ProcessMouseHover(x, y, invalidated_objects);
    }
 }
 

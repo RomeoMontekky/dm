@@ -194,13 +194,13 @@ void Sticker::OnMouseMove(long x, long y)
 
 void Sticker::OnMouseHover(long x, long y)
 {
-   ProcessMouseReposition(x, y);
+   ProcessMouseHover(x, y);
    m_is_mouse_tracking = false;
 }
 
 void Sticker::OnMouseLeave()
 {
-   ProcessMouseReposition(-1, -1);
+   ProcessMouseHover(-1, -1);
    m_is_mouse_tracking = false;
 }
 
@@ -232,7 +232,7 @@ void Sticker::OnPaint(HDC hdc)
    graphics.DrawImage(m_memory_image.get(), 0, 0);
 }
 
-void Sticker::ProcessMouseReposition(long x, long y)
+void Sticker::ProcessMouseHover(long x, long y)
 {
    if (!m_memory_image)
    {
@@ -240,7 +240,7 @@ void Sticker::ProcessMouseReposition(long x, long y)
    }
 
    BGO::TObjectPtrVector invalidated_objects;
-   m_object->ProcessMouseMove(x, y, invalidated_objects);
+   m_object->ProcessMouseHover(x, y, invalidated_objects);
 
    if (!invalidated_objects.empty())
    {

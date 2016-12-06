@@ -61,7 +61,7 @@ private:
    void OnMouseLeave();
    void OnPaint(HDC hdc);
    
-   void ProcessMouseReposition(long x, long y);
+   void ProcessMouseHover(long x, long y);
 
 private:
    bool m_is_dirty;

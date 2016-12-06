@@ -25,7 +25,7 @@ public:
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) = 0;
    virtual void Draw(Gdiplus::Graphics* graphics) const = 0;
    virtual const Object* ProcessMouseClick(long x, long y);
-   virtual void ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects);
+   virtual void ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects);
 
 protected:
    Gdiplus::RectF m_boundary;
@@ -82,7 +82,7 @@ public:
 
    // Base and Text overrides
    virtual const Object* ProcessMouseClick(long x, long y) override;
-   virtual void ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects) override;
+   virtual void ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects) override;
    virtual unsigned long GetFontStyle() const override;
 
 private:
@@ -109,7 +109,7 @@ public:
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
    virtual const Object* ProcessMouseClick(long x, long y) override;
-   virtual void ProcessMouseMove(long x, long y, TObjectPtrVector& invalidated_objects) override;
+   virtual void ProcessMouseHover(long x, long y, TObjectPtrVector& invalidated_objects) override;
 
 protected:
    Gdiplus::REAL m_indent_before_x;
