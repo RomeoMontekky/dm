@@ -25,7 +25,9 @@ public:
 
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) = 0;
    virtual void Draw(Gdiplus::Graphics* graphics) const = 0;
-   virtual bool ProcessClick(long x, long y, TULongVector& group_indexes);
+   
+   enum class ClickType { NoClick, ClickDone, ClickDoneNeedResize };
+   virtual ClickType ProcessClick(long x, long y, TULongVector* group_indexes = nullptr);
    virtual void ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects);
 
 protected:
@@ -47,9 +49,8 @@ private:
 class Text : public ObjectWithBackground
 {
 public:
-   Text(const Gdiplus::Color& back_color,
-        const wchar_t* font_name, unsigned long font_size,
-        unsigned long font_style, Gdiplus::Color font_color);
+   Text(const Gdiplus::Color& back_color, const wchar_t* font_name, 
+        unsigned long font_size, unsigned long font_style, const Gdiplus::Color& font_color);
    
    bool SetText(const char* text);
    const std::wstring& GetText() const;
@@ -75,20 +76,42 @@ private:
 class ClickableText : public Text
 {
 public:
-   ClickableText(const Gdiplus::Color& back_color,
-                 const wchar_t* font_name, unsigned long font_size,
-                 unsigned long font_style, Gdiplus::Color font_color, bool is_clickable = true);
+   ClickableText(const Gdiplus::Color& back_color, const wchar_t* font_name, unsigned long font_size,
+                 unsigned long font_style, const Gdiplus::Color& font_color, bool is_clickable = true);
 
    bool SetClickable(bool is_clickable);
 
    // Base and Text overrides
-   virtual bool ProcessClick(long x, long y, TULongVector& group_indexes) override;
+   virtual ClickType ProcessClick(long x, long y, TULongVector* group_indexes = nullptr) override;
    virtual void ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects) override;
    virtual unsigned long GetFontStyle() const override;
 
 private:
    bool m_is_clickable;
    bool m_is_clickable_view;
+};
+
+class CollapsibleText : public ClickableText
+{
+public:
+   CollapsibleText(const Gdiplus::Color& back_color, const wchar_t* font_name, unsigned long font_size,
+                   unsigned long font_style, const Gdiplus::Color& font_color,
+                   unsigned long collapsed_font_size, const Gdiplus::Color& collapsed_font_color);
+   
+   void SetCollapsed(bool is_collapsed);
+   bool GetCollapsed() const;
+   
+   // Base and Text overrides
+   virtual ClickType ProcessClick(long x, long y, TULongVector* group_indexes = nullptr) override;
+   virtual unsigned long GetFontSize() const override;
+   virtual Gdiplus::Color GetFontColor() const override;
+   
+private:
+   using ClickableText::SetClickable;
+   
+   unsigned long m_collapsed_font_size;
+   Gdiplus::Color m_collapsed_font_color;
+   bool m_is_collapsed;
 };
 
 class Group : public Object
@@ -109,7 +132,7 @@ public:
    // Base overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
-   virtual bool ProcessClick(long x, long y, TULongVector& group_indexes) override;
+   virtual ClickType ProcessClick(long x, long y, TULongVector* group_indexes = nullptr) override;
    virtual void ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects) override;
 
 protected:

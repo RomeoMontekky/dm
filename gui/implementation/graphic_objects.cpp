@@ -46,9 +46,9 @@ const Gdiplus::RectF& Object::GetBoundary() const
    return m_boundary;
 }
 
-bool Object::ProcessClick(long x, long y, TULongVector& group_indexes)
+Object::ClickType Object::ProcessClick(long x, long y, TULongVector* group_indexes)
 {
-   return false;
+   return ClickType::NoClick;
 }
 
 void Object::ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects)
@@ -75,9 +75,8 @@ void ObjectWithBackground::Draw(Gdiplus::Graphics* graphics) const
 
 ///////////// class Text /////////////
    
-Text::Text(const Gdiplus::Color& back_color,
-           const wchar_t* font_name, unsigned long font_size,
-           unsigned long font_style, Gdiplus::Color font_color) :
+Text::Text(const Gdiplus::Color& back_color, const wchar_t* font_name, 
+           unsigned long font_size, unsigned long font_style, const Gdiplus::Color& font_color) :
    ObjectWithBackground(back_color),
    m_font_name(font_name), m_font_size(font_size),
    m_font_style(font_style), m_font_color(font_color)
@@ -144,9 +143,8 @@ Gdiplus::Color Text::GetFontColor() const
 /////////// class ClickableText ////////////
 
 ClickableText::ClickableText(
-   const Gdiplus::Color& back_color,
-   const wchar_t* font_name, unsigned long font_size,
-   unsigned long font_style, Gdiplus::Color font_color, bool is_clickable) :
+   const Gdiplus::Color& back_color, const wchar_t* font_name, unsigned long font_size,
+   unsigned long font_style, const Gdiplus::Color& font_color, bool is_clickable) :
       Text(back_color, font_name, font_size, font_style, font_color),
       m_is_clickable(is_clickable), m_is_clickable_view(false)
 {
@@ -163,10 +161,9 @@ bool ClickableText::SetClickable(bool is_clickable)
    return false;
 }
 
-// Overrides
-bool ClickableText::ProcessClick(long x, long y, TULongVector& group_indexes)
+Object::ClickType ClickableText::ProcessClick(long x, long y, TULongVector* group_indexes)
 {
-   return (GetBoundary().Contains(x, y) == TRUE);
+   return (GetBoundary().Contains(x, y) == TRUE) ? ClickType::ClickDone : ClickType::NoClick;
 }
 
 void ClickableText::ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects)
@@ -186,6 +183,48 @@ unsigned long ClickableText::GetFontStyle() const
 {
    const auto font_style = Text::GetFontStyle();
    return m_is_clickable_view ? (font_style | Gdiplus::FontStyleUnderline) : font_style;
+}
+
+///////////// class CollapsibleText ////////////////
+
+CollapsibleText::CollapsibleText(
+   const Gdiplus::Color& back_color, const wchar_t* font_name, unsigned long font_size,
+   unsigned long font_style, const Gdiplus::Color& font_color,
+   unsigned long collapsed_font_size, const Gdiplus::Color& collapsed_font_color) :
+      ClickableText(back_color, font_name, font_size, font_style, font_color, true),
+      m_collapsed_font_size(collapsed_font_size), m_collapsed_font_color(collapsed_font_color), m_is_collapsed(true)
+{
+   // no code
+}
+
+void CollapsibleText::SetCollapsed(bool is_collapsed)
+{
+   m_is_collapsed = is_collapsed;
+}
+
+bool CollapsibleText::GetCollapsed() const
+{
+   return m_is_collapsed;
+}
+
+Object::ClickType CollapsibleText::ProcessClick(long x, long y, TULongVector* group_indexes)
+{
+   if (ClickableText::ProcessClick(x, y, group_indexes) != ClickType::NoClick)
+   {
+      m_is_collapsed = !m_is_collapsed;
+      return ClickType::ClickDoneNeedResize;
+   }
+   return ClickType::NoClick;
+}
+
+unsigned long CollapsibleText::GetFontSize() const
+{
+   return m_is_collapsed ? m_collapsed_font_size : ClickableText::GetFontSize();
+}
+
+Gdiplus::Color CollapsibleText::GetFontColor() const
+{
+   return m_is_collapsed ? m_collapsed_font_color : ClickableText::GetFontColor();
 }
 
 ///////////// class Group ////////////////
@@ -274,18 +313,22 @@ void Group::Draw(Gdiplus::Graphics* graphics) const
    }
 }
 
-bool Group::ProcessClick(long x, long y, TULongVector& group_indexes)
+Object::ClickType Group::ProcessClick(long x, long y, TULongVector* group_indexes)
 {
    for (auto index = 0UL; index < m_object_infos.size(); ++index)
    {
-      if (m_object_infos[index].m_object->ProcessClick(x, y, group_indexes))
+      const auto click = m_object_infos[index].m_object->ProcessClick(x, y, group_indexes);
+      if (click != ClickType::NoClick)
       {
-         group_indexes.push_back(index);
-         return true;
+         if (group_indexes != nullptr)
+         {
+            group_indexes->push_back(index);
+         }
+         return click;
       }
    }
    
-   return false;
+   return ClickType::NoClick;
 }
 
 void Group::ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects)

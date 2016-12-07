@@ -97,6 +97,21 @@ private:
    Sticker& m_sticker;
 };
 
+class Sections : public BGO::Group
+{
+public:
+   Sections(Sticker& sticker);
+   
+   void SetSectionCount(unsigned long count);
+   unsigned long GetSectionCount() const;
+   
+   const Section& GetSection(unsigned long index) const;
+   Section& GetSection(unsigned long index);
+   
+private:
+   Sticker& m_sticker;
+};
+
 class StickerObject : public BGO::Group
 {
 public:
@@ -107,7 +122,7 @@ public:
    enum class StateType { Minimized, Opened, Expanded };
    StateType GetState() const;
 
-   bool SetSectionCount(unsigned long count);
+   void SetSectionCount(unsigned long count);
    unsigned long GetSectionCount() const;
 
    const Section& GetSection(unsigned long index) const;
@@ -116,7 +131,7 @@ public:
    // Group overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
-   virtual bool ProcessClick(long x, long y, BGO::TULongVector& group_indexes) override;
+   virtual ClickType ProcessClick(long x, long y, BGO::TULongVector* group_indexes = nullptr) override;
 
 private:
    enum Indexes { idxSections, /*idxEtc,*/ idxLast };

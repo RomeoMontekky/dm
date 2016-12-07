@@ -150,14 +150,8 @@ void Sticker::OnLButtonUp(long x, long y)
       return;
    }
 
-   const auto old_state = m_object->GetState();
-   {
-      BGO::TULongVector fake;
-      m_object->ProcessClick(x, y, fake);
-   }
-   const auto new_state = m_object->GetState();
    
-   if (new_state != old_state)
+   if (m_object->ProcessClick(x, y) == BGO::Object::ClickType::ClickDoneNeedResize)
    {
       auto memory_graphics = GetGraphics(m_memory_image);
       
