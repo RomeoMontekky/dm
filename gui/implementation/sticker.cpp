@@ -103,8 +103,7 @@ LRESULT Sticker::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       {
          RECT client_rect;
          ::GetClientRect(GetHandle(), &client_rect);
-         // Save initilial window rect into the variable to have ability to restore it at any time.
-         m_object->SetMinimizedBoundary(client_rect);
+         m_object->Initialize(client_rect);
          break;
       }
       case WM_LBUTTONUP:
@@ -150,7 +149,6 @@ void Sticker::OnLButtonUp(long x, long y)
       return;
    }
 
-   
    if (m_object->ProcessClick(x, y) == BGO::Object::ClickType::ClickDoneNeedResize)
    {
       auto memory_graphics = GetGraphics(m_memory_image);

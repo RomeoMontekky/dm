@@ -69,8 +69,7 @@ private:
    enum Indexes { idxPrefix, idxDesc, idxLast };
 };
 
-// TODO: Finish behavior implementation
-class SectionTitle : public BGO::Text
+class SectionTitle : public BGO::CollapsibleText
 {
 public:
    SectionTitle();
@@ -80,6 +79,8 @@ class Section : public BGO::Group, public ISection
 {
 public:
    Section(Sticker& sticker);
+
+   void SetCollapsed(bool is_collapsed);
 
    void RecalculateTitleBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics);
    void DrawTitle(Gdiplus::Graphics* graphics) const;
@@ -107,6 +108,8 @@ public:
    
    const Section& GetSection(unsigned long index) const;
    Section& GetSection(unsigned long index);
+
+   void CollapseAllExcludingFirst();
    
 private:
    Sticker& m_sticker;
@@ -117,7 +120,7 @@ class StickerObject : public BGO::Group
 public:
    StickerObject(Sticker& sticker);
 
-   void SetMinimizedBoundary(const RECT& boundary);
+   void Initialize(const RECT& boundary);
 
    enum class StateType { Minimized, Opened, Expanded };
    StateType GetState() const;

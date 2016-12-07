@@ -114,7 +114,7 @@ LRESULT CALLBACK Window::StaticWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, L
       window = reinterpret_cast<Window*>(::GetProp(hwnd, g_window_ptr_property));
    }
 
-   // Some messages can be sent before WM_NCCREATE.
+   // Some messages can be send before WM_NCCREATE.
    // It is enough to have just default handling for such a cases.
    if (nullptr == window)
    {

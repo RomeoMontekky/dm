@@ -119,7 +119,8 @@ bool SectionFooter::SetDescription(const char* text)
 /////////// class SectionTitle //////////
 
 SectionTitle::SectionTitle() :
-   BGO::Text(Colors::grey_very_light, g_tahoma_name, 9, Gdiplus::FontStyleBold, Colors::red_dark)
+   BGO::CollapsibleText(Colors::grey_very_light, g_tahoma_name, 9,
+                        Gdiplus::FontStyleBold, Colors::red_dark, 8, Colors::grey_dark)
 {}
 
 ///////////// class Section ////////////////
@@ -133,14 +134,19 @@ Section::Section(Sticker& sticker) : BGO::Group(), m_sticker(sticker)
    BGO::Group::SetObject(idxFooter, std::make_unique<SectionFooter>(), BGO::Group::GluingType::Bottom, g_indent_vert);
 }
 
+void Section::SetCollapsed(bool is_collapsed)
+{
+   static_cast<SGO::SectionTitle*>(BGO::Group::GetObject(idxTitle))->SetCollapsed(is_collapsed);
+}
+
 void Section::RecalculateTitleBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
 {
-   static_cast<BGO::Text*>(BGO::Group::GetObject(idxTitle))->RecalculateBoundary(x, y, graphics);
+   BGO::Group::GetObject(idxTitle)->RecalculateBoundary(x, y, graphics);
 }
 
 void Section::DrawTitle(Gdiplus::Graphics* graphics) const
 {
-   static_cast<const BGO::Text*>(BGO::Group::GetObject(idxTitle))->Draw(graphics);
+   BGO::Group::GetObject(idxTitle)->Draw(graphics);
 }
 
 void Section::SetTitle(const char* title)
@@ -258,9 +264,22 @@ Section& Sections::GetSection(unsigned long index)
    {
       auto section_ptr = std::make_unique<Section>(m_sticker);
       section = section_ptr.get();
+      section->SetCollapsed(index > 0);
       BGO::Group::SetObject(index, std::move(section_ptr), BGO::Group::GluingType::Bottom, g_indent_vert);
    }
    return *section;
+}
+
+void Sections::CollapseAllExcludingFirst()
+{
+   const auto count = GetSectionCount();
+   assert(count > 0);
+
+   GetSection(0).SetCollapsed(false);
+   for (auto index = 1UL; index < count; ++index)
+   {
+      GetSection(index).SetCollapsed(true);
+   }
 }
 
 ////////// class StickerGraphicObject /////////////
@@ -273,7 +292,7 @@ StickerObject::StickerObject(Sticker& sticker) :
    //Group::SetObject(idxEtc, std::make_unique<BGO::Text>(), BGO::Group::GluingType::Bottom, g_indent_vert);
 }
 
-void StickerObject::SetMinimizedBoundary(const RECT& boundary)
+void StickerObject::Initialize(const RECT& boundary)
 {
    m_minimized_boundary.X = boundary.left;
    m_minimized_boundary.Y = boundary.top;
