@@ -116,11 +116,11 @@ bool SectionFooter::SetDescription(const char* text)
    return static_cast<BGO::Text*>(BGO::Group::GetObject(idxDesc))->SetText(text);
 }
 
-/////////// class SectionTitle //////////
+/////////// class SectionTitle ////////////
 
 SectionTitle::SectionTitle() :
    BGO::CollapsibleText(Colors::grey_very_light, g_tahoma_name, 9,
-                        Gdiplus::FontStyleBold, Colors::red_dark, 8, Colors::grey_dark)
+                        Gdiplus::FontStyleBold, Colors::red_dark, 9, Colors::grey_dark)
 {}
 
 ///////////// class Section ////////////////
@@ -134,19 +134,19 @@ Section::Section(Sticker& sticker) : BGO::Group(), m_sticker(sticker)
    BGO::Group::SetObject(idxFooter, std::make_unique<SectionFooter>(), BGO::Group::GluingType::Bottom, g_indent_vert);
 }
 
-void Section::SetCollapsed(bool is_collapsed)
+const SectionTitle& Section::GetTitle() const
 {
-   static_cast<SGO::SectionTitle*>(BGO::Group::GetObject(idxTitle))->SetCollapsed(is_collapsed);
+   return *static_cast<const SectionTitle*>(BGO::Group::GetObject(idxTitle));
 }
 
-void Section::RecalculateTitleBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics)
+SectionTitle& Section::GetTitle()
 {
-   BGO::Group::GetObject(idxTitle)->RecalculateBoundary(x, y, graphics);
+   return *static_cast<SectionTitle*>(BGO::Group::GetObject(idxTitle));
 }
 
-void Section::DrawTitle(Gdiplus::Graphics* graphics) const
+bool Section::IsObjectVisible(unsigned long index) const
 {
-   BGO::Group::GetObject(idxTitle)->Draw(graphics);
+   return (index > idxTitle) ? !GetTitle().GetCollapsed() : true;
 }
 
 void Section::SetTitle(const char* title)
@@ -264,7 +264,7 @@ Section& Sections::GetSection(unsigned long index)
    {
       auto section_ptr = std::make_unique<Section>(m_sticker);
       section = section_ptr.get();
-      section->SetCollapsed(index > 0);
+      section->GetTitle().SetCollapsed(index > 0);
       BGO::Group::SetObject(index, std::move(section_ptr), BGO::Group::GluingType::Bottom, g_indent_vert);
    }
    return *section;
@@ -275,10 +275,10 @@ void Sections::CollapseAllExcludingFirst()
    const auto count = GetSectionCount();
    assert(count > 0);
 
-   GetSection(0).SetCollapsed(false);
+   GetSection(0).GetTitle().SetCollapsed(false);
    for (auto index = 1UL; index < count; ++index)
    {
-      GetSection(index).SetCollapsed(true);
+      GetSection(index).GetTitle().SetCollapsed(true);
    }
 }
 
@@ -289,7 +289,7 @@ StickerObject::StickerObject(Sticker& sticker) :
 {
    BGO::Group::SetObjectCount(idxLast);
    BGO::Group::SetObject(idxSections, std::make_unique<Sections>(sticker), BGO::Group::GluingType::Bottom, g_indent_vert);
-   //Group::SetObject(idxEtc, std::make_unique<BGO::Text>(), BGO::Group::GluingType::Bottom, g_indent_vert);
+   //BGO::Group::SetObject(idxEtc, std::make_unique<BGO::Text>(), BGO::Group::GluingType::Bottom, g_indent_vert);
 }
 
 void StickerObject::Initialize(const RECT& boundary)
@@ -329,7 +329,7 @@ void StickerObject::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplu
 {
    if (StateType::Minimized == m_state)
    {
-      GetSection(0).RecalculateTitleBoundary(x, y, graphics);
+      GetSection(0).GetTitle().RecalculateBoundary(x, y, graphics);
       m_boundary = m_minimized_boundary;
    }
    else
@@ -345,7 +345,7 @@ void StickerObject::Draw(Gdiplus::Graphics* graphics) const
 
    if (StateType::Minimized == m_state)
    {
-      GetSection(0).DrawTitle(graphics);
+      GetSection(0).GetTitle().Draw(graphics);
    }
    else
    {
@@ -360,10 +360,21 @@ BGO::Object::ClickType StickerObject::ProcessClick(long x, long y, BGO::TULongVe
       m_state = StateType::Opened;
       return ClickType::ClickDoneNeedResize;
    }
-   else
+   
+   const auto click = BGO::Group::ProcessClick(x, y, group_indexes);
+   if (click != BGO::Object::ClickType::NoClick)
    {
-      return BGO::Group::ProcessClick(x, y, group_indexes);
+      auto& first_section_title = GetSection(0).GetTitle();
+      if (first_section_title.GetCollapsed())
+      {
+         first_section_title.SetCollapsed(false);
+         static_cast<Sections*>(GetObject(idxSections))->CollapseAllExcludingFirst();
+         m_state = StateType::Minimized;
+         return ClickType::ClickDoneNeedResize;
+      }
    }
+   
+   return click;
 }
 
 } // namespace SGO

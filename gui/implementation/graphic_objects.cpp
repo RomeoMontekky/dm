@@ -279,37 +279,44 @@ void Group::RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graph
    Gdiplus::REAL indent_x = m_indent_before_x;
    Gdiplus::REAL indent_y = m_indent_before_y;
 
-   for (auto& object_info : m_object_infos)
+   for (auto index = 0UL; index < m_object_infos.size(); ++index)
    {
-      assert(object_info.m_object);
-
-      object_info.m_object->RecalculateBoundary
-      (
-         indent_x + ((GluingType::Right == object_info.m_gluing_type) ? m_boundary.GetRight() : m_boundary.GetLeft()),
-         indent_y + ((GluingType::Bottom == object_info.m_gluing_type) ? m_boundary.GetBottom() : m_boundary.GetTop()),
-         graphics
-      );
-
-      if (GluingType::Right == object_info.m_gluing_type)
+      if (IsObjectVisible(index))
       {
-         indent_x = object_info.m_indent_after;
-         indent_y = 0;
+         auto& object_info = m_object_infos[index];
+        
+         assert(object_info.m_object);
+         object_info.m_object->RecalculateBoundary
+         (
+            indent_x + ((GluingType::Right == object_info.m_gluing_type) ? m_boundary.GetRight() : m_boundary.GetLeft()),
+            indent_y + ((GluingType::Bottom == object_info.m_gluing_type) ? m_boundary.GetBottom() : m_boundary.GetTop()),
+            graphics
+         );
+   
+         if (GluingType::Right == object_info.m_gluing_type)
+         {
+            indent_x = object_info.m_indent_after;
+            indent_y = 0;
+         }
+         else
+         {
+            indent_x = 0;
+            indent_y = object_info.m_indent_after;
+         }
+   
+         Gdiplus::RectF::Union(m_boundary, m_boundary, object_info.m_object->GetBoundary());
       }
-      else
-      {
-         indent_x = 0;
-         indent_y = object_info.m_indent_after;
-      }
-
-      Gdiplus::RectF::Union(m_boundary, m_boundary, object_info.m_object->GetBoundary());
    }
 }
 
 void Group::Draw(Gdiplus::Graphics* graphics) const
 {
-   for (auto& object_info : m_object_infos)
+   for (auto index = 0UL; index < m_object_infos.size(); ++index)
    {
-      object_info.m_object->Draw(graphics);
+      if (IsObjectVisible(index))
+      {
+         m_object_infos[index].m_object->Draw(graphics);
+      }
    }
 }
 
@@ -317,14 +324,17 @@ Object::ClickType Group::ProcessClick(long x, long y, TULongVector* group_indexe
 {
    for (auto index = 0UL; index < m_object_infos.size(); ++index)
    {
-      const auto click = m_object_infos[index].m_object->ProcessClick(x, y, group_indexes);
-      if (click != ClickType::NoClick)
+      if (IsObjectVisible(index))
       {
-         if (group_indexes != nullptr)
+         const auto click = m_object_infos[index].m_object->ProcessClick(x, y, group_indexes);
+         if (click != ClickType::NoClick)
          {
-            group_indexes->push_back(index);
+            if (group_indexes != nullptr)
+            {
+               group_indexes->push_back(index);
+            }
+            return click;
          }
-         return click;
       }
    }
    
@@ -333,10 +343,18 @@ Object::ClickType Group::ProcessClick(long x, long y, TULongVector* group_indexe
 
 void Group::ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects)
 {
-   for (auto& object_info : m_object_infos)
+   for (auto index = 0UL; index < m_object_infos.size(); ++index)
    {
-      object_info.m_object->ProcessHover(x, y, invalidated_objects);
+      if (IsObjectVisible(index))
+      {
+         m_object_infos[index].m_object->ProcessHover(x, y, invalidated_objects);
+      }
    }
+}
+
+bool Group::IsObjectVisible(unsigned long index) const
+{
+   return true;
 }
 
 } // namespace BGO

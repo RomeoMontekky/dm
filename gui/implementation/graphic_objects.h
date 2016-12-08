@@ -128,12 +128,15 @@ public:
                   GluingType gluing_type, Gdiplus::REAL indent_after = 0);
    const Object* GetObject(unsigned long index) const;
    Object* GetObject(unsigned long index);
-
+   
    // Base overrides
    virtual void RecalculateBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics) override;
    virtual void Draw(Gdiplus::Graphics* graphics) const override;
    virtual ClickType ProcessClick(long x, long y, TULongVector* group_indexes = nullptr) override;
    virtual void ProcessHover(long x, long y, TObjectPtrVector& invalidated_objects) override;
+   
+protected:
+   virtual bool IsObjectVisible(unsigned long index) const;
 
 protected:
    Gdiplus::REAL m_indent_before_x;

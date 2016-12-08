@@ -80,10 +80,11 @@ class Section : public BGO::Group, public ISection
 public:
    Section(Sticker& sticker);
 
-   void SetCollapsed(bool is_collapsed);
-
-   void RecalculateTitleBoundary(Gdiplus::REAL x, Gdiplus::REAL y, Gdiplus::Graphics* graphics);
-   void DrawTitle(Gdiplus::Graphics* graphics) const;
+   const SectionTitle& GetTitle() const;
+   SectionTitle& GetTitle();
+   
+   // Group overrides
+   virtual bool IsObjectVisible(unsigned long index) const override;
 
    // ISection overrides
    virtual void SetTitle(const char* title) override;
