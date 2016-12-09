@@ -5,19 +5,13 @@ include("../common.cmake")
 set(BINARY_NAME "gui")
 
 set(CPP_FILES 
-   "implementation/graphic_objects.cpp"
    "implementation/main.cpp"
-   "implementation/sticker.cpp"
-   "implementation/sticker_objects.cpp"
    "implementation/window.cpp"
    "implementation/window_class.cpp"
 )
 
 set(HEADER_FILES
-   "implementation/graphic_objects.h"
    "implementation/window.h"
-   "implementation/sticker.h"
-   "implementation/sticker_objects.h"
    "implementation/window_class.h"
 )
 
