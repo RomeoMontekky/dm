@@ -45,7 +45,7 @@ WindowClass::WindowClass(const TCHAR* class_name, UINT style, const TCHAR* base_
    }
 
    // Win API doesn't allow to set class's extra-data using ATOM, returned from
-   // RegisterClassEx, so we are forced to create temprory invisible window and set
+   // RegisterClassEx, so we are forced to create temprary invisible window and set
    // extra-data through it. The window is destroyed as soon as data is set.
    // Also we set here Window::WindowProc, which could not be set at the beginning
    // (see explanation above).
