@@ -5,11 +5,11 @@
 true  # is the same as '1'.
 false # is the same as '0'.
 
-true     := 1         # error: 'true' is reserved.
-false    := 0         # error: 'false' is reserved.
-f1(true) := true + 1  # error: 'true' is reserved.
-f2(true) := false + 1 # error: 'false' is reserved.
-f3(call) := call + 1  # error: 'call' is reserved.
+true      := 1         # error: 'true' is reserved.
+false     := 0         # error: 'false' is reserved.
+f1(true)  := true + 1  # error: 'true' is reserved.
+f2(false) := false + 1 # error: 'false' is reserved.
+f3(call)  := call + 1  # error: 'call' is reserved.
 
 g1(x) := (x + 1       # error: no closing bracket.
 g2(x) :=  x + 1)      # error: no opening bracket.

@@ -3,7 +3,7 @@
 Error: Variable name 'true' can't be reserved word.
 Error: Variable name 'false' can't be reserved word.
 Error: Parameter name 'true' can't be reserved word.
-Error: Parameter name 'true' can't be reserved word.
+Error: Parameter name 'false' can't be reserved word.
 Error: Parameter name 'call' can't be reserved word.
 Error: Closing bracket is missing.
 Error: Closing bracket can't be before an opening one.
