@@ -9,6 +9,13 @@
 - estimate props and cons of refusing the use of "call" qualifier and
   introduce support of returning value for functions.
 
+- "Variable name 'true' can't be reserved word." - Error in the error :)
+
+- Pass all StrLenPtr by value or move to C++17 std::string_view.
+
+- Enlarge tests of parsing.
+  "Parameters are missing during usage of variable" isn't covered.
+
 ------
 
 For MinCNF/MinDNF: https://ru.wikipedia.org/wiki/Метод_Куайна

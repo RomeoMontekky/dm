@@ -129,15 +129,15 @@ private:
       const OperationExpression& enveloping, long enveloping_amount, long skip_index,
       bool (*Comparator)(const TExpressionPtr&, const TExpressionPtr&));
 
-   // Checks whether children of expression1 differs from children of expression2 by a single
+   // Checks whether children of expression1 differ from children of expression2 by a single
    // item. If it is true, diff_index1 and diff_index2 are filled with differed indexes.
    static bool DoChildrenDifferByOne(const OperationExpression& expression1,
                                       const OperationExpression& expression2,
                                       long& diff_index1, long& diff_index2);
 
 private:
-   // Will be filled by new evaluated expression if the whole
-   // operation expression was evaluated to some simple form.
+   // Will be filled with new evaluated expression if the whole
+   // operation expression is evaluated to some simple form.
    TExpressionPtr m_evaluated_expression;
 };
 
