@@ -37,42 +37,47 @@ TFunctionOutputPtr FunctionImpl::Call(VariableManager& variable_mgr, const TStri
    if (variable1->GetParameterCount() != variable2->GetParameterCount())
    {
       stream << "not equal. Different number of parameters.";
-      return std::make_unique<FunctionOutput>(stream.str());
    }
-   
-   const auto param_count = variable1->GetParameterCount();
-   
-   CombinationGenerator generator(param_count);
-   auto param_values = generator.GenerateFirst();
-   while (param_values != nullptr)
+   else
    {
-      const auto result1 = CalculateExpression(variable1->GetExpression(), param_values);
-      const auto result2 = CalculateExpression(variable2->GetExpression(), param_values);
-      
-      if (result1 != result2)
+      const auto param_count = variable1->GetParameterCount();
+
+      CombinationGenerator generator(param_count);
+      auto param_values = generator.GenerateFirst();
+      while (param_values != nullptr)
       {
-         stream << "not equal. Different results on parameter combination (";
-         auto is_first = true;
-         for (auto index = 0L; index < param_count; ++index)
+         const auto result1 = CalculateExpression(variable1->GetExpression(), param_values);
+         const auto result2 = CalculateExpression(variable2->GetExpression(), param_values);
+
+         if (result1 != result2)
          {
-            if (is_first)
+            stream << "not equal. Different results on parameter combination (";
+            auto is_first = true;
+            for (auto index = 0L; index < param_count; ++index)
             {
-               is_first = false;
+               if (is_first)
+               {
+                  is_first = false;
+               }
+               else
+               {
+                  stream << ", ";
+               }
+               stream << LiteralTypeToString(param_values[index]);
             }
-            else
-            {
-               stream << ", ";
-            }
-            stream << LiteralTypeToString(param_values[index]);
+            stream << ").";
+            break;
          }
-         stream << ").";
-         return std::make_unique<FunctionOutput>(stream.str());
+
+         param_values = generator.GenerateNext();
       }
-      
-      param_values = generator.GenerateNext();
+
+      if (nullptr == param_values)
+      {
+         stream << "equal.";
+      }
    }
    
-   stream << "equal.";
    return std::make_unique<FunctionOutput>(stream.str());
 }
 
