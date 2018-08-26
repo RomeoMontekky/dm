@@ -20,7 +20,9 @@ Variable::Variable(const StringPtrLen& name, const Variable& rhs) :
    VariableDeclaration(name, rhs), m_expression()
 {
    const auto param_count = GetParameterCount();
-   
+
+   assert(param_count == rhs.GetParameterCount());
+
    TExpressionPtrVector replace_params;
    replace_params.reserve(param_count);
    for (auto index = 0L; index < param_count; ++index)
@@ -29,7 +31,7 @@ Variable::Variable(const StringPtrLen& name, const Variable& rhs) :
          std::make_unique<ParamRefExpression>(*this, index));
    }
 
-   m_expression = rhs.m_expression->CloneWithSubstitution(replace_params);
+   m_expression = rhs.GetExpression()->CloneWithSubstitution(replace_params);
 }
 
 void Variable::SetExpression(TExpressionPtr&& expression)
