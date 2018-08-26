@@ -6,5 +6,5 @@ call table(f_true)
 f(x, y, z) := x & y -> z
 call table(f)
 
-call table(unknown)   # error: uknown name of variable.
+call table(unknown)   # error: unknown name of variable.
 call table(f_true, f) # error: incorrect amount of parameters.

@@ -12,5 +12,5 @@ f3(x, y) := x -> y -> x -> y
 g3(x, y) := x -> y
 call compare(f3, g3)
 
-call compare(f1, unknown) # error: uknown name of variable.
-call compare(unknown, f1) # error: uknown name of variable.
+call compare(f1, unknown) # error: unknown name of variable.
+call compare(unknown, f1) # error: unknown name of variable.

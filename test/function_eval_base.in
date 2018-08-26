@@ -77,4 +77,4 @@ base6c(x, y, z) := (x = y = z) & (z + x + y + 1)
 call eval(base6c)
 
 
-call eval(unknown) # error: uknown name of variable.
+call eval(unknown) # error: unknown name of variable.
