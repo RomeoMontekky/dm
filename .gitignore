@@ -1,12 +1,18 @@
+# Folders
+/bin/
+CMakeFiles/
+CMakeScripts/
+
+# Files
+CMakeLists.txt.user
 CMakeCache.txt
-CMakeFiles
-CMakeScripts
-Makefile
 cmake_install.cmake
+cmake.out
 install_manifest.txt
+Makefile
+make.out
 *.exe
 *.dll
 *.a
-cmake.out
-make.out
-CMakeLists.txt.user
+
+
