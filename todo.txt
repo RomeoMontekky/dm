@@ -1,3 +1,5 @@
+- distibutive law for conjunction/disjunction.
+- improvement of plus evaluation: distibutive law, gluing law.
 - show position of erred character in the error message.
 - enhance evaluation functionality:
    - Law of Blake-Porecky: (x | (!x & y)) => (x | y)
